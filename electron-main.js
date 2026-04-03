@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, dialog, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, shell, dialog, ipcMain, globalShortcut, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { fork, execFileSync } = require('child_process');
@@ -355,12 +355,41 @@ function ensureDataDir() {
   console.log(`[Data] Directory: ${dataDir}`);
 }
 
+// --- System Notifications (poll server for pending reminders) ---
+let notificationPoller = null;
+
+function startNotificationPoller() {
+  notificationPoller = setInterval(async () => {
+    try {
+      const http = require('http');
+      const data = await new Promise((resolve, reject) => {
+        http.get(`http://localhost:${PORT}/api/scheduled/pending`, res => {
+          let body = '';
+          res.on('data', c => body += c);
+          res.on('end', () => resolve(JSON.parse(body)));
+        }).on('error', reject);
+      });
+      if (data.pending && data.pending.length > 0) {
+        data.pending.forEach(p => {
+          const notif = new Notification({
+            title: '记忆手帐',
+            body: p.message,
+            silent: false,
+          });
+          notif.show();
+        });
+      }
+    } catch {}
+  }, 15000);
+}
+
 // --- App Lifecycle ---
 app.on('ready', async () => {
   ensureDataDir();
   checkAndSetupCC();
   await startServer();
   createWindow();
+  startNotificationPoller();
 });
 
 app.on('window-all-closed', () => {

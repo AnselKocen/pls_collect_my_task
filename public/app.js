@@ -1188,7 +1188,15 @@ document.getElementById('graphDeleteCurrent').addEventListener('click', () => {
 });
 
 document.getElementById('graphClose').addEventListener('click', () => {
+  document.getElementById('graphModal').querySelector('.modal-graph-analysis').classList.remove('graph-fullscreen');
+  document.getElementById('graphFullscreen').textContent = '⛶';
   document.getElementById('graphModal').classList.add('hidden');
+});
+document.getElementById('graphFullscreen').addEventListener('click', () => {
+  const panel = document.getElementById('graphModal').querySelector('.modal-graph-analysis');
+  const btn = document.getElementById('graphFullscreen');
+  panel.classList.toggle('graph-fullscreen');
+  btn.textContent = panel.classList.contains('graph-fullscreen') ? '⤡' : '⤢';
 });
 document.getElementById('graphRegenBtn').addEventListener('click', generateGraph);
 
@@ -1761,7 +1769,9 @@ function applyTheme(theme) {
 }
 
 function loadSettings() {
-  document.getElementById('dailyTime').value = settings.dailyDigestTime || '23:55';
+  const dailyTime = settings.dailyDigestTime || '23:55';
+  document.getElementById('dailyTime').value = dailyTime;
+  document.getElementById('dailyTimeDisplay').textContent = dailyTime;
   const theme = settings.theme || 'gold';
   document.getElementById('themeSelect').value = theme;
   if (theme === 'custom') {
@@ -1775,9 +1785,11 @@ function loadSettings() {
 // Save time on confirm button click
 document.getElementById('dailyTimeConfirm').addEventListener('click', async () => {
   try {
+    const newTime = document.getElementById('dailyTime').value;
     settings = await api('/api/settings', { method: 'PUT', body: JSON.stringify({
-      dailyDigestTime: document.getElementById('dailyTime').value
+      dailyDigestTime: newTime
     }) });
+    document.getElementById('dailyTimeDisplay').textContent = newTime;
     showToast('整理时间已保存 ✓');
   } catch (err) { console.error(err); }
 });
@@ -2099,6 +2111,66 @@ document.getElementById('ctResetBtn').addEventListener('click', () => {
     applyTheme('gold');
   }
 });
+
+// === Scheduled Reminders ===
+document.getElementById('btnScheduledTasks').addEventListener('click', async () => {
+  await renderScheduledList();
+  document.getElementById('scheduledModal').classList.remove('hidden');
+});
+document.getElementById('scheduledClose').addEventListener('click', () => {
+  document.getElementById('scheduledModal').classList.add('hidden');
+});
+
+document.getElementById('scheduledAddBtn').addEventListener('click', async () => {
+  const date = document.getElementById('scheduledDate').value || null;
+  const time = document.getElementById('scheduledTime').value;
+  const content = document.getElementById('scheduledContent').value.trim();
+  if (!time || !content) { showToast('请填写时间和内容'); return; }
+  await api('/api/scheduled', { method: 'POST', body: JSON.stringify({ date, time, content }) });
+  document.getElementById('scheduledContent').value = '';
+  document.getElementById('scheduledDate').value = '';
+  await renderScheduledList();
+});
+
+async function renderScheduledList() {
+  const data = await api('/api/scheduled');
+  const list = document.getElementById('scheduledList');
+  const tasks = data.tasks || [];
+  if (tasks.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:var(--t-text-light);font-size:13px;padding:20px 0">还没有定时提醒</p>';
+    return;
+  }
+  tasks.sort((a, b) => a.time.localeCompare(b.time));
+  list.innerHTML = tasks.map(t => {
+    const dateLabel = t.date || '每天';
+    return `
+    <div class="scheduled-item">
+      <span class="sch-time">${dateLabel} ${t.time}</span>
+      <span class="sch-content">Memo's CC: ${escapeHtml(t.content)}</span>
+      <button class="sch-del" data-id="${t.id}" title="删除">&times;</button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.sch-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await api(`/api/scheduled/${btn.dataset.id}`, { method: 'DELETE' });
+      await renderScheduledList();
+    });
+  });
+}
+
+// Poll for pending reminders every 30s (only in browser, not Electron)
+if (!window.electronAPI) {
+  setInterval(async () => {
+    try {
+      const data = await fetch('/api/scheduled/pending').then(r => r.json());
+      if (data.pending && data.pending.length > 0) {
+        data.pending.forEach(p => {
+          showToast(p.message);
+        });
+      }
+    } catch {}
+  }, 30000);
+}
 
 // === Load Suggestions ===
 async function loadSuggestions() {

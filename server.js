@@ -140,7 +140,8 @@ function ensureDataFiles() {
       sourceFile: '内置卡池',
       createdAt: now
     }] },
-    'habit_log.json': { logs: [] }
+    'habit_log.json': { logs: [] },
+    'scheduled_tasks.json': { tasks: [] }
   };
   for (const [file, data] of Object.entries(defaults)) {
     const fp = path.join(DATA_DIR, file);
@@ -795,6 +796,54 @@ app.get('/api/habit/calendar', (req, res) => {
   res.json({ calendar: result });
 });
 
+// --- Scheduled Reminders ---
+app.get('/api/scheduled', (req, res) => {
+  res.json(readJSON('scheduled_tasks.json'));
+});
+
+app.get('/api/scheduled/pending', (req, res) => {
+  const data = readJSON('scheduled_tasks.json');
+  const pending = data.pending || [];
+  if (pending.length > 0) {
+    data.pending = [];
+    writeJSON('scheduled_tasks.json', data);
+  }
+  res.json({ pending });
+});
+
+// Test endpoint: manually push a pending notification
+app.post('/api/scheduled/test', (req, res) => {
+  const data = readJSON('scheduled_tasks.json');
+  if (!data.pending) data.pending = [];
+  data.pending.push({ id: 'test', message: "Memo's CC: 这是一条测试通知", firedAt: new Date().toISOString() });
+  writeJSON('scheduled_tasks.json', data);
+  res.json({ ok: true });
+});
+
+app.post('/api/scheduled', async (req, res) => {
+  const { date, time, content } = req.body;
+  if (!time || !content) return res.status(400).json({ error: '时间和内容不能为空' });
+  const task = await withFileLock('scheduled_tasks.json', () => {
+    const data = readJSON('scheduled_tasks.json');
+    const t = { id: uuidv4(), date: date || null, time, content, createdAt: new Date().toISOString() };
+    data.tasks.push(t);
+    writeJSON('scheduled_tasks.json', data);
+    return t;
+  });
+  scheduleReminders();
+  res.json(task);
+});
+
+app.delete('/api/scheduled/:id', async (req, res) => {
+  await withFileLock('scheduled_tasks.json', () => {
+    const data = readJSON('scheduled_tasks.json');
+    data.tasks = data.tasks.filter(t => t.id !== req.params.id);
+    writeJSON('scheduled_tasks.json', data);
+  });
+  scheduleReminders();
+  res.json({ ok: true });
+});
+
 // --- Cron Jobs ---
 let dailyJob = null;
 let weeklyJob = null;
@@ -854,6 +903,49 @@ function scheduleCronJobs() {
   });
 
   console.log(`[Cron] Scheduled daily at ${settings.dailyDigestTime}, weekly on ${settings.weeklyDigestDay} at ${settings.weeklyDigestTime}`);
+  scheduleReminders();
+}
+
+// --- Scheduled Reminders (interval-based, more reliable in Electron fork) ---
+let reminderInterval = null;
+let lastReminderMinute = '';
+
+function scheduleReminders() {
+  if (reminderInterval) return; // already running
+  reminderInterval = setInterval(() => {
+    try {
+      const now = new Date();
+      const currentMinute = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      if (currentMinute === lastReminderMinute) return; // already checked this minute
+      lastReminderMinute = currentMinute;
+      const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+      const data = readJSON('scheduled_tasks.json');
+      if (!data.tasks || data.tasks.length === 0) return;
+      if (!data.pending) data.pending = [];
+
+      let changed = false;
+      const toRemove = [];
+
+      data.tasks.forEach(t => {
+        if (t.time !== currentMinute) return;
+        if (t.date && t.date !== today) return;
+        const msg = `Memo's CC: ${t.content}`;
+        console.log(`[Reminder] Firing: ${msg} (time=${t.time} date=${t.date || 'daily'})`);
+        data.pending.push({ id: t.id, message: msg, firedAt: now.toISOString() });
+        if (t.date) toRemove.push(t.id);
+        changed = true;
+      });
+
+      if (toRemove.length > 0) {
+        data.tasks = data.tasks.filter(x => !toRemove.includes(x.id));
+      }
+      if (changed) {
+        writeJSON('scheduled_tasks.json', data);
+      }
+    } catch (err) { console.error('[Reminder] Error:', err.message); }
+  }, 15000); // check every 15 seconds
+  console.log(`[Reminder] Interval checker started`);
 }
 
 // --- Start ---

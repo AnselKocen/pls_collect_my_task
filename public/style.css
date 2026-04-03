@@ -6447,6 +6447,18 @@ textarea { width:100%; resize:vertical; min-height:60px; }
 .modal { position:fixed; inset:0; background:rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; z-index:100; backdrop-filter:blur(2px); padding:20px 0; }
 .modal.hidden { display:none; }
 .modal-content { background: var(--t-card); border:1.5px solid var(--t-border-light); padding:32px 24px 24px; max-width:520px; width:90%; max-height:80vh; overflow:visible; position:relative; box-shadow: var(--shadow); }
+/* Scheduled tasks */
+.scheduled-new { margin-bottom:12px; }
+.scheduled-list { display:flex; flex-direction:column; gap:8px; overflow-y:auto; max-height:calc(80vh - 240px); }
+.scheduled-item {
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
+  background:var(--t-card); border:1px solid var(--t-border-light); border-radius:8px;
+}
+.scheduled-item .sch-time { font-weight:700; font-size:14px; color:var(--t-text); white-space:nowrap; }
+.scheduled-item .sch-content { flex:1; font-size:13px; color:var(--t-text-light); }
+.scheduled-item .sch-del { background:none; border:none; cursor:pointer; font-size:14px; color:var(--t-text-light); padding:2px 4px; }
+.scheduled-item .sch-del:hover { color:#e55; }
+
 .modal-tag-summary { overflow:visible; display:flex; flex-direction:column; }
 .modal-tag-summary .tag-summary-history,
 .modal-tag-summary .tag-manager-scroll { overflow-y:auto; max-height:calc(80vh - 160px); }
@@ -6455,7 +6467,21 @@ textarea { width:100%; resize:vertical; min-height:60px; }
 .modal-graph-analysis {
   max-width:1100px; width:96%; padding:20px 20px 16px;
   max-height:calc(100vh - 80px); overflow:visible; margin-top:10px;
+  transition: max-width 0.3s, max-height 0.3s, margin-top 0.3s, border-radius 0.3s;
 }
+.modal-graph-analysis.graph-fullscreen {
+  max-width:100vw; width:100vw; max-height:100vh; height:100vh;
+  margin-top:0; border-radius:0;
+}
+.modal-graph-analysis.graph-fullscreen .ga-body { height:calc(100vh - 200px); }
+.graph-fullscreen-btn {
+  position:absolute; top:10px; right:44px; z-index:12;
+  background:var(--t-text); border:none;
+  border-radius:6px; width:28px; height:28px; cursor:pointer;
+  font-size:14px; line-height:28px; text-align:center; color:#fff;
+  font-weight:700; transition: opacity 0.2s;
+}
+.graph-fullscreen-btn:hover { opacity:0.8; }
 .ga-header { margin-bottom:10px; }
 .ga-header h3 { font-size:16px; font-weight:700; color:var(--t-text); margin-bottom:8px; }
 .ga-tag-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }

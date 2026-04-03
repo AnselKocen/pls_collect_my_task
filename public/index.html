@@ -153,12 +153,8 @@
       <div class="sidebar-section collapsible" id="settingsSection">
         <div class="sidebar-title section-toggle" id="settingsToggle"><span class="tape tape-sidebar-2">设置 <span class="arrow">▾</span></span></div>
         <div id="settingsPanel" class="section-body settings-panel">
-          <label>每日整理时间
-            <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
-              <input type="time" id="dailyTime" value="23:55" style="flex:1">
-              <button id="dailyTimeConfirm" class="btn-small">确定</button>
-            </div>
-          </label>
+          <div style="font-size:12px;color:var(--t-text-light);margin-bottom:2px">每日整理时间 <span id="dailyTimeDisplay" style="font-weight:700;color:var(--t-text)">23:00</span></div>
+          <button id="btnScheduledTasks" class="btn-small" style="width:100%;margin-bottom:6px">更多定时任务</button>
           <label>主题配色</label>
           <div class="theme-nav">
             <button id="themePrev" class="theme-arrow" title="上一个">‹</button>
@@ -222,6 +218,7 @@
     <!-- Graph Modal -->
     <div id="graphModal" class="modal hidden">
       <div class="modal-content modal-graph-analysis">
+        <button class="graph-fullscreen-btn" id="graphFullscreen" title="全屏">⤢</button>
         <button class="modal-close" id="graphClose">&times;</button>
         <div class="tape tape-deco tape-plaid-gold" style="width:110px;top:-8px;left:46%;transform:translateX(-50%) rotate(-1deg)"></div>
 
@@ -503,6 +500,35 @@
           <button id="ctApplyBtn" class="btn-primary">应用并保存</button>
           <button id="ctResetBtn" class="btn-small">重置</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Scheduled Tasks Modal -->
+    <div id="scheduledModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3>定时任务</h3>
+          <button class="modal-close" id="scheduledClose">&times;</button>
+        </div>
+        <div class="tape tape-deco tape-sidebar-2" style="width:100px;top:-8px;left:50%;transform:translateX(-50%) rotate(1deg)"></div>
+        <div class="scheduled-fixed">
+          <div class="scheduled-item" style="background:var(--t-bg)">
+            <span class="sch-time">每天</span>
+            <input type="time" id="dailyTime" value="23:00" style="width:90px;font-size:13px">
+            <span class="sch-content" style="flex:1">每日整理（自动生成摘要）</span>
+            <button id="dailyTimeConfirm" class="btn-small">保存</button>
+          </div>
+        </div>
+        <div class="scheduled-new" style="margin-top:10px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="date" id="scheduledDate" style="flex:0 0 auto">
+            <input type="time" id="scheduledTime" style="flex:0 0 auto">
+            <input type="text" id="scheduledContent" placeholder="任务内容" style="flex:1">
+            <button id="scheduledAddBtn" class="btn-primary">添加</button>
+          </div>
+          <p style="font-size:11px;color:var(--t-text-light);margin-top:4px">通知将以「Memo's CC:」开头。不填日期则每天重复。</p>
+        </div>
+        <div id="scheduledList" class="scheduled-list"></div>
       </div>
     </div>
 
