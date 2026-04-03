@@ -1,0 +1,10 @@
+node_modules/
+data/
+.DS_Store
+.server.pid
+.server.log
+.claude/
+dist/
+.idea/
+claude-config.json
+coffee.html

@@ -1,0 +1,55 @@
+{
+  "name": "memo-app",
+  "version": "1.0.0",
+  "description": "Memo Journal with CC — personal journal app with Claude Code CLI integration",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "node server.js",
+    "electron": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.memo.journal",
+    "productName": "记忆手帐",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "server.js",
+      "electron-main.js",
+      "electron-preload.js",
+      "package.json",
+      "public/**/*",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "server.js",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "target": "dmg"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": "nsis"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "node-cron": "^4.2.1",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "electron": "^35.7.5",
+    "electron-builder": "^26.8.1"
+  }
+}

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clawd's Cozy Corner</title>
+<style>
+:root {
+  --bg: #8bbcaa;
+  --bg2: #7aaa98;
+  --crab: #e8a070;
+  --crab-dk: #d08858;
+  --crab-lt: #f0b888;
+  --eye: #2a2a3a;
+  --blue: #5a9ee0;
+  --blue-lt: #88bbf0;
+  --cream2: #f0e8d8;
+  --gold: #d4a468;
+  --sparkle: #f0d868;
+  --err: #e06060;
+  --yellow: #f0d040;
+  --pink: #f0a0a0;
+  --pink-lt: #f8c8c8;
+  --shadow: rgba(0,0,0,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:linear-gradient(135deg,var(--bg) 0%,var(--bg2) 100%);
+  min-height:100vh;display:flex;justify-content:center;align-items:center;
+  font-family:'Courier New',monospace;overflow:hidden;
+}
+
+/* ==================== SCENE ==================== */
+/* .stage: full layout container, CC walks in the floor area below the furniture */
+.stage{
+  position:relative;
+  width:560px;
+  height:257px;  /* 207px image content + 50px floor space for CC */
+}
+/* .img-wrap: clips transparent margins of the PNG, shows only furniture */
+.img-wrap{
+  position:absolute;
+  top:0;left:0;
+  overflow:hidden;
+  width:560px;
+  height:207px;  /* content height: (655-88)*(560/1536) ≈ 207px */
+}
+.room-bg{
+  position:absolute;
+  top:-32px;     /* hide 88px top-transparent area: 88*(560/1536)≈32px */
+  left:0;
+  width:560px;
+  height:373px;  /* full image height: 1024*(560/1536)≈373px */
+  image-rendering:pixelated;
+  pointer-events:none;
+  user-select:none;
+}
+
+/* ==================== CLAWD (CC) ==================== */
+.cc-container{
+  position:absolute;
+  /* Furniture bottom sits at 207px from stage top = 50px from stage bottom (257px total).
+     cc-inner 160px, legs end at 124px → 36px empty below. At scale 0.6 → 22px empty.
+     bottom = 50 - 22 = 28px puts CC feet level with furniture bottom. */
+  bottom:28px;
+  left:130px;
+  z-index:10;cursor:pointer;
+  transition:left 1.8s ease-in-out;
+  transform-origin:bottom center;
+  scale:.6;
+  /* white pixel outline */
+  filter:
+    drop-shadow(1px 0 0 #fff)
+    drop-shadow(-1px 0 0 #fff)
+    drop-shadow(0 1px 0 #fff)
+    drop-shadow(0 -1px 0 #fff)
+    drop-shadow(2px 0 0 #fff)
+    drop-shadow(-2px 0 0 #fff)
+    drop-shadow(0 2px 0 #fff)
+    drop-shadow(0 -2px 0 #fff);
+}
+.cc-container.walking{transition:left 1.8s ease-in-out}
+.cc-container.flip{scale:-.6 .6}
+.cc-container.flip .cc-label{display:none}
+.cc-container.flip .cc-err{transform:translateX(-50%) scaleX(-1)}
+.cc-container.flip .cc-qmark{transform:scaleX(-1)}
+.cc-container.flip .cc-think{transform:translateX(-50%) scaleX(-1)}
+.cc-container.flip .cc-bubble{transform:translateX(-50%) scaleX(-1)}
+
+/* CC body */
+.cc-inner{position:relative;width:150px;height:160px}
+.cc-sprite{position:relative;width:150px;height:160px;animation:ccBob 2.2s ease-in-out infinite}
+@keyframes ccBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.cc-container.walking .cc-sprite{animation:ccWalk .4s ease-in-out infinite}
+@keyframes ccWalk{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+.cc-body{position:absolute;left:50%;transform:translateX(-50%);top:36px;width:100px;height:68px;background:#e8a878}
+.cc-body::before{content:'';position:absolute;top:0;left:0;right:0;height:10px;background:#f0b890}
+.cc-claw{position:absolute;top:52px;width:16px;height:20px;background:#e8a878}
+.cc-claw.L{left:8px;animation:clawL 2s ease-in-out infinite;transform-origin:right center}
+.cc-claw.R{right:8px;animation:clawR 2s ease-in-out infinite;transform-origin:left center}
+@keyframes clawL{0%,100%{transform:rotate(0)}30%{transform:rotate(-12deg)}70%{transform:rotate(8deg)}}
+@keyframes clawR{0%,100%{transform:rotate(0)}30%{transform:rotate(12deg)}70%{transform:rotate(-8deg)}}
+.cc-container.st-happy .cc-claw.L{animation:clawLFast .5s ease-in-out infinite}
+.cc-container.st-happy .cc-claw.R{animation:clawRFast .5s ease-in-out infinite}
+@keyframes clawLFast{0%,100%{transform:rotate(0)}50%{transform:rotate(-20deg)}}
+@keyframes clawRFast{0%,100%{transform:rotate(0)}50%{transform:rotate(20deg)}}
+.cc-container.st-coding .cc-claw.L{animation:clawCode .4s ease-in-out infinite}
+.cc-container.st-coding .cc-claw.R{animation:clawCode .4s ease-in-out infinite .2s}
+@keyframes clawCode{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-5deg) translateY(-2px)}}
+.cc-container.st-sweeping .cc-claw.R{animation:clawSweep .7s ease-in-out infinite}
+@keyframes clawSweep{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg) translateX(3px)}}
+.cc-container.st-error .cc-claw.L{animation:clawDroop 1.5s ease-in-out infinite}
+.cc-container.st-error .cc-claw.R{animation:clawDroop 1.5s ease-in-out infinite .3s}
+@keyframes clawDroop{0%,100%{transform:rotate(5deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(0)}}
+.cc-container.walking .cc-claw.L{animation:clawWalkL .4s ease-in-out infinite}
+.cc-container.walking .cc-claw.R{animation:clawWalkR .4s ease-in-out infinite}
+@keyframes clawWalkL{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes clawWalkR{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}
+
+.cc-legs{position:absolute;top:102px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
+.cc-leg{width:8px;height:22px;background:#d08858}
+.cc-shadow-bar{position:absolute;top:124px;left:50%;transform:translateX(-50%);width:80px;height:5px;background:#999;opacity:.6}
+
+/* eyes */
+.cc-eyes{position:absolute;top:52px;left:50%;transform:translateX(-50%);display:flex;gap:30px}
+.cc-eye{width:10px;height:13px;background:#2a2a2a}
+.cc-eyes-gt-lt{position:absolute;top:48px;left:50%;transform:translateX(-50%);display:none;gap:24px}
+.eye-gt,.eye-lt{width:22px;height:22px;position:relative}
+.eye-gt::before,.eye-gt::after{content:'';position:absolute;width:16px;height:4.5px;background:#2a2a2a;left:0}
+.eye-gt::before{top:1px;transform:rotate(26deg);transform-origin:left center}
+.eye-gt::after{bottom:1px;transform:rotate(-26deg);transform-origin:left center}
+.eye-lt::before,.eye-lt::after{content:'';position:absolute;width:16px;height:4.5px;background:#2a2a2a;right:0}
+.eye-lt::before{top:1px;transform:rotate(-26deg);transform-origin:right center}
+.eye-lt::after{bottom:1px;transform:rotate(26deg);transform-origin:right center}
+.cc-eyes-caret{position:absolute;top:48px;left:50%;transform:translateX(-50%);display:none;gap:24px}
+.eye-caret{width:22px;height:16px;position:relative}
+.eye-caret::before,.eye-caret::after{content:'';position:absolute;width:14px;height:4.5px;background:#2a2a2a;bottom:0}
+.eye-caret::before{left:0;transform:rotate(-30deg);transform-origin:right bottom}
+.eye-caret::after{right:0;transform:rotate(30deg);transform-origin:left bottom}
+.cc-eyes-xx{position:absolute;top:48px;left:50%;transform:translateX(-50%);display:none;gap:22px}
+.eye-x{width:20px;height:20px;position:relative}
+.eye-x::before,.eye-x::after{content:'';position:absolute;width:20px;height:4.5px;background:#2a2a2a;top:50%;left:50%}
+.eye-x::before{transform:translate(-50%,-50%) rotate(45deg)}
+.eye-x::after{transform:translate(-50%,-50%) rotate(-45deg)}
+
+.cc-label{display:none}
+
+/* overlays */
+.cc-bubble{position:absolute;top:-6px;left:8px;opacity:0;transition:opacity .3s;pointer-events:none}
+.cc-bubble-box{width:52px;height:40px;background:#fff;border-radius:8px;display:flex;justify-content:center;align-items:center;gap:10px}
+.cc-bubble-eye{width:5px;height:7px;background:var(--blue)}
+.cc-bubble .bdot{position:absolute;background:#fff;border:1px solid #e0d8d0;border-radius:50%}
+.cc-bubble .bdot1{width:10px;height:8px;bottom:-8px;left:18px}
+.cc-bubble .bdot2{width:6px;height:5px;bottom:-15px;left:24px}
+
+.cc-think{position:absolute;top:-10px;left:8px;opacity:0;transition:opacity .3s;pointer-events:none}
+.cc-think-box{min-width:52px;height:40px;background:#fff;border-radius:8px;display:flex;justify-content:center;align-items:center;padding:0 12px}
+.cc-think-txt{font-size:15px;color:var(--blue);font-weight:bold}
+.cc-think .bdot{position:absolute;background:#fff;border:1px solid #e0d8d0;border-radius:50%}
+.cc-think .bdot1{width:10px;height:8px;bottom:-8px;left:10px}
+.cc-think .bdot2{width:6px;height:5px;bottom:-15px;left:16px}
+
+.cc-laptop{position:absolute;top:34px;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .3s;z-index:3}
+.lt-body{width:64px;height:40px;background:#708898;border-radius:3px 3px 0 0;display:flex;justify-content:center;align-items:center}
+.lt-screen{width:52px;height:32px;background:#384858;border-radius:2px;display:flex;justify-content:center;align-items:center}
+.lt-dot{width:10px;height:10px;background:var(--blue);border-radius:2px;animation:dp 1.2s ease-in-out infinite}
+@keyframes dp{0%,100%{opacity:.3}50%{opacity:1}}
+.lt-base{width:70px;height:5px;background:#889098;border-radius:0 0 2px 2px;margin-left:-3px}
+
+.cc-qmark{position:absolute;top:-2px;left:10px;opacity:0;transition:opacity .3s}
+.cc-err{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:var(--err);font-size:20px;font-weight:bold;letter-spacing:4px;opacity:0;text-shadow:1px 1px 0 rgba(0,0,0,0.1)}
+.cc-broom{position:absolute;right:-14px;top:24px;opacity:0;transition:opacity .3s;transform-origin:bottom center}
+.broom-stick{width:5px;height:60px;background:#b09868;border-radius:2px;margin-left:8px}
+.broom-head{width:24px;height:16px;background:var(--sparkle);border-radius:2px;margin-top:-1px}
+.broom-edge{width:24px;height:3px;background:#c8a020;border-radius:0 0 2px 2px}
+
+.spk{position:absolute;opacity:0;pointer-events:none}
+.spk svg{width:14px;height:14px}
+.spk:nth-child(1){top:10px;right:-8px}
+.spk:nth-child(2){top:4px;left:16px}
+.spk:nth-child(3){top:26px;right:-14px}
+.fpx{position:absolute;width:6px;height:6px;opacity:0;pointer-events:none}
+.fpx:nth-child(1){top:30px;left:-6px;background:#e8a878}
+.fpx:nth-child(2){top:14px;right:12px;background:#f0b888}
+.blue-px{position:absolute;width:7px;height:7px;background:var(--blue);opacity:0;pointer-events:none}
+
+/* ==================== CC STATES ==================== */
+.cc-container.st-idle .cc-bubble{opacity:1}
+.cc-container.st-idle .spk{animation:spkA 2.5s ease-in-out infinite}
+@keyframes spkA{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:.9;transform:scale(1.2) rotate(15deg)}}
+
+.cc-container.st-thinking .cc-think{opacity:1}
+
+.cc-container.st-coding .cc-laptop{opacity:1}
+.cc-container.st-coding .blue-px{animation:bpxA 2s ease-in-out infinite}
+@keyframes bpxA{0%,100%{opacity:0}50%{opacity:.5}}
+.cc-container.st-coding .cc-sprite{animation:ccCode .45s ease-in-out infinite}
+@keyframes ccCode{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-2px) rotate(-1.5deg)}75%{transform:translateY(-1px) rotate(1.5deg)}}
+
+.cc-container.st-looking .cc-qmark{opacity:1;animation:qB 1.2s ease-in-out infinite}
+@keyframes qB{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.cc-container.st-looking .fpx{animation:fpxA 2s ease-in-out infinite}
+@keyframes fpxA{0%,100%{opacity:0;transform:translateY(0)}50%{opacity:.6;transform:translateY(-12px)}}
+
+.cc-container.st-sweeping .cc-broom{opacity:1;animation:swB .7s ease-in-out infinite}
+@keyframes swB{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(15deg)}}
+.cc-container.st-sweeping .cc-sprite{animation:swM .7s ease-in-out infinite}
+@keyframes swM{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+
+.cc-container.st-error .cc-err{opacity:1;animation:errF .7s ease-in-out infinite}
+@keyframes errF{0%,100%{opacity:1}50%{opacity:.35}}
+.cc-container.st-error .cc-sprite{animation:errS .25s ease-in-out infinite}
+@keyframes errS{0%,100%{transform:translateX(0) scaleY(1)}25%{transform:translateX(-3px) scaleY(.88)}75%{transform:translateX(3px) scaleY(.88)}}
+.cc-container.st-error .cc-body{background:#d89060}
+
+.cc-container.st-happy .cc-sprite{animation:hapB .55s ease-in-out infinite}
+@keyframes hapB{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-4deg)}75%{transform:translateY(-8px) rotate(4deg)}}
+.cc-container.st-happy .spk{animation:spkA 1.2s ease-in-out infinite}
+
+.cc-container.walking .cc-leg:nth-child(1),.cc-container.walking .cc-leg:nth-child(3){animation:legStep .4s ease-in-out infinite}
+.cc-container.walking .cc-leg:nth-child(2),.cc-container.walking .cc-leg:nth-child(4){animation:legStep .4s ease-in-out infinite .2s}
+@keyframes legStep{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+/* ==================== CONTROLS ==================== */
+.controls{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  display:flex;gap:7px;z-index:100;
+}
+.controls button{
+  padding:7px 13px;border:2px solid var(--cream2);
+  background:rgba(255,255,255,0.2);backdrop-filter:blur(4px);
+  color:#5a7a68;font-family:'Courier New',monospace;font-size:12px;
+  cursor:pointer;border-radius:6px;transition:all .2s;
+}
+.controls button:hover{background:rgba(255,255,255,0.35)}
+.controls button.active{background:rgba(255,255,255,0.45);border-color:var(--sparkle);color:#3a6a50;font-weight:bold}
+
+/* title */
+.title{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  color:#5a8a70;font-size:13px;opacity:.7;letter-spacing:2px;text-align:center;
+  text-shadow:0 1px 2px rgba(255,255,255,0.2);
+}
+.title b{color:var(--gold)}
+
+/* ambient dust */
+.dust{position:fixed;width:3px;height:3px;background:rgba(255,255,255,0.2);pointer-events:none;border-radius:50%;animation:dustF 9s ease-in-out infinite}
+.dust:nth-child(1){left:6%;top:12%;animation-delay:0s}
+.dust:nth-child(2){left:22%;top:30%;animation-delay:2.5s}
+.dust:nth-child(3){left:60%;top:10%;animation-delay:5s}
+.dust:nth-child(4){left:78%;top:40%;animation-delay:7s}
+.dust:nth-child(5){left:42%;top:50%;animation-delay:1.5s}
+.dust:nth-child(6){left:88%;top:22%;animation-delay:3.5s}
+@keyframes dustF{0%,100%{opacity:0;transform:translateY(0)}50%{opacity:.4;transform:translateY(-18px)}}
+</style>
+</head>
+<body>
+
+<div class="title">Clawd's Cozy Corner <b>~</b> click CC or use buttons</div>
+
+<div class="dust"></div><div class="dust"></div><div class="dust"></div>
+<div class="dust"></div><div class="dust"></div><div class="dust"></div>
+
+<div class="stage">
+  <!-- Room background: transparent PNG, clip transparent margins -->
+  <div class="img-wrap">
+    <img class="room-bg" src="/pictures/ChatGPT Image 2026年3月31日 14_51_17.png" alt="CC's home">
+  </div>
+
+  <!-- ==================== CC ==================== -->
+  <div class="cc-container st-idle" id="cc">
+    <!-- sparkles -->
+    <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="var(--sparkle)"/></svg></div>
+    <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="var(--sparkle)"/></svg></div>
+    <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="var(--sparkle)"/></svg></div>
+    <!-- float pixels -->
+    <div class="fpx"></div><div class="fpx"></div>
+    <!-- blue pixels (coding) -->
+    <div class="blue-px" style="top:8px;left:22px"></div>
+    <div class="blue-px" style="top:2px;left:38px"></div>
+    <div class="blue-px" style="top:12px;right:10px"></div>
+    <div class="blue-px" style="top:4px;right:24px"></div>
+
+    <!-- idle bubble -->
+    <div class="cc-bubble">
+      <div class="cc-bubble-box">
+        <div class="cc-bubble-eye"></div>
+        <div class="cc-bubble-eye"></div>
+      </div>
+      <span class="bdot bdot1"></span>
+      <span class="bdot bdot2"></span>
+    </div>
+    <!-- thinking bubble -->
+    <div class="cc-think">
+      <div class="cc-think-box">
+        <span class="cc-think-txt" id="thinkTxt">...</span>
+      </div>
+      <span class="bdot bdot1"></span>
+      <span class="bdot bdot2"></span>
+    </div>
+    <!-- laptop -->
+    <div class="cc-laptop">
+      <div class="lt-body"><div class="lt-screen"><div class="lt-dot"></div></div></div>
+      <div class="lt-base"></div>
+    </div>
+    <!-- question mark -->
+    <div class="cc-qmark" id="qmark">
+      <svg class="psvg" width="28" height="36" viewBox="0 0 7 9" style="image-rendering:pixelated">
+        <rect x="1" y="0" width="4" height="1" class="qr"/>
+        <rect x="0" y="1" width="2" height="1" class="qr"/>
+        <rect x="4" y="1" width="2" height="1" class="qr"/>
+        <rect x="3" y="2" width="2" height="1" class="qr"/>
+        <rect x="2" y="3" width="2" height="1" class="qr"/>
+        <rect x="2" y="5" width="2" height="1" class="qr"/>
+      </svg>
+    </div>
+    <!-- error text -->
+    <div class="cc-err" style="font-family:'Courier New',monospace">ERROR</div>
+    <!-- broom -->
+    <div class="cc-broom">
+      <div class="broom-stick"></div>
+      <div class="broom-head"></div>
+      <div class="broom-edge"></div>
+    </div>
+
+    <div class="cc-inner">
+      <div class="cc-sprite">
+        <div class="cc-claw L"></div>
+        <div class="cc-claw R"></div>
+        <div class="cc-body"></div>
+        <!-- all eye sets -->
+        <div class="cc-eyes" id="eyesNormal"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+        <div class="cc-eyes-gt-lt" id="eyesGtLt"><div class="eye-gt"></div><div class="eye-lt"></div></div>
+        <div class="cc-eyes-caret" id="eyesCaret"><div class="eye-caret"></div><div class="eye-caret"></div></div>
+        <div class="cc-eyes-xx" id="eyesXx"><div class="eye-x"></div><div class="eye-x"></div></div>
+        <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+        <div class="cc-shadow-bar"></div>
+      </div>
+    </div>
+    <div class="cc-label" id="ccLabel">idle ~</div>
+  </div>
+</div><!-- end .stage -->
+
+<!-- Controls -->
+<div class="controls">
+  <button class="active" data-s="idle">idle</button>
+  <button data-s="thinking">想事情</button>
+  <button data-s="coding">写代码</button>
+  <button data-s="looking">张望</button>
+  <button data-s="sweeping">整理中</button>
+  <button data-s="error">报错了</button>
+  <button data-s="happy">开心</button>
+</div>
+
+<script>
+const cc = document.getElementById('cc');
+const ccLabel = document.getElementById('ccLabel');
+const thinkTxt = document.getElementById('thinkTxt');
+const eyesNormal = document.getElementById('eyesNormal');
+const eyesGtLt = document.getElementById('eyesGtLt');
+const eyesCaret = document.getElementById('eyesCaret');
+const eyesXx = document.getElementById('eyesXx');
+const btns = document.querySelectorAll('.controls button');
+
+const STATES = ['idle','thinking','coding','looking','sweeping','error','happy'];
+const LABELS = {idle:'idle ~',thinking:'想事情...',coding:'写代码中',looking:'张望',sweeping:'整理中...',error:'报错了!',happy:'开心!'};
+const THOUGHTS = ['{ }','</>','...','fn()','0x1','>>>','npm','git','bug?'];
+
+let curState = 'idle';
+let stateIdx = 0;
+let stateTimer = null;
+let isWalking = false;
+let walkDir = 1;
+let walkPos = 130;
+
+// Walk bounds: stay within 560px wide scene, CC ~97px wide at scale 0.65
+const WALK_MIN = 50;
+const WALK_MAX = 380;
+const WALK_STEP = 55;
+
+function setEyes(type) {
+  eyesNormal.style.display = type === 'normal' ? 'flex' : 'none';
+  eyesXx.style.display = type === 'x' ? 'flex' : 'none';
+  const useGtLt = Math.random() > 0.5;
+  eyesGtLt.style.display = (type === 'happy' && useGtLt) ? 'flex' : 'none';
+  eyesCaret.style.display = (type === 'happy' && !useGtLt) ? 'flex' : 'none';
+}
+
+function setState(state) {
+  STATES.forEach(s => cc.classList.remove('st-' + s));
+  cc.classList.add('st-' + state);
+  curState = state;
+  ccLabel.textContent = LABELS[state];
+  btns.forEach(b => b.classList.toggle('active', b.dataset.s === state));
+
+  if (state === 'error') setEyes('x');
+  else if (state === 'happy') setEyes('happy');
+  else setEyes('normal');
+
+  if (state === 'thinking') {
+    thinkTxt.textContent = THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)];
+  }
+
+  if (state === 'looking') {
+    const c = Math.random() > 0.5 ? '#4888d8' : '#e8c030';
+    document.querySelectorAll('.qr').forEach(r => r.setAttribute('fill', c));
+  }
+}
+
+function walkCycleStep() {
+  isWalking = true;
+  cc.classList.add('walking');
+
+  let nextPos = walkPos + (walkDir * WALK_STEP);
+  if (nextPos > WALK_MAX) { nextPos = WALK_MAX; walkDir = -1; }
+  if (nextPos < WALK_MIN) { nextPos = WALK_MIN; walkDir = 1; }
+  walkPos = nextPos;
+
+  if (walkDir < 0) cc.classList.add('flip');
+  else cc.classList.remove('flip');
+
+  cc.style.left = walkPos + 'px';
+
+  stateTimer = setTimeout(() => {
+    isWalking = false;
+    cc.classList.remove('walking');
+
+    const pauseState = STATES[Math.floor(Math.random() * STATES.length)];
+    setState(pauseState);
+
+    const pauseTime = 2500 + Math.random() * 1500;
+    stateTimer = setTimeout(() => {
+      setState('idle');
+      walkCycleStep();
+    }, pauseTime);
+  }, 2000);
+}
+
+btns.forEach(b => b.addEventListener('click', () => {
+  clearTimeout(stateTimer);
+  cc.classList.remove('walking');
+  isWalking = false;
+  setState(b.dataset.s);
+  stateTimer = setTimeout(walkCycleStep, 6000);
+}));
+
+cc.addEventListener('click', () => {
+  clearTimeout(stateTimer);
+  cc.classList.remove('walking');
+  isWalking = false;
+  stateIdx = (stateIdx + 1) % STATES.length;
+  setState(STATES[stateIdx]);
+  stateTimer = setTimeout(walkCycleStep, 6000);
+});
+
+setTimeout(walkCycleStep, 2000);
+</script>
+</body>
+</html>

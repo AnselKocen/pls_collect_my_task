@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Washi Tape Demo</title>
+<style>
+  body {
+    background: #f5f0e8;
+    padding: 40px;
+    font-family: -apple-system, sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+
+  .tape-showcase {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .tape-showcase h3 {
+    color: #8a7a6a;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  /* === Base Tape === */
+  .tape {
+    position: relative;
+    width: 160px;
+    height: 36px;
+    border-radius: 1px;
+    opacity: 0.85;
+    /* Torn edges */
+    clip-path: polygon(
+      2% 0%, 5% 2%, 8% 0%, 12% 1%, 15% 0%, 18% 2%, 22% 0%, 25% 1%, 28% 0%, 32% 2%, 35% 0%, 38% 1%, 42% 0%, 45% 2%, 48% 0%, 52% 1%, 55% 0%, 58% 2%, 62% 0%, 65% 1%, 68% 0%, 72% 2%, 75% 0%, 78% 1%, 82% 0%, 85% 2%, 88% 0%, 92% 1%, 95% 0%, 98% 2%, 100% 0%,
+      100% 100%, 98% 98%, 95% 100%, 92% 99%, 88% 100%, 85% 98%, 82% 100%, 78% 99%, 75% 100%, 72% 98%, 68% 100%, 65% 99%, 62% 100%, 58% 98%, 55% 100%, 52% 99%, 48% 100%, 45% 98%, 42% 100%, 38% 99%, 35% 100%, 32% 98%, 28% 100%, 25% 99%, 22% 100%, 18% 98%, 15% 100%, 12% 99%, 8% 100%, 5% 98%, 2% 100%, 0% 98%
+    );
+  }
+
+  /* Wrinkle/fold effect overlay */
+  .tape::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.25) 32%, rgba(255,255,255,0.25) 33%, transparent 35%),
+      linear-gradient(95deg, transparent 60%, rgba(255,255,255,0.15) 62%, rgba(255,255,255,0.15) 63%, transparent 65%),
+      linear-gradient(110deg, transparent 75%, rgba(0,0,0,0.04) 77%, transparent 79%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* Subtle shadow underneath */
+  .tape::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 4px; right: 4px;
+    height: 4px;
+    background: rgba(0,0,0,0.06);
+    filter: blur(3px);
+    border-radius: 50%;
+  }
+
+  /* === Green Grid Tape === */
+  .tape-green-grid {
+    background:
+      linear-gradient(0deg, rgba(34,120,60,0.2) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,120,60,0.2) 1px, transparent 1px),
+      linear-gradient(135deg, #a8ddb5 0%, #7bc88f 50%, #a8ddb5 100%);
+    background-size: 8px 8px, 8px 8px, 100% 100%;
+  }
+
+  /* === Green Plain Tape === */
+  .tape-green-plain {
+    background: linear-gradient(135deg, #b5e2b5 0%, #8fcc8f 30%, #a8d8a8 60%, #9dd49d 100%);
+  }
+
+  /* wrinkled version */
+  .tape-green-wrinkle {
+    background: linear-gradient(135deg, #b5e2b5 0%, #8fcc8f 30%, #a8d8a8 60%, #9dd49d 100%);
+    clip-path: polygon(
+      0% 2%, 3% 0%, 7% 3%, 10% 0%, 15% 2%, 18% 0%, 22% 1%, 26% 3%, 30% 0%, 34% 2%, 38% 0%, 42% 3%, 45% 0%, 48% 2%, 52% 0%, 56% 3%, 60% 1%, 64% 0%, 68% 2%, 72% 0%, 76% 3%, 80% 1%, 84% 0%, 88% 2%, 92% 0%, 96% 3%, 100% 1%,
+      100% 98%, 97% 100%, 93% 97%, 90% 100%, 86% 98%, 82% 100%, 78% 97%, 74% 100%, 70% 98%, 66% 100%, 62% 97%, 58% 100%, 54% 98%, 50% 100%, 46% 97%, 42% 100%, 38% 98%, 34% 100%, 30% 97%, 26% 100%, 22% 98%, 18% 100%, 14% 97%, 10% 100%, 6% 98%, 2% 100%, 0% 97%
+    );
+  }
+
+  .tape-green-wrinkle::before {
+    background:
+      linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.3) 22%, rgba(255,255,255,0.1) 28%, transparent 32%),
+      linear-gradient(80deg, transparent 45%, rgba(0,0,0,0.06) 48%, transparent 52%),
+      linear-gradient(110deg, transparent 65%, rgba(255,255,255,0.2) 67%, transparent 72%);
+  }
+
+  /* === Yellow Plaid Tape === */
+  .tape-yellow-plaid {
+    background:
+      linear-gradient(0deg, rgba(200,150,30,0.25) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,150,30,0.25) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(200,150,30,0.12) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(200,150,30,0.12) 2px, transparent 2px),
+      linear-gradient(135deg, #f5d97a 0%, #ecc84a 50%, #f5d97a 100%);
+    background-size: 6px 6px, 6px 6px, 18px 18px, 18px 18px, 100% 100%;
+  }
+
+  /* === Yellow Stripe Tape === */
+  .tape-yellow-stripe {
+    background:
+      repeating-linear-gradient(
+        0deg,
+        rgba(200,160,40,0.2) 0px,
+        rgba(200,160,40,0.2) 2px,
+        transparent 2px,
+        transparent 5px
+      ),
+      linear-gradient(135deg, #f5dc80 0%, #e8c84a 50%, #f5dc80 100%);
+  }
+
+  /* === Pink Plain Tape === */
+  .tape-pink-plain {
+    background: linear-gradient(135deg, #f5b8c8 0%, #eda0b8 40%, #f0b0c0 70%, #f5baca 100%);
+  }
+
+  .tape-pink-wrinkle {
+    background: linear-gradient(135deg, #f5b8c8 0%, #eda0b8 40%, #f0b0c0 70%, #f5baca 100%);
+  }
+
+  .tape-pink-wrinkle::before {
+    background:
+      linear-gradient(95deg, transparent 15%, rgba(255,255,255,0.35) 18%, rgba(255,255,255,0.1) 25%, transparent 28%),
+      linear-gradient(85deg, transparent 50%, rgba(0,0,0,0.05) 53%, transparent 56%),
+      linear-gradient(100deg, transparent 70%, rgba(255,255,255,0.25) 73%, transparent 78%);
+  }
+
+  /* === Pink Dot Tape === */
+  .tape-pink-dot {
+    background:
+      radial-gradient(circle 3px, rgba(200,80,120,0.25) 70%, transparent 71%),
+      linear-gradient(135deg, #f5c0d0 0%, #f0a8c0 50%, #f5c0d0 100%);
+    background-size: 10px 10px, 100% 100%;
+  }
+
+  /* === Purple Plaid Tape === */
+  .tape-purple-plaid {
+    background:
+      linear-gradient(0deg, rgba(140,100,180,0.2) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(140,100,180,0.2) 2px, transparent 2px),
+      linear-gradient(0deg, rgba(140,100,180,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(140,100,180,0.1) 1px, transparent 1px),
+      linear-gradient(135deg, #d8c0f0 0%, #c8a8e8 50%, #d8c0f0 100%);
+    background-size: 16px 16px, 16px 16px, 8px 8px, 8px 8px, 100% 100%;
+  }
+
+  /* === Blue Grid Tape === */
+  .tape-blue-grid {
+    background:
+      linear-gradient(0deg, rgba(100,140,200,0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,140,200,0.18) 1px, transparent 1px),
+      linear-gradient(135deg, #c0d8f0 0%, #a8c8e8 50%, #c0d8f0 100%);
+    background-size: 8px 8px, 8px 8px, 100% 100%;
+  }
+
+  /* === Kraft / Brown Tape === */
+  .tape-kraft {
+    background: linear-gradient(135deg, #d4b896 0%, #c4a878 40%, #d0b490 70%, #c8ac80 100%);
+    opacity: 0.9;
+  }
+
+  .tape-kraft-pattern {
+    background:
+      repeating-linear-gradient(
+        45deg,
+        rgba(180,150,100,0.15) 0px,
+        rgba(180,150,100,0.15) 3px,
+        transparent 3px,
+        transparent 8px
+      ),
+      linear-gradient(135deg, #d4b896 0%, #c0a070 50%, #d4b896 100%);
+    opacity: 0.9;
+  }
+
+  /* === Coral/Red Tape === */
+  .tape-coral {
+    background: linear-gradient(135deg, #f0a08a 0%, #e88870 40%, #f0a090 70%, #e89078 100%);
+  }
+
+  /* === Rotation Variants === */
+  .rot-1 { transform: rotate(-2deg); }
+  .rot-2 { transform: rotate(1.5deg); }
+  .rot-3 { transform: rotate(-1deg); }
+  .rot-4 { transform: rotate(3deg); }
+  .rot-5 { transform: rotate(-3deg); }
+
+  /* === Size Variants === */
+  .tape-small { width: 100px; height: 28px; }
+  .tape-medium { width: 140px; height: 32px; }
+  .tape-wide { width: 180px; height: 40px; }
+
+  /* === Demo: Tape on Paper === */
+  .paper-demo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 40px;
+    justify-content: center;
+  }
+
+  .paper-card {
+    width: 200px;
+    height: 200px;
+    background: linear-gradient(155deg, #fefcf4, #f8f2e4);
+    border: 1px solid #e0d8c8;
+    border-radius: 2px;
+    position: relative;
+    box-shadow: 2px 3px 8px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a7a6a;
+    font-size: 14px;
+  }
+
+  /* Grid paper */
+  .paper-grid {
+    background:
+      linear-gradient(0deg, rgba(180,140,100,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(180,140,100,0.1) 1px, transparent 1px),
+      linear-gradient(155deg, #fef8f0, #f8efe2);
+    background-size: 20px 20px, 20px 20px, 100% 100%;
+  }
+
+  /* Blue grid paper */
+  .paper-blue-grid {
+    background:
+      linear-gradient(0deg, rgba(100,140,200,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,140,200,0.08) 1px, transparent 1px),
+      linear-gradient(155deg, #f8fbff, #eef4fa);
+    background-size: 18px 18px, 18px 18px, 100% 100%;
+  }
+
+  /* Kraft paper */
+  .paper-kraft {
+    background: linear-gradient(155deg, #d8c8a8, #c8b898);
+    border-color: #b8a888;
+    color: #6a5a40;
+  }
+
+  .paper-card .tape {
+    position: absolute;
+  }
+
+  .paper-card .tape-top {
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+  }
+
+  .paper-card .tape-top-right {
+    top: -10px;
+    right: -20px;
+    transform: rotate(35deg);
+  }
+
+  .paper-card .tape-top-left {
+    top: -10px;
+    left: -20px;
+    transform: rotate(-35deg);
+  }
+
+  /* Spiral binding holes */
+  .paper-spiral {
+    position: absolute;
+    left: 0;
+    top: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .paper-spiral span {
+    width: 12px;
+    height: 12px;
+    background: #f5f0e8;
+    border-radius: 50%;
+    margin-left: -6px;
+    border: 1px solid #e0d8c8;
+  }
+
+  h1 {
+    width: 100%;
+    text-align: center;
+    color: #8a7a6a;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    width: 100%;
+    text-align: center;
+    color: #a09080;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+
+  /* Pin */
+  .pin {
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 -2px 3px rgba(0,0,0,0.15);
+  }
+
+  .pin::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 4px;
+    width: 5px; height: 5px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+  }
+
+  .pin-yellow { background: radial-gradient(circle at 40% 35%, #fde68a, #eab308); }
+  .pin-blue { background: radial-gradient(circle at 40% 35%, #bfdbfe, #60a5fa); }
+  .pin-pink { background: radial-gradient(circle at 40% 35%, #fbcfe8, #ec4899); }
+  .pin-red { background: radial-gradient(circle at 40% 35%, #fca5a5, #ef4444); }
+</style>
+</head>
+<body>
+
+<h1>Washi Tape Collection</h1>
+
+<h2>Green Series</h2>
+<div class="tape-showcase">
+  <div class="tape tape-green-grid rot-1"></div>
+  <div class="tape tape-green-grid tape-wide rot-2"></div>
+  <div class="tape tape-green-plain rot-3"></div>
+  <div class="tape tape-green-wrinkle tape-wide rot-4"></div>
+</div>
+
+<div class="tape-showcase">
+  <h3>Yellow Series</h3>
+  <div class="tape tape-yellow-plaid rot-2"></div>
+  <div class="tape tape-yellow-plaid tape-wide rot-5"></div>
+  <div class="tape tape-yellow-stripe rot-1"></div>
+  <div class="tape tape-yellow-stripe tape-wide rot-3"></div>
+</div>
+
+<div class="tape-showcase">
+  <h3>Pink Series</h3>
+  <div class="tape tape-pink-plain rot-3"></div>
+  <div class="tape tape-pink-wrinkle tape-wide rot-1"></div>
+  <div class="tape tape-pink-dot rot-4"></div>
+  <div class="tape tape-pink-dot tape-wide rot-2"></div>
+</div>
+
+<div class="tape-showcase">
+  <h3>Purple & Blue</h3>
+  <div class="tape tape-purple-plaid rot-5"></div>
+  <div class="tape tape-purple-plaid tape-wide rot-2"></div>
+  <div class="tape tape-blue-grid rot-1"></div>
+  <div class="tape tape-blue-grid tape-wide rot-4"></div>
+</div>
+
+<div class="tape-showcase">
+  <h3>Kraft & Coral</h3>
+  <div class="tape tape-kraft rot-2"></div>
+  <div class="tape tape-kraft-pattern tape-wide rot-3"></div>
+  <div class="tape tape-coral rot-1"></div>
+  <div class="tape tape-coral tape-small rot-5"></div>
+</div>
+
+<h2>Tape on Paper Cards</h2>
+
+<div class="paper-demo">
+  <div class="paper-card paper-grid">
+    <div class="tape tape-coral tape-small tape-top"></div>
+    <div class="paper-spiral">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    Grid Paper + Coral
+  </div>
+
+  <div class="paper-card paper-blue-grid">
+    <div class="tape tape-blue-grid tape-small tape-top" style="transform:translateX(-50%) rotate(1deg)"></div>
+    Blue Grid + Blue Tape
+  </div>
+
+  <div class="paper-card">
+    <div class="tape tape-kraft-pattern tape-small tape-top" style="transform:translateX(-50%) rotate(-3deg)"></div>
+    Plain Paper + Kraft
+  </div>
+
+  <div class="paper-card paper-kraft">
+    <div class="pin pin-yellow" style="top:-6px;right:12px"></div>
+    <div class="tape tape-blue-grid tape-small tape-top-left"></div>
+    Kraft + Pin + Blue Tape
+  </div>
+
+  <div class="paper-card">
+    <div class="pin pin-pink" style="top:-6px;left:12px"></div>
+    <div class="tape tape-pink-dot tape-small tape-top-right"></div>
+    Pin + Pink Dot Tape
+  </div>
+
+  <div class="paper-card paper-grid">
+    <div class="tape tape-green-grid tape-small tape-top" style="transform:translateX(-50%) rotate(2deg)"></div>
+    <div class="tape tape-yellow-stripe tape-small tape-top-right" style="transform:rotate(40deg)"></div>
+    Double Tape
+  </div>
+
+  <div class="paper-card paper-blue-grid">
+    <div class="tape tape-purple-plaid tape-small tape-top-left" style="transform:rotate(-30deg)"></div>
+    Purple Plaid
+  </div>
+
+  <div class="paper-card">
+    <div class="tape tape-green-wrinkle tape-medium tape-top" style="transform:translateX(-50%) rotate(-1deg)"></div>
+    Wrinkled Green
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <!-- Window frame -->
+  <rect x="40" y="20" width="320" height="360" rx="12" fill="#f0fdf4" stroke="#d4e8d4" stroke-width="3"/>
+  <line x1="200" y1="20" x2="200" y2="380" stroke="#d4e8d4" stroke-width="2"/>
+  <line x1="40" y1="200" x2="360" y2="200" stroke="#d4e8d4" stroke-width="2"/>
+  <!-- Window sill -->
+  <rect x="30" y="370" width="340" height="16" rx="4" fill="#e8f5e9" stroke="#d4e8d4" stroke-width="1.5"/>
+  <!-- Plant on sill -->
+  <ellipse cx="120" cy="370" rx="20" ry="8" fill="#a3d9a5"/>
+  <rect x="112" y="354" width="16" height="20" rx="3" fill="#c4b5a0" stroke="#a89070" stroke-width="1"/>
+  <path d="M120 354c-4-12-14-16-10-24 2-4 8-2 10 2" fill="#86efac" stroke="#22c55e" stroke-width="1"/>
+  <path d="M120 354c2-10 10-18 8-26-1-4-6-3-8 0" fill="#86efac" stroke="#22c55e" stroke-width="1"/>
+  <path d="M120 350c-8-6-16-4-18-10 0-4 4-4 8-2" fill="#bbf7d0" stroke="#22c55e" stroke-width="0.8"/>
+  <!-- Another plant -->
+  <ellipse cx="290" cy="370" rx="16" ry="6" fill="#a3d9a5"/>
+  <rect x="283" y="358" width="14" height="16" rx="3" fill="#deb887" stroke="#a89070" stroke-width="1"/>
+  <path d="M290 358c0-14-6-20-2-28 2-3 6 0 6 4" fill="#86efac" stroke="#22c55e" stroke-width="1"/>
+  <path d="M290 358c4-10 12-14 10-22-1-3-5-1-6 2" fill="#bbf7d0" stroke="#22c55e" stroke-width="0.8"/>
+  <!-- Sky through window -->
+  <circle cx="120" cy="80" r="24" fill="#fef9c3" opacity="0.4"/>
+  <!-- Clouds -->
+  <ellipse cx="280" cy="100" rx="30" ry="12" fill="#dcfce7" opacity="0.5"/>
+  <ellipse cx="300" cy="96" rx="20" ry="10" fill="#dcfce7" opacity="0.4"/>
+</svg>

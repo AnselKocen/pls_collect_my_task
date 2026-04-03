@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Archive Clip</title>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f2efea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 80px;
+    min-height: 100vh;
+    flex-wrap: wrap;
+    padding: 60px;
+  }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .label { color: #bbb; font-size: 12px; font-family: -apple-system, sans-serif; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+
+<!-- Reference -->
+<div class="item">
+  <span style="font-size:12px;color:#ddd;font-family:sans-serif">参考原图</span>
+  <img src="data:image/svg+xml,<svg/>" style="width:180px;opacity:0.4" alt=""/>
+</div>
+
+<!-- Main clip SVG -->
+<div class="item">
+<svg width="420" height="400" viewBox="0 0 420 400" xmlns="http://www.w3.org/2000/svg">
+<defs>
+
+  <!-- Drop shadow -->
+  <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
+    <feOffset dx="5" dy="12" result="off"/>
+    <feComponentTransfer result="shadow">
+      <feFuncA type="linear" slope="0.20"/>
+    </feComponentTransfer>
+    <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+
+  <!-- Body gradient: matte powder blue, light from upper-right -->
+  <linearGradient id="bodyG" x1="100%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%"   stop-color="#D0E6F5"/>
+    <stop offset="40%"  stop-color="#BFCFDE"/>  <!-- slightly desaturated center -->
+    <stop offset="100%" stop-color="#A8BDCE"/>
+  </linearGradient>
+
+  <!-- Subtle matte sheen (very low opacity, not glossy) -->
+  <radialGradient id="sheenG" cx="72%" cy="22%" r="55%">
+    <stop offset="0%"   stop-color="rgba(255,255,255,0.24)"/>
+    <stop offset="60%"  stop-color="rgba(255,255,255,0.05)"/>
+    <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+  </radialGradient>
+
+  <!-- Edge shadow (left + bottom) -->
+  <linearGradient id="lEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%"   stop-color="rgba(60,92,112,0.30)"/>
+    <stop offset="18%"  stop-color="rgba(60,92,112,0.08)"/>
+    <stop offset="100%" stop-color="rgba(60,92,112,0)"/>
+  </linearGradient>
+  <linearGradient id="bEdge" x1="0%" y1="100%" x2="0%" y2="0%">
+    <stop offset="0%"   stop-color="rgba(55,88,108,0.26)"/>
+    <stop offset="24%"  stop-color="rgba(55,88,108,0.06)"/>
+    <stop offset="100%" stop-color="rgba(55,88,108,0)"/>
+  </linearGradient>
+
+  <!-- Ring gradient (same base hue but slightly brighter) -->
+  <radialGradient id="ringG" cx="36%" cy="30%" r="68%">
+    <stop offset="0%"   stop-color="#DAEEF8"/>
+    <stop offset="35%"  stop-color="#C2D8EC"/>
+    <stop offset="70%"  stop-color="#AECADC"/>
+    <stop offset="100%" stop-color="#94B8CC"/>
+  </radialGradient>
+
+  <!-- Ring hole -->
+  <radialGradient id="holeG" cx="42%" cy="35%" r="65%">
+    <stop offset="0%"   stop-color="#EEF8FC"/>
+    <stop offset="100%" stop-color="#C4DCEA"/>
+  </radialGradient>
+
+  <!-- Hinge screw -->
+  <radialGradient id="screwG" cx="35%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#D8ECF6"/>
+    <stop offset="55%"  stop-color="#AACAD8"/>
+    <stop offset="100%" stop-color="#84A8BA"/>
+  </radialGradient>
+
+  <!-- Clip body path (reused for clipPath) -->
+  <!-- body: wide landscape, ring upper-left offset, wavy bottom -->
+  <clipPath id="bodyClip">
+    <path d="
+      M 222,148
+      L 370,148 Q 388,148 390,164 L 390,245
+      Q 390,258 381,261
+      C 370,264 360,252 342,250 C 324,248 315,260 297,263
+      C 279,266 269,253 251,251 C 233,249 223,262 205,264
+      C 187,267 177,254 159,252 C 141,250 131,262 114,264
+      C 100,266 88,255 78,258 Q 64,261 60,250
+      L 60,172 Q 60,155 76,152 L 126,150 C 148,148 172,145 198,146
+      Z
+    "/>
+  </clipPath>
+
+</defs>
+
+<!--
+  The clip is drawn upright (ring at top-left, body hangs to the right and below),
+  then rotated -28° to match the photo angle.
+  Pivot: roughly the hinge/neck area at (170, 175).
+-->
+<g transform="translate(210,185) rotate(-28) translate(-170,-175)" filter="url(#sh)">
+
+  <!-- ═══════════════════════════════
+       BODY
+  ═══════════════════════════════ -->
+
+  <!--
+    Body shape: wide landscape plate.
+    Ring is upper-left; body extends strongly to the right.
+    LEFT side is narrower (only about 80px to the left of neck center).
+    RIGHT side is wider (about 220px to the right of neck center).
+    Bottom has 4 sinusoidal waves.
+    All corners rounded (rx~20).
+  -->
+  <path d="
+    M 222,148
+    L 370,148
+    Q 388,148 390,164
+    L 390,245
+    Q 390,258 381,261
+    C 370,264 360,252 342,250
+    C 324,248 315,260 297,263
+    C 279,266 269,253 251,251
+    C 233,249 223,262 205,264
+    C 187,267 177,254 159,252
+    C 141,250 131,262 114,264
+    C 100,266 88,255 78,258
+    Q 64,261 60,250
+    L 60,172
+    Q 60,155 76,152
+    L 126,150
+    C 148,148 172,145 198,146
+    Z
+  " fill="url(#bodyG)"/>
+
+  <!-- Surface sheen overlay (very faint, matte-style) -->
+  <path d="
+    M 222,148 L 370,148 Q 388,148 390,164 L 390,245
+    Q 390,258 381,261 C 370,264 360,252 342,250 C 324,248 315,260 297,263
+    C 279,266 269,253 251,251 C 233,249 223,262 205,264
+    C 187,267 177,254 159,252 C 141,250 131,262 114,264
+    C 100,266 88,255 78,258 Q 64,261 60,250
+    L 60,172 Q 60,155 76,152 L 126,150 C 148,148 172,145 198,146 Z
+  " fill="url(#sheenG)"/>
+
+  <!-- Left edge shadow overlay -->
+  <rect x="55" y="145" width="90" height="125" fill="url(#lEdge)" clip-path="url(#bodyClip)"/>
+  <!-- Bottom shadow overlay -->
+  <rect x="55" y="218" width="345" height="58" fill="url(#bEdge)" clip-path="url(#bodyClip)"/>
+
+  <!-- Top-edge highlight (thin bright line) -->
+  <path d="M 128,151 L 368,149" stroke="rgba(255,255,255,0.38)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Right-side subtle highlight -->
+  <path d="M 389,168 L 389,244" stroke="rgba(255,255,255,0.16)" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <!-- Bottom wavy-edge HIGHLIGHT just above the waves (gives rolled-edge 3D feel) -->
+  <path d="
+    M 80,250
+    C 100,248 112,258 130,256
+    C 148,254 160,244 178,246
+    C 196,248 208,258 226,256
+    C 244,254 256,244 274,246
+    C 292,248 304,258 322,256
+    C 340,254 352,244 370,246
+    C 381,247 388,252 390,257
+  " stroke="rgba(255,255,255,0.26)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Subtle inner shadow at bottom of body (the fold ridge) -->
+  <path d="
+    M 74,257
+    C 92,260 104,248 122,246
+    C 140,244 152,258 170,261
+    C 188,264 200,250 218,248
+    C 236,246 248,260 266,263
+    C 284,266 296,252 314,250
+    C 332,248 344,262 364,264
+    C 375,265 384,260 388,255
+  " stroke="rgba(60,92,112,0.22)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═══════════════════════════════
+       NECK (ring → body connection)
+  ═══════════════════════════════ -->
+  <path d="
+    M 138,108
+    C 136,118 134,130 133,143
+    L 218,143
+    C 217,130 215,118 212,108
+    Z
+  " fill="#BACEDE"/>
+  <!-- Neck left shadow (3D depth) -->
+  <path d="M 138,108 C 136,118 134,130 133,143 L 148,143 L 150,108 Z" fill="rgba(65,100,122,0.20)"/>
+  <!-- Neck right shadow -->
+  <path d="M 212,108 C 215,118 217,130 218,143 L 203,143 L 201,108 Z" fill="rgba(65,100,122,0.16)"/>
+  <!-- Neck top highlight -->
+  <line x1="141" y1="110" x2="210" y2="110" stroke="rgba(255,255,255,0.42)" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- ═══════════════════════════════
+       RING HANDLE
+  ═══════════════════════════════ -->
+  <!-- Ring depth (slightly darker, offset down-right for 3D) -->
+  <circle cx="175" cy="63" r="46" fill="#8EAEC4"/>
+  <!-- Ring face -->
+  <circle cx="175" cy="59" r="46" fill="url(#ringG)"/>
+  <!-- Ring outer rim highlight -->
+  <circle cx="175" cy="59" r="46" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="6"/>
+  <!-- Top-arc specular highlight -->
+  <path d="M 147,49 A 29,29 0 0,1 203,49"
+    stroke="rgba(255,255,255,0.50)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- Left-side highlight -->
+  <path d="M 131,59 A 44,44 0 0,1 133,44"
+    stroke="rgba(255,255,255,0.26)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Bottom shadow (ring curves away from light) -->
+  <path d="M 148,74 A 28,28 0 0,0 202,74"
+    stroke="rgba(60,96,116,0.20)" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+  <!-- Ring hole -->
+  <circle cx="175" cy="59" r="26" fill="url(#holeG)"/>
+  <!-- Hole inner rim -->
+  <circle cx="175" cy="59" r="26" fill="none" stroke="rgba(88,132,154,0.36)" stroke-width="3"/>
+  <!-- Hole top arc bright -->
+  <path d="M 156,52 A 20,20 0 0,1 194,52"
+    stroke="rgba(255,255,255,0.36)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- ═══════════════════════════════
+       HINGE MECHANISM (left side)
+       Small metal plate with 2 screws
+  ═══════════════════════════════ -->
+  <!-- Hinge plate (sits on left edge of body) -->
+  <rect x="44" y="170" width="22" height="46" rx="4.5" fill="#A4C0D2" stroke="#8AAEC2" stroke-width="0.8"/>
+  <!-- Plate highlight -->
+  <rect x="47" y="174" width="7" height="13" rx="2.5" fill="rgba(255,255,255,0.30)"/>
+  <!-- Plate bottom shadow -->
+  <rect x="44" y="202" width="22" height="14" rx="4" fill="rgba(55,88,108,0.12)"/>
+
+  <!-- Screw 1 (top) -->
+  <circle cx="55" cy="183" r="5.8" fill="url(#screwG)" stroke="#7AA0B8" stroke-width="0.8"/>
+  <line x1="52" y1="183" x2="58" y2="183" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="55" y1="180" x2="55" y2="186" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <!-- Screw 1 glint -->
+  <circle cx="53" cy="181" r="1.2" fill="rgba(255,255,255,0.55)"/>
+
+  <!-- Screw 2 (bottom) -->
+  <circle cx="55" cy="207" r="5.8" fill="url(#screwG)" stroke="#7AA0B8" stroke-width="0.8"/>
+  <line x1="52" y1="207" x2="58" y2="207" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="55" y1="204" x2="55" y2="210" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <!-- Screw 2 glint -->
+  <circle cx="53" cy="205" r="1.2" fill="rgba(255,255,255,0.55)"/>
+
+  <!-- ═══════════════════════════════
+       "Archive" CURSIVE TEXT
+  ═══════════════════════════════ -->
+  <!--
+    In the reference: text is debossed (recessed into the metal).
+    Effect: main text is in a slightly darker shade of body color,
+    with a tiny offset bright shadow above (simulates raised edge of recess).
+  -->
+  <!-- Shadow-highlight (bright, above-left: simulates top of deboss recess) -->
+  <text x="240" y="222"
+    text-anchor="middle"
+    font-family="'Dancing Script', 'Brush Script MT', 'Apple Chancery', cursive"
+    font-size="44" font-weight="500"
+    fill="rgba(215,232,244,0.70)"
+    transform="translate(-0.8,-1)">Archive</text>
+  <!-- Main debossed text (darker than body surface) -->
+  <text x="240" y="222"
+    text-anchor="middle"
+    font-family="'Dancing Script', 'Brush Script MT', 'Apple Chancery', cursive"
+    font-size="44" font-weight="500"
+    fill="rgba(78,118,142,0.62)">Archive</text>
+
+</g>
+</svg>
+<span class="label">Archive Clip · SVG</span>
+</div>
+
+<!-- Larger upright version -->
+<div class="item">
+<svg width="380" height="360" viewBox="0 0 420 360" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="sh3" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>
+    <feOffset dx="4" dy="10" result="off"/>
+    <feComponentTransfer result="shadow">
+      <feFuncA type="linear" slope="0.20"/>
+    </feComponentTransfer>
+    <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <linearGradient id="bg3" x1="100%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%"   stop-color="#D0E6F5"/>
+    <stop offset="40%"  stop-color="#BFCFDE"/>
+    <stop offset="100%" stop-color="#A8BDCE"/>
+  </linearGradient>
+  <radialGradient id="sh3g" cx="72%" cy="22%" r="55%">
+    <stop offset="0%"   stop-color="rgba(255,255,255,0.24)"/>
+    <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+  </radialGradient>
+  <radialGradient id="rg3" cx="36%" cy="30%" r="68%">
+    <stop offset="0%"   stop-color="#DAEEF8"/>
+    <stop offset="35%"  stop-color="#C2D8EC"/>
+    <stop offset="70%"  stop-color="#AECADC"/>
+    <stop offset="100%" stop-color="#94B8CC"/>
+  </radialGradient>
+  <radialGradient id="hg3" cx="42%" cy="35%" r="65%">
+    <stop offset="0%"   stop-color="#EEF8FC"/>
+    <stop offset="100%" stop-color="#C4DCEA"/>
+  </radialGradient>
+  <radialGradient id="sg3" cx="35%" cy="28%" r="70%">
+    <stop offset="0%"   stop-color="#D8ECF6"/>
+    <stop offset="55%"  stop-color="#AACAD8"/>
+    <stop offset="100%" stop-color="#84A8BA"/>
+  </radialGradient>
+  <linearGradient id="le3" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%"   stop-color="rgba(60,92,112,0.30)"/>
+    <stop offset="18%"  stop-color="rgba(60,92,112,0.08)"/>
+    <stop offset="100%" stop-color="rgba(60,92,112,0)"/>
+  </linearGradient>
+  <linearGradient id="be3" x1="0%" y1="100%" x2="0%" y2="0%">
+    <stop offset="0%"   stop-color="rgba(55,88,108,0.26)"/>
+    <stop offset="24%"  stop-color="rgba(55,88,108,0.06)"/>
+    <stop offset="100%" stop-color="rgba(55,88,108,0)"/>
+  </linearGradient>
+  <clipPath id="bc3">
+    <path d="M 222,148 L 370,148 Q 388,148 390,164 L 390,245 Q 390,258 381,261 C 370,264 360,252 342,250 C 324,248 315,260 297,263 C 279,266 269,253 251,251 C 233,249 223,262 205,264 C 187,267 177,254 159,252 C 141,250 131,262 114,264 C 100,266 88,255 78,258 Q 64,261 60,250 L 60,172 Q 60,155 76,152 L 126,150 C 148,148 172,145 198,146 Z"/>
+  </clipPath>
+</defs>
+
+<!-- Upright (no tilt) for shape reference -->
+<g transform="translate(0,-30)" filter="url(#sh3)">
+
+  <path d="M 222,148 L 370,148 Q 388,148 390,164 L 390,245 Q 390,258 381,261 C 370,264 360,252 342,250 C 324,248 315,260 297,263 C 279,266 269,253 251,251 C 233,249 223,262 205,264 C 187,267 177,254 159,252 C 141,250 131,262 114,264 C 100,266 88,255 78,258 Q 64,261 60,250 L 60,172 Q 60,155 76,152 L 126,150 C 148,148 172,145 198,146 Z" fill="url(#bg3)"/>
+  <path d="M 222,148 L 370,148 Q 388,148 390,164 L 390,245 Q 390,258 381,261 C 370,264 360,252 342,250 C 324,248 315,260 297,263 C 279,266 269,253 251,251 C 233,249 223,262 205,264 C 187,267 177,254 159,252 C 141,250 131,262 114,264 C 100,266 88,255 78,258 Q 64,261 60,250 L 60,172 Q 60,155 76,152 L 126,150 C 148,148 172,145 198,146 Z" fill="url(#sh3g)"/>
+  <rect x="55" y="145" width="90" height="125" fill="url(#le3)" clip-path="url(#bc3)"/>
+  <rect x="55" y="218" width="345" height="58" fill="url(#be3)" clip-path="url(#bc3)"/>
+  <path d="M 128,151 L 368,149" stroke="rgba(255,255,255,0.38)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 80,250 C 100,248 112,258 130,256 C 148,254 160,244 178,246 C 196,248 208,258 226,256 C 244,254 256,244 274,246 C 292,248 304,258 322,256 C 340,254 352,244 370,246 C 381,247 388,252 390,257" stroke="rgba(255,255,255,0.26)" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 74,257 C 92,260 104,248 122,246 C 140,244 152,258 170,261 C 188,264 200,250 218,248 C 236,246 248,260 266,263 C 284,266 296,252 314,250 C 332,248 344,262 364,264 C 375,265 384,260 388,255" stroke="rgba(60,92,112,0.22)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Neck -->
+  <path d="M 138,108 C 136,118 134,130 133,143 L 218,143 C 217,130 215,118 212,108 Z" fill="#BACEDE"/>
+  <path d="M 138,108 C 136,118 134,130 133,143 L 148,143 L 150,108 Z" fill="rgba(65,100,122,0.20)"/>
+  <path d="M 212,108 C 215,118 217,130 218,143 L 203,143 L 201,108 Z" fill="rgba(65,100,122,0.16)"/>
+  <line x1="141" y1="110" x2="210" y2="110" stroke="rgba(255,255,255,0.42)" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Ring -->
+  <circle cx="175" cy="63" r="46" fill="#8EAEC4"/>
+  <circle cx="175" cy="59" r="46" fill="url(#rg3)"/>
+  <circle cx="175" cy="59" r="46" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="6"/>
+  <path d="M 147,49 A 29,29 0 0,1 203,49" stroke="rgba(255,255,255,0.50)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M 148,74 A 28,28 0 0,0 202,74" stroke="rgba(60,96,116,0.20)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="175" cy="59" r="26" fill="url(#hg3)"/>
+  <circle cx="175" cy="59" r="26" fill="none" stroke="rgba(88,132,154,0.36)" stroke-width="3"/>
+  <path d="M 156,52 A 20,20 0 0,1 194,52" stroke="rgba(255,255,255,0.36)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Hinge -->
+  <rect x="44" y="170" width="22" height="46" rx="4.5" fill="#A4C0D2" stroke="#8AAEC2" stroke-width="0.8"/>
+  <rect x="47" y="174" width="7" height="13" rx="2.5" fill="rgba(255,255,255,0.30)"/>
+  <circle cx="55" cy="183" r="5.8" fill="url(#sg3)" stroke="#7AA0B8" stroke-width="0.8"/>
+  <line x1="52" y1="183" x2="58" y2="183" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="55" y1="180" x2="55" y2="186" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <circle cx="55" cy="207" r="5.8" fill="url(#sg3)" stroke="#7AA0B8" stroke-width="0.8"/>
+  <line x1="52" y1="207" x2="58" y2="207" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="55" y1="204" x2="55" y2="210" stroke="#6090A8" stroke-width="1.3" stroke-linecap="round"/>
+
+  <!-- Text -->
+  <text x="240" y="222" text-anchor="middle"
+    font-family="'Dancing Script','Brush Script MT',cursive"
+    font-size="44" font-weight="500"
+    fill="rgba(215,232,244,0.70)" transform="translate(-0.8,-1)">Archive</text>
+  <text x="240" y="222" text-anchor="middle"
+    font-family="'Dancing Script','Brush Script MT',cursive"
+    font-size="44" font-weight="500"
+    fill="rgba(78,118,142,0.62)">Archive</text>
+
+</g>
+</svg>
+<span class="label">正视图</span>
+</div>
+
+</body>
+</html>

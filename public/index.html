@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记忆手帐 ♥ — Memo Journal with CC</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <!-- Main App -->
+  <div id="app" class="app hidden">
+    <div class="bg-decor">
+      <img src="assets/window-bg.svg" class="bg-window" alt="">
+    </div>
+
+    <div class="main">
+      <!-- Daily Digest (collapsible) -->
+      <div id="digestBanner" class="digest-banner hidden">
+        <div class="theme-dots">
+          <span class="dot dot-1"></span>
+          <span class="dot dot-2"></span>
+          <span class="dot dot-3"></span>
+          <span class="dot dot-4"></span>
+        </div>
+        <div class="digest-bg"></div>
+        <div class="digest-main">
+          <div class="tape tape-clock tape-2" style="top:-12px;left:6px;transform:rotate(-2deg)"><span id="liveClock"></span></div>
+          <div class="tape tape-deco tape-4" style="width:110px;height:26px;top:-10px;right:-22px;transform:rotate(38deg)"></div>
+          <div class="tape tape-deco tape-9" style="width:100px;height:24px;top:-4px;right:-14px;transform:rotate(26deg)"></div>
+          <div class="paperclip" style="top:-12px;right:60px"></div>
+          <div class="star star-md star-gold" style="bottom:-8px;left:-6px"></div>
+          <div class="star star-sm star-light" style="bottom:4px;left:8px"></div>
+          <div class="digest-header" id="digestToggle">
+            <span class="digest-icon">📋</span>
+            <h3 id="digestTitle">今日摘要</h3>
+            <span class="arrow">▾</span>
+          </div>
+          <div id="digestBody" class="digest-body">
+            <p id="digestText"></p>
+            <div id="digestTasks" class="digest-tasks"></div>
+            <div class="digest-actions">
+              <button id="digestRegenBtn" class="btn-small">重新生成</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CC Suggestions Banner -->
+      <div id="suggestBanner" class="suggest-banner hidden">
+        <div class="suggest-content" id="suggestContent"></div>
+        <button id="suggestClose" class="suggest-close">&times;</button>
+      </div>
+
+      <!-- Filter + Search -->
+      <div class="filter-bar">
+        <div class="filter-tags" id="filterTags"></div>
+        <button id="clearFilterBtn" class="btn-small hidden">清除</button>
+      </div>
+
+      <!-- CC Walk Strip -->
+      <div class="cc-walk-strip">
+        <div id="ccTaskBubble" class="cc-task-bubble hidden"></div>
+        <div class="cc-container st-idle" id="ccScene">
+          <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
+          <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
+          <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
+          <div class="fpx"></div><div class="fpx"></div>
+          <div class="blue-px" style="top:8px;left:22px"></div>
+          <div class="blue-px" style="top:2px;left:38px"></div>
+          <div class="blue-px" style="top:12px;right:10px"></div>
+          <div class="blue-px" style="top:4px;right:24px"></div>
+          <div class="cc-bubble">
+            <div class="cc-bubble-box"><div class="cc-bubble-eye"></div><div class="cc-bubble-eye"></div></div>
+            <span class="bdot bdot1"></span><span class="bdot bdot2"></span>
+          </div>
+          <div class="cc-think">
+            <div class="cc-think-box"><span class="cc-think-txt" id="sceneThinkTxt">...</span></div>
+            <span class="bdot bdot1"></span><span class="bdot bdot2"></span>
+          </div>
+          <div class="cc-laptop">
+            <div class="lt-body"><div class="lt-screen"><div class="lt-dot"></div></div></div>
+            <div class="lt-base"></div>
+          </div>
+          <div class="cc-qmark" id="sceneQmark">
+            <svg width="28" height="36" viewBox="0 0 7 9" style="image-rendering:pixelated">
+              <rect x="1" y="0" width="4" height="1" class="qr" fill="#4888d8"/>
+              <rect x="0" y="1" width="2" height="1" class="qr" fill="#4888d8"/>
+              <rect x="4" y="1" width="2" height="1" class="qr" fill="#4888d8"/>
+              <rect x="3" y="2" width="2" height="1" class="qr" fill="#4888d8"/>
+              <rect x="2" y="3" width="2" height="1" class="qr" fill="#4888d8"/>
+              <rect x="2" y="5" width="2" height="1" class="qr" fill="#4888d8"/>
+            </svg>
+          </div>
+          <div class="cc-err" style="font-family:'Courier New',monospace">ERROR</div>
+          <div class="cc-broom">
+            <div class="broom-stick"></div><div class="broom-head"></div><div class="broom-edge"></div>
+          </div>
+          <div class="cc-inner">
+            <div class="cc-sprite">
+              <div class="cc-claw L"></div>
+              <div class="cc-claw R"></div>
+              <div class="cc-body"></div>
+              <div class="cc-eyes" id="sceneEyesNormal"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+              <div class="cc-eyes-gt-lt" id="sceneEyesGtLt"><div class="eye-gt"></div><div class="eye-lt"></div></div>
+              <div class="cc-eyes-caret" id="sceneEyesCaret"><div class="eye-caret"></div><div class="eye-caret"></div></div>
+              <div class="cc-eyes-xx" id="sceneEyesXx"><div class="eye-x"></div><div class="eye-x"></div></div>
+              <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+              <div class="cc-shadow-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <div class="search-dual">
+          <div class="search-half">
+            <label class="search-label">关键词搜索</label>
+            <div class="search-half-row search-input-wrap">
+              <input type="text" id="searchInput" placeholder="输入关键词查找便签">
+              <button id="searchClearBtn" class="search-clear-btn hidden" title="清空">✕</button>
+            </div>
+          </div>
+          <div class="search-divider"></div>
+          <div class="search-half">
+            <label class="search-label">问 CC</label>
+            <div class="search-half-row">
+              <input type="text" id="ccSearchInput" placeholder="描述你想找的任务，CC会帮你找哦">
+              <button id="smartSearchBtn" class="btn-small btn-cc btn-search-sm">查找</button>
+            </div>
+          </div>
+        </div>
+        <button id="clearSearchBtn" class="btn-small hidden" style="display:none!important"></button>
+      </div>
+
+      <div id="kanbanGrid" class="kanban-grid"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title"><span class="tape tape-sidebar-1">智能助手</span></div>
+        <div class="cc-buttons">
+          <button id="btnTagSuggest" class="btn-cc">✨ 整理标签</button>
+          <button id="btnTagGraph" class="btn-cc">🌾 任务图谱</button>
+          <button id="btnWeeklyDigest" class="btn-cc">🍯 本周总结</button>
+          <button id="btnHabitTrack" class="btn-cc">🌻 习惯养成</button>
+          <button id="btnBlindBox" class="btn-cc btn-fun">🕯️ 任务盲盒</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section collapsible" id="settingsSection">
+        <div class="sidebar-title section-toggle" id="settingsToggle"><span class="tape tape-sidebar-2">设置 <span class="arrow">▾</span></span></div>
+        <div id="settingsPanel" class="section-body settings-panel">
+          <label>每日整理时间
+            <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+              <input type="time" id="dailyTime" value="23:55" style="flex:1">
+              <button id="dailyTimeConfirm" class="btn-small">确定</button>
+            </div>
+          </label>
+          <label>主题配色</label>
+          <div class="theme-nav">
+            <button id="themePrev" class="theme-arrow" title="上一个">‹</button>
+            <select id="themeSelect">
+              <option value="gold">焦糖布丁</option>
+              <option value="cozy">慵懒晨光</option>
+              <option value="macaron">柔雾马卡龙</option>
+              <option value="berry">莓莓粉荔</option>
+              <option value="slate">湖光暖岸</option>
+              <option value="summer">晴川浅夏</option>
+              <option value="candy">糖果马卡龙</option>
+              <option value="mintchoc">薄荷生巧</option>
+              <option value="gelato">夏日冰淇淋</option>
+              <option value="blueberry">蓝莓酸奶</option>
+              <option value="spring">柠翠晴日</option>
+              <option value="mint">清新薄荷</option>
+              <option value="pinkcoast">粉蓝海岸</option>
+              <option value="coconut">蕉叶椰乳</option>
+              <option value="mintrose">薄荷粉藤</option>
+              <option value="milktea">奶茶蓝调</option>
+              <option value="greencream">青青奶霜</option>
+              <option value="springplaid">春风格纹</option>
+              <option value="traingreen">夏枝列车</option>
+              <option value="pistachio">青柠马卡龙</option>
+              <option value="icecool">清爽冰凉</option>
+              <option value="orangesoda">橙汽苏打</option>
+              <option value="appleyogurt">苹果酸奶夹</option>
+              <option value="mistmacaron">青橙马卡龙</option>
+              <option value="custom">自定义</option>
+            </select>
+            <button id="themeNext" class="theme-arrow" title="下一个">›</button>
+          </div>
+          <button id="customThemeBtn" class="btn-small">自定义主题</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section sidebar-input">
+        <div class="sidebar-title"><span class="tape tape-sidebar-3">快速记录</span></div>
+        <textarea id="memoInput" placeholder="写下你的碎碎念..." rows="3"></textarea>
+        <div class="tag-selector" id="tagSelector"></div>
+        <div class="input-actions">
+          <button id="tagManagerBtn" class="btn-small" title="标签管理">🏷️ 标签管理</button>
+          <button id="sendBtn" class="btn-primary">发送</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tag Suggestions History Modal -->
+    <div id="tagSuggestModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3 id="tagSuggestTitle">🏷️ 标签整理建议</h3>
+          <button class="modal-close" id="tagSuggestClose">&times;</button>
+        </div>
+        <div class="tape tape-deco tape-sidebar-1" style="width:110px;top:-8px;left:40%;transform:translateX(-50%) rotate(2deg)"></div>
+        <button id="tagSuggestGenBtn" class="btn-primary">生成建议</button>
+        <div id="tagSuggestHistory" class="tag-summary-history"></div>
+      </div>
+    </div>
+
+    <!-- Graph Modal -->
+    <div id="graphModal" class="modal hidden">
+      <div class="modal-content modal-graph-analysis">
+        <button class="modal-close" id="graphClose">&times;</button>
+        <div class="tape tape-deco tape-plaid-gold" style="width:110px;top:-8px;left:46%;transform:translateX(-50%) rotate(-1deg)"></div>
+
+        <!-- Header: title + shared tag picker -->
+        <div class="ga-header">
+          <h3 id="graphTitle">🌾 关联图谱</h3>
+          <div class="ga-tag-row">
+            <span class="ga-tag-hint">范围</span>
+            <div class="ga-tag-picker" id="graphTagPicker"></div>
+          </div>
+        </div>
+
+        <!-- Navigation: prev/next + meta + delete -->
+        <div class="ga-nav" id="graphNav" style="display:none">
+          <button class="ga-nav-btn" id="graphPrev">‹</button>
+          <span class="ga-nav-info" id="graphNavInfo">1 / 1</span>
+          <button class="ga-nav-btn" id="graphNext">›</button>
+          <span class="ga-nav-meta" id="graphNavMeta"></span>
+          <button class="ga-nav-del" id="graphDeleteCurrent" title="删除此图谱">🗑</button>
+        </div>
+
+        <!-- Body: left = graph, right = insights + summaries -->
+        <div class="ga-body">
+          <div class="ga-left">
+            <div class="ga-panel-label">关联图谱</div>
+            <div id="graphContainer" class="graph-container"></div>
+          </div>
+          <div class="ga-divider"></div>
+          <div class="ga-right">
+            <div id="graphInsights" class="ga-insights" style="display:none">
+              <div class="ga-panel-label">💡 发散思考</div>
+              <div class="ga-insights-content" id="graphInsightsContent"></div>
+            </div>
+            <div class="ga-panel-label">标签总结</div>
+            <div id="graphSummaryPanel" class="graph-summary-panel">
+              <p class="ga-empty-hint">选择标签后点击生成，或查看历史总结</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="ga-footer">
+          <button id="graphRegenBtn" class="btn-primary">生成图谱</button>
+          <span id="graphDate" class="ga-date"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Digest Modal -->
+    <div id="weeklyModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3 id="weeklyTitle">📊 本周总结</h3>
+          <button class="modal-close" id="weeklyClose">&times;</button>
+        </div>
+        <div class="tape tape-deco tape-dot-gold" style="width:100px;top:-8px;left:50%;transform:translateX(-50%) rotate(-1deg)"></div>
+        <div class="tag-summary-picker" id="weeklyTagPicker"></div>
+        <button id="weeklyGenBtn" class="btn-primary">生成本周总结</button>
+        <div id="weeklyHistory" class="tag-summary-history"></div>
+      </div>
+    </div>
+
+    <!-- Blind Box Modal -->
+    <div id="blindBoxModal" class="modal hidden">
+      <div class="modal-content modal-blindbox">
+        <button class="modal-close" id="blindboxClose">&times;</button>
+        <div class="tape tape-deco tape-stripe-gold" style="width:100px;top:-8px;left:50%;transform:translateX(-50%) rotate(-2deg)"></div>
+        <div id="blindboxStep1" class="blindbox-step">
+          <h3 id="blindboxTitle" style="text-align:center;margin-bottom:16px;color:var(--text)">🎁 选择盲盒范围</h3>
+          <p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:16px">任务太多，不知道从哪儿开始？开一个任务盲盒吧！✨</p>
+          <div id="blindboxTagPicker" class="blindbox-tag-picker"></div>
+          <div style="text-align:center;margin-top:20px">
+            <button id="blindboxGoBtn" class="btn-primary" style="padding:10px 32px;font-size:15px">开盲盒！</button>
+          </div>
+        </div>
+        <div id="blindboxStep2" class="blindbox-step hidden">
+          <div class="blindbox-animation" id="blindboxAnimation">
+            <div class="gift-box">🎁</div>
+          </div>
+          <div id="blindboxResult" class="blindbox-result hidden">
+            <p style="text-align:center;font-size:14px;color:var(--text-light);margin-bottom:10px">抽到了 ——</p>
+            <div class="blindbox-card">
+              <p id="blindboxContent"></p>
+              <div id="blindboxTags2" class="blindbox-card-tags"></div>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:16px">
+            <button id="blindboxAgain" class="btn-small">再来一次</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Habit Building Modal -->
+    <div id="tagSummaryModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3 id="tagSummaryTitle">🌱 习惯养成</h3>
+          <button class="modal-close" id="tagSummaryClose">&times;</button>
+        </div>
+        <div class="tape tape-deco tape-sidebar-2" style="width:100px;top:-8px;left:40%;transform:translateX(-50%) rotate(1deg)"></div>
+
+        <!-- Tabs -->
+        <div class="habit-tabs">
+          <button class="habit-tab active" data-tab="pools">🃏 卡池</button>
+          <button class="habit-tab" data-tab="draw">🎉 抽习惯</button>
+          <button class="habit-tab" data-tab="calendar">📅 打卡日历</button>
+        </div>
+
+        <!-- Panel: 卡池管理 -->
+        <div class="habit-panel" id="habitPanelPools">
+          <div class="habit-upload-area" id="habitUploadArea">
+            <p>📁 拖拽or上传「书籍生成的skills.zip」</p>
+            <input type="file" id="habitFileInput" accept=".zip" hidden>
+          </div>
+          <p class="habit-upload-hint">没有书籍生成的zip？前往 <a href="https://pdf2app.cn" target="_blank" rel="noopener">pdf2app.cn</a>，上传你的书籍即可生成！</p>
+          <div id="habitUploadProgress" class="habit-upload-progress hidden">
+            <div class="habit-spinner"></div>
+            <p class="habit-progress-text">正在总结习惯...</p>
+          </div>
+          <div id="habitPoolList" class="habit-pool-list"></div>
+        </div>
+
+        <!-- Panel: 抽习惯 -->
+        <div class="habit-panel hidden" id="habitPanelDraw">
+          <!-- Step 1: 选卡池 -->
+          <div id="habitDrawStep1">
+            <p class="habit-draw-hint">选择一个卡池，抽取今日习惯 ✨</p>
+            <div id="habitDrawPoolPicker" class="habit-draw-pool-picker"></div>
+            <div style="text-align:center;margin-top:16px">
+              <button id="habitDrawBtn" class="btn-primary" disabled>开始抽取</button>
+            </div>
+          </div>
+          <!-- Step 2: 动画+结果 -->
+          <div id="habitDrawStep2" class="hidden">
+            <div id="habitDrawResult" class="habit-draw-result hidden">
+              <p style="text-align:center;font-size:14px;color:var(--t-text-light);margin-bottom:10px">✨今日习惯——</p>
+              <div class="habit-result-card">
+                <p id="habitDrawContent"></p>
+              </div>
+            </div>
+            <div style="text-align:center;margin-top:16px">
+              <button id="habitDrawAgain" class="btn-small">再抽一个</button>
+              <button id="habitDrawBack" class="btn-small" style="margin-left:8px">返回选池</button>
+            </div>
+          </div>
+          <!-- 今日习惯 -->
+          <div id="habitTodaySection" class="habit-today-section hidden">
+            <div id="habitTodayList" class="habit-today-list"></div>
+          </div>
+        </div>
+
+        <!-- Panel: 打卡日历 -->
+        <div class="habit-panel hidden" id="habitPanelCalendar">
+          <div class="habit-calendar-nav">
+            <button class="habit-cal-arrow" id="habitCalPrev">‹</button>
+            <span class="habit-cal-month" id="habitCalMonth"></span>
+            <button class="habit-cal-arrow" id="habitCalNext">›</button>
+          </div>
+          <div class="habit-calendar-grid" id="habitCalendarGrid">
+            <div class="habit-cal-header">日</div>
+            <div class="habit-cal-header">一</div>
+            <div class="habit-cal-header">二</div>
+            <div class="habit-cal-header">三</div>
+            <div class="habit-cal-header">四</div>
+            <div class="habit-cal-header">五</div>
+            <div class="habit-cal-header">六</div>
+          </div>
+          <div id="habitCalendarLog" class="habit-calendar-log"></div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- Habit Day Detail Popover -->
+    <div id="habitDayDetailModal" class="modal hidden" style="z-index:250">
+      <div class="modal-content" style="max-width:400px">
+        <div class="modal-header">
+          <h3 id="habitDayDetailTitle">打卡详情</h3>
+          <button class="modal-close" id="habitDayDetailClose">&times;</button>
+        </div>
+        <div id="habitDayDetailList" class="habit-day-detail-list"></div>
+      </div>
+    </div>
+
+    <!-- Habit Pool Detail Modal -->
+    <div id="habitPoolDetailModal" class="modal hidden">
+      <div class="modal-content" style="max-width:460px">
+        <div class="modal-header">
+          <h3 id="habitPoolDetailTitle">卡池详情</h3>
+          <button class="modal-close" id="habitPoolDetailClose">&times;</button>
+        </div>
+        <div class="habit-pool-detail-name-row">
+          <input type="text" id="habitPoolDetailNameInput" class="habit-pool-name-input" placeholder="卡池名称">
+          <button id="habitPoolDetailNameSave" class="btn-small">保存</button>
+        </div>
+        <div id="habitPoolDetailList" class="habit-pool-detail-list"></div>
+      </div>
+    </div>
+
+    <!-- Tag Manager Modal -->
+    <div id="tagManagerModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3>🏷️ 标签管理<span class="tag-manager-hint"> - 可以自定义标签的纸胶带和emoji喔～</span></h3>
+          <button class="modal-close" id="tagManagerClose">&times;</button>
+        </div>
+        <div class="clip clip-gold" style="top:-49px;left:50%;transform:translateX(-50%)"><svg viewBox="0 0 360 175" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" fill="var(--d-clip-body-1)" d="M 180,42 A 37,37,0,0,1,217,79 L 217,120 C 255,122,316,136,334,158 L 334,166 L 26,166 L 26,158 C 44,136,105,122,143,120 L 143,79 A 37,37,0,0,1,180,42 Z M 180,62 A 16,16,0,0,1,180,94 A 16,16,0,0,1,180,62 Z"/><circle cx="180" cy="78" r="15" fill="var(--d-clip-gold-border)" opacity="0.65"/><path fill="var(--d-clip-gold-border)" opacity="0.3" d="M 26,166 Q 180,173,334,166 L 334,170 Q 180,177,26,170 Z"/></svg></div>
+        <div id="tagManagerToast" class="modal-toast hidden"></div>
+        <div class="tag-manager-scroll">
+          <div class="tag-manager-new">
+            <div class="emoji-picker-selected" id="emojiPickerSelected">🏷️</div>
+            <input type="text" id="newTagName" placeholder="标签名称">
+            <div id="newTapePicker" class="tape-picker"></div>
+            <button id="addNewTagBtn" class="btn-primary">添加</button>
+          </div>
+          <div id="emojiPicker" class="emoji-picker hidden"></div>
+          <div id="tagManagerList" class="tag-manager-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Memo Detail Modal -->
+    <div id="memoDetailModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="memoDetailTitle">手帐详情</h3>
+          <button class="modal-close" id="memoDetailClose">&times;</button>
+        </div>
+        <div class="tape tape-deco tape-plaid-gold" style="width:80px;top:-8px;left:50%;transform:translateX(-50%) rotate(-1deg)"></div>
+        <div id="memoDetailTags" style="margin-bottom:12px"></div>
+        <div id="memoDetailContent" class="discuss-content"></div>
+        <div id="memoDetailTime" style="margin-top:12px;font-size:12px;color:var(--text-light)"></div>
+      </div>
+    </div>
+
+    <!-- Custom Theme Modal -->
+    <div id="customThemeModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3>自定义主题</h3>
+          <button class="modal-close" id="customThemeClose">&times;</button>
+        </div>
+        <div class="tape tape-deco tape-sidebar-1" style="width:100px;top:-8px;left:50%;transform:translateX(-50%) rotate(-1deg)"></div>
+        <div class="custom-theme-grid">
+          <label class="ct-picker">
+            <span>背景色</span>
+            <input type="color" id="ctBg" value="#FBF7E9">
+            <code class="ct-hex" data-for="ctBg">#FBF7E9</code>
+          </label>
+          <label class="ct-picker">
+            <span>卡片色</span>
+            <input type="color" id="ctCard" value="#FFFFFF">
+            <code class="ct-hex" data-for="ctCard">#FFFFFF</code>
+          </label>
+          <label class="ct-picker">
+            <span>强调色</span>
+            <input type="color" id="ctAccent" value="#E8B84B">
+            <code class="ct-hex" data-for="ctAccent">#E8B84B</code>
+          </label>
+          <label class="ct-picker">
+            <span>文字色</span>
+            <input type="color" id="ctText" value="#4a3a28">
+            <code class="ct-hex" data-for="ctText">#4a3a28</code>
+          </label>
+          <label class="ct-picker">
+            <span>边框色</span>
+            <input type="color" id="ctBorder" value="#c8b8a0">
+            <code class="ct-hex" data-for="ctBorder">#c8b8a0</code>
+          </label>
+          <label class="ct-picker">
+            <span>装饰色</span>
+            <input type="color" id="ctDeco" value="#fce888">
+            <code class="ct-hex" data-for="ctDeco">#fce888</code>
+          </label>
+        </div>
+        <div class="ct-actions">
+          <button id="ctApplyBtn" class="btn-primary">应用并保存</button>
+          <button id="ctResetBtn" class="btn-small">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Confirm Dialog -->
+    <div id="confirmModal" class="modal hidden" style="z-index:300">
+      <div class="modal-content confirm-dialog">
+        <div class="clip clip-gold" style="top:-49px;left:50%;transform:translateX(-50%)"><svg viewBox="0 0 360 175" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" fill="var(--d-clip-body-1)" d="M 180,42 A 37,37,0,0,1,217,79 L 217,120 C 255,122,316,136,334,158 L 334,166 L 26,166 L 26,158 C 44,136,105,122,143,120 L 143,79 A 37,37,0,0,1,180,42 Z M 180,62 A 16,16,0,0,1,180,94 A 16,16,0,0,1,180,62 Z"/><circle cx="180" cy="78" r="15" fill="var(--d-clip-gold-border)" opacity="0.65"/><path fill="var(--d-clip-gold-border)" opacity="0.3" d="M 26,166 Q 180,173,334,166 L 334,170 Q 180,177,26,170 Z"/></svg></div>
+        <p id="confirmMessage"></p>
+        <div class="confirm-actions">
+          <button id="confirmCancel" class="btn-small">取消</button>
+          <button id="confirmOk" class="btn-primary">确认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Toast -->
+    <div id="appToast" class="app-toast hidden"></div>
+
+    <!-- CC Toast Notification -->
+    <div id="ccToast" class="cc-toast hidden">
+      <div class="cc-toast-content">
+        <span id="ccToastText"></span>
+      </div>
+    </div>
+
+    <div class="app-footer"><span class="app-copyright">© Anselkocen</span></div>
+  </div>
+
+  <div class="deco-stars" style="position:fixed;inset:0;z-index:0;pointer-events:none">
+    <div class="star star-md star-yellow" style="top:12%;left:4%"></div>
+    <div class="star star-sm star-brown" style="top:35%;left:2%"></div>
+    <div class="star star-sm star-light" style="top:65%;left:7%"></div>
+    <div class="star star-lg star-gold" style="top:82%;left:3%;opacity:0.4"></div>
+    <div class="star star-sm star-brown" style="top:22%;left:1%"></div>
+    <div class="star star-lg star-yellow" style="top:88%;left:42%;opacity:0.35"></div>
+    <div class="star star-sm star-gold" style="top:55%;left:60%"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

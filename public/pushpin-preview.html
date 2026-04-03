@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>📌 Flipped Pushpin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f0ece4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    height: 100vh;
+    font-family: -apple-system, sans-serif;
+  }
+  .label { color: #bbb; font-size: 12px; letter-spacing: 0.05em; margin-top: 6px; }
+  .row { display: flex; align-items: center; gap: 60px; }
+  .item { display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+
+<div class="row">
+
+  <!-- Original emoji for reference -->
+  <div class="item">
+    <span style="font-size:80px; line-height:1">📌</span>
+    <span class="label">原版 emoji</span>
+  </div>
+
+  <!-- Small -->
+  <div class="item">
+    <svg width="100" height="100" viewBox="-55 -55 110 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="sh1" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="1" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.25)"/>
+        </filter>
+        <radialGradient id="b1" cx="38%" cy="32%" r="65%">
+          <stop offset="0%"   stop-color="#FFE090"/>
+          <stop offset="30%"  stop-color="#F49030"/>
+          <stop offset="65%"  stop-color="#CC5808"/>
+          <stop offset="100%" stop-color="#7A2400"/>
+        </radialGradient>
+        <radialGradient id="br1" cx="50%" cy="50%" r="50%">
+          <stop offset="60%"  stop-color="#8C3000"/>
+          <stop offset="100%" stop-color="#4E1200"/>
+        </radialGradient>
+        <linearGradient id="col1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#5A1800"/>
+          <stop offset="35%"  stop-color="#D05010"/>
+          <stop offset="60%"  stop-color="#E86820"/>
+          <stop offset="100%" stop-color="#4A1000"/>
+        </linearGradient>
+        <linearGradient id="pin1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#808080"/>
+          <stop offset="28%"  stop-color="#E0E0E0"/>
+          <stop offset="50%"  stop-color="#F8F8F8"/>
+          <stop offset="72%"  stop-color="#C0C0C0"/>
+          <stop offset="100%" stop-color="#707070"/>
+        </linearGradient>
+        <linearGradient id="tp1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#909090"/>
+          <stop offset="50%"  stop-color="#EBEBEB"/>
+          <stop offset="100%" stop-color="#686868"/>
+        </linearGradient>
+      </defs>
+      <!--
+        Draw pin pointing DOWN (ball at top), rotate(45°) → cap upper-right, tip lower-left = flipped 📌
+      -->
+      <g transform="rotate(45)" filter="url(#sh1)">
+        <!-- Ball rim (3D depth) -->
+        <circle cx="0" cy="-34" r="22" fill="url(#br1)" transform="translate(0,4)"/>
+        <!-- Ball face -->
+        <circle cx="0" cy="-34" r="22" fill="url(#b1)"/>
+        <!-- Specular highlight -->
+        <ellipse cx="-9" cy="-44" rx="8" ry="5.5" fill="rgba(255,255,255,0.62)" transform="rotate(-25,0,-34)"/>
+        <!-- Mini glint -->
+        <circle cx="-12" cy="-47" r="2" fill="rgba(255,255,255,0.82)"/>
+        <!-- Subtle bottom shadow on ball -->
+        <ellipse cx="0" cy="-22" rx="14" ry="4.5" fill="rgba(60,8,0,0.20)"/>
+
+        <!-- Collar ring -->
+        <rect x="-11" y="-14" width="22" height="9" rx="3" fill="url(#col1)"/>
+        <!-- Collar top glint -->
+        <rect x="-8"  y="-13" width="8"  height="3" rx="1.5" fill="rgba(255,150,60,0.40)"/>
+
+        <!-- Barrel (thin cylindrical pin) -->
+        <rect x="-5" y="-6" width="10" height="36" rx="2" fill="url(#pin1)"/>
+        <!-- Barrel center highlight -->
+        <rect x="-2" y="-6" width="4"  height="36" rx="1" fill="rgba(255,255,255,0.30)"/>
+
+        <!-- Tip -->
+        <polygon points="-5,30  5,30  0,50" fill="url(#tp1)"/>
+        <!-- Tip highlight face -->
+        <polygon points="-2,30  2,30  0,46" fill="rgba(255,255,255,0.38)"/>
+        <!-- Tip sharp end -->
+        <circle cx="0" cy="49" r="1.2" fill="#5A5A5A"/>
+      </g>
+    </svg>
+    <span class="label">翻转版 · 橙色</span>
+  </div>
+
+  <!-- Large -->
+  <div class="item">
+    <svg width="180" height="180" viewBox="-55 -55 110 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="sh2" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="2" dy="5" stdDeviation="7" flood-color="rgba(0,0,0,0.22)"/>
+        </filter>
+        <radialGradient id="b2" cx="38%" cy="32%" r="65%">
+          <stop offset="0%"   stop-color="#FFE090"/>
+          <stop offset="30%"  stop-color="#F49030"/>
+          <stop offset="65%"  stop-color="#CC5808"/>
+          <stop offset="100%" stop-color="#7A2400"/>
+        </radialGradient>
+        <radialGradient id="br2" cx="50%" cy="50%" r="50%">
+          <stop offset="60%"  stop-color="#8C3000"/>
+          <stop offset="100%" stop-color="#4E1200"/>
+        </radialGradient>
+        <linearGradient id="col2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#5A1800"/>
+          <stop offset="35%"  stop-color="#D05010"/>
+          <stop offset="60%"  stop-color="#E86820"/>
+          <stop offset="100%" stop-color="#4A1000"/>
+        </linearGradient>
+        <linearGradient id="pin2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#808080"/>
+          <stop offset="28%"  stop-color="#E0E0E0"/>
+          <stop offset="50%"  stop-color="#F8F8F8"/>
+          <stop offset="72%"  stop-color="#C0C0C0"/>
+          <stop offset="100%" stop-color="#707070"/>
+        </linearGradient>
+        <linearGradient id="tp2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#909090"/>
+          <stop offset="50%"  stop-color="#EBEBEB"/>
+          <stop offset="100%" stop-color="#686868"/>
+        </linearGradient>
+        <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+          <stop offset="70%"  stop-color="rgba(255,255,255,0)"/>
+          <stop offset="100%" stop-color="rgba(255,185,80,0.22)"/>
+        </radialGradient>
+      </defs>
+
+      <g transform="rotate(45)" filter="url(#sh2)">
+        <!-- Ball rim -->
+        <circle cx="0" cy="-34" r="22" fill="url(#br2)" transform="translate(0,4)"/>
+        <!-- Ball face -->
+        <circle cx="0" cy="-34" r="22" fill="url(#b2)"/>
+        <!-- Edge glow -->
+        <circle cx="0" cy="-34" r="22" fill="url(#glow2)"/>
+        <!-- Arc rim light (top arc highlight) -->
+        <path d="M -19,-34 A 19,19 0 0,1 19,-34"
+              stroke="rgba(255,215,120,0.5)" stroke-width="2.5"
+              fill="none" stroke-linecap="round"/>
+        <!-- Specular -->
+        <ellipse cx="-9" cy="-44" rx="8.5" ry="5.5" fill="rgba(255,255,255,0.62)" transform="rotate(-25,0,-34)"/>
+        <!-- Glint -->
+        <circle cx="-12.5" cy="-47.5" r="2.2" fill="rgba(255,255,255,0.85)"/>
+        <!-- Shadow at ball base -->
+        <ellipse cx="0" cy="-22" rx="15" ry="5" fill="rgba(60,8,0,0.20)"/>
+
+        <!-- Collar -->
+        <rect x="-11" y="-14" width="22" height="9" rx="3" fill="url(#col2)"/>
+        <rect x="-8"  y="-13" width="9"  height="3.5" rx="1.5" fill="rgba(255,150,60,0.38)"/>
+        <rect x="-11" y="-5.5" width="22" height="1.5" rx="0.8" fill="rgba(0,0,0,0.10)"/>
+
+        <!-- Barrel -->
+        <rect x="-5" y="-6" width="10" height="36" rx="2" fill="url(#pin2)"/>
+        <!-- Center gloss -->
+        <rect x="-2" y="-6" width="4"  height="36" rx="1" fill="rgba(255,255,255,0.30)"/>
+        <!-- Top/bottom edges -->
+        <rect x="-5" y="-6" width="10" height="2.5" rx="1" fill="rgba(0,0,0,0.08)"/>
+        <rect x="-5" y="27.5" width="10" height="2.5" rx="1" fill="rgba(0,0,0,0.06)"/>
+
+        <!-- Tip -->
+        <polygon points="-5,30  5,30  0,50" fill="url(#tp2)"/>
+        <polygon points="-2,30  2,30  0,47" fill="rgba(255,255,255,0.40)"/>
+        <polygon points="-5,30  5,30  0,50" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="0.5"/>
+        <!-- Tip dot -->
+        <circle cx="0" cy="49.5" r="1.3" fill="#545454"/>
+      </g>
+    </svg>
+    <span class="label">放大版</span>
+  </div>
+
+  <!-- Extra large -->
+  <div class="item">
+    <svg width="240" height="240" viewBox="-55 -55 110 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="sh3" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="2" dy="6" stdDeviation="8" flood-color="rgba(0,0,0,0.20)"/>
+        </filter>
+        <radialGradient id="b3" cx="38%" cy="32%" r="65%">
+          <stop offset="0%"   stop-color="#FFE8A0"/>
+          <stop offset="25%"  stop-color="#F9A040"/>
+          <stop offset="58%"  stop-color="#D06010"/>
+          <stop offset="100%" stop-color="#7A2400"/>
+        </radialGradient>
+        <radialGradient id="br3" cx="50%" cy="50%" r="50%">
+          <stop offset="60%"  stop-color="#8C3000"/>
+          <stop offset="100%" stop-color="#4E1200"/>
+        </radialGradient>
+        <linearGradient id="col3" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#5A1800"/>
+          <stop offset="35%"  stop-color="#D05010"/>
+          <stop offset="60%"  stop-color="#E86820"/>
+          <stop offset="100%" stop-color="#4A1000"/>
+        </linearGradient>
+        <linearGradient id="pin3" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#808080"/>
+          <stop offset="28%"  stop-color="#E0E0E0"/>
+          <stop offset="50%"  stop-color="#F8F8F8"/>
+          <stop offset="72%"  stop-color="#C0C0C0"/>
+          <stop offset="100%" stop-color="#707070"/>
+        </linearGradient>
+        <linearGradient id="tp3" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#909090"/>
+          <stop offset="50%"  stop-color="#EBEBEB"/>
+          <stop offset="100%" stop-color="#686868"/>
+        </linearGradient>
+        <radialGradient id="glow3" cx="50%" cy="50%" r="50%">
+          <stop offset="70%"  stop-color="rgba(255,255,255,0)"/>
+          <stop offset="100%" stop-color="rgba(255,185,80,0.20)"/>
+        </radialGradient>
+      </defs>
+
+      <g transform="rotate(45)" filter="url(#sh3)">
+        <circle cx="0" cy="-34" r="22" fill="url(#br3)" transform="translate(0,4)"/>
+        <circle cx="0" cy="-34" r="22" fill="url(#b3)"/>
+        <circle cx="0" cy="-34" r="22" fill="url(#glow3)"/>
+        <path d="M -19,-34 A 19,19 0 0,1 19,-34"
+              stroke="rgba(255,215,120,0.50)" stroke-width="2.5"
+              fill="none" stroke-linecap="round"/>
+        <ellipse cx="-9" cy="-44" rx="8.5" ry="5.5"
+                 fill="rgba(255,255,255,0.62)" transform="rotate(-25,0,-34)"/>
+        <circle cx="-12.5" cy="-47.5" r="2.2" fill="rgba(255,255,255,0.88)"/>
+        <ellipse cx="0" cy="-22" rx="15" ry="5" fill="rgba(60,8,0,0.20)"/>
+
+        <rect x="-11" y="-14" width="22" height="9"   rx="3"   fill="url(#col3)"/>
+        <rect x="-8"  y="-13" width="9"  height="3.5" rx="1.5" fill="rgba(255,150,60,0.38)"/>
+        <rect x="-11" y="-5.5" width="22" height="1.5" rx="0.8" fill="rgba(0,0,0,0.10)"/>
+
+        <rect x="-5" y="-6"  width="10" height="36"  rx="2"   fill="url(#pin3)"/>
+        <rect x="-2" y="-6"  width="4"  height="36"  rx="1"   fill="rgba(255,255,255,0.30)"/>
+        <rect x="-5" y="-6"  width="10" height="2.5" rx="1"   fill="rgba(0,0,0,0.08)"/>
+        <rect x="-5" y="27.5" width="10" height="2.5" rx="1"  fill="rgba(0,0,0,0.06)"/>
+
+        <polygon points="-5,30  5,30  0,50" fill="url(#tp3)"/>
+        <polygon points="-2,30  2,30  0,47" fill="rgba(255,255,255,0.40)"/>
+        <circle cx="0" cy="49.5" r="1.3" fill="#545454"/>
+      </g>
+    </svg>
+    <span class="label">超大版</span>
+  </div>
+
+</div>
+</body>
+</html>

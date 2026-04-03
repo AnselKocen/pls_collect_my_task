@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CC — Exact Reference Match v3</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box }
+body {
+  background: #f0e0d0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 10px;
+  font-family: monospace;
+  gap: 14px;
+}
+h1 { color: #886650; font-size: 15px; }
+.grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+.card {
+  background: #f5e8da;
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 210px;
+}
+.card label { color: #886650; font-size: 11px; }
+
+/* ============ CC BASE — bigger body ============ */
+.cc {
+  position: relative;
+  width: 150px;
+  height: 160px;
+}
+.cc-body {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  top: 36px;
+  width: 100px;
+  height: 68px;
+  background: #e8a878;
+  border-radius: 4px;
+}
+.cc-body::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 10px;
+  background: #f0b890;
+  border-radius: 4px 4px 0 0;
+}
+
+/* ============ CLAWS ============ */
+.cc-claw {
+  position: absolute;
+  top: 54px;
+  width: 18px;
+  height: 22px;
+  background: #e8a878;
+  border-radius: 2px;
+}
+.cc-claw.L { left: 6px; }
+.cc-claw.R { right: 6px; }
+.cc-claw::before, .cc-claw::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 7px;
+  background: #e8a878;
+  border-radius: 1px;
+}
+.cc-claw.L::before { left: -8px; top: 0; }
+.cc-claw.L::after  { left: -8px; bottom: 0; }
+.cc-claw.R::before { right: -8px; top: 0; }
+.cc-claw.R::after  { right: -8px; bottom: 0; }
+
+/* ============ LEGS — thin & long, attached to body ============ */
+.cc-legs {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+}
+.cc-leg {
+  width: 8px;
+  height: 22px;
+  background: #d08858;
+  border-radius: 0 0 2px 2px;
+  margin-top: -4px; /* overlap into body */
+}
+
+/* ============ SHADOW ============ */
+.cc-shadow {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 5px;
+  background: #999;
+  border-radius: 3px;
+  opacity: .6;
+}
+
+/* ============ EYES — Normal (centered in face, wider apart) ============ */
+.cc-eyes {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 30px;
+}
+.cc-eye {
+  width: 10px;
+  height: 13px;
+  background: #2a2a2a;
+  border-radius: 1px;
+}
+
+/* ============ EYES — > < (bigger, thicker, centered) ============ */
+.cc-eyes-gt-lt {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 24px;
+}
+.eye-gt, .eye-lt {
+  width: 22px;
+  height: 22px;
+  position: relative;
+}
+.eye-gt::before, .eye-gt::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 4.5px;
+  background: #2a2a2a;
+  border-radius: 1px;
+  left: 0;
+}
+.eye-gt::before { top: 1px; transform: rotate(26deg); transform-origin: left center; }
+.eye-gt::after  { bottom: 1px; transform: rotate(-26deg); transform-origin: left center; }
+.eye-lt::before, .eye-lt::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 4.5px;
+  background: #2a2a2a;
+  border-radius: 1px;
+  right: 0;
+}
+.eye-lt::before { top: 1px; transform: rotate(-26deg); transform-origin: right center; }
+.eye-lt::after  { bottom: 1px; transform: rotate(26deg); transform-origin: right center; }
+
+/* ============ EYES — ^ ^ (bigger, thicker) ============ */
+.cc-eyes-caret {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 24px;
+}
+.eye-caret {
+  width: 22px;
+  height: 16px;
+  position: relative;
+}
+.eye-caret::before, .eye-caret::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 4.5px;
+  background: #2a2a2a;
+  border-radius: 1px;
+  bottom: 0;
+}
+.eye-caret::before { left: 0; transform: rotate(-30deg); transform-origin: right bottom; }
+.eye-caret::after  { right: 0; transform: rotate(30deg); transform-origin: left bottom; }
+
+/* ============ EYES — X X (bigger, thicker) ============ */
+.cc-eyes-xx {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 22px;
+}
+.eye-x {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+.eye-x::before, .eye-x::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 4.5px;
+  background: #2a2a2a;
+  border-radius: 1px;
+  top: 50%; left: 50%;
+}
+.eye-x::before { transform: translate(-50%,-50%) rotate(45deg); }
+.eye-x::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+
+/* ============ THOUGHT BUBBLE ============ */
+.cc-bubble {
+  position: absolute;
+  top: -6px;
+  left: 8px;
+}
+.bubble-box {
+  width: 52px;
+  height: 40px;
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+.bubble-eye {
+  width: 5px;
+  height: 7px;
+  background: #4888d8;
+  border-radius: 1px;
+}
+.bubble-dot1 {
+  position: absolute;
+  bottom: -8px; left: 18px;
+  width: 10px; height: 8px;
+  background: #fff; border-radius: 50%;
+}
+.bubble-dot2 {
+  position: absolute;
+  bottom: -15px; left: 24px;
+  width: 6px; height: 5px;
+  background: #fff; border-radius: 50%;
+}
+
+/* ============ SPARKLE ============ */
+.sparkle { position: absolute; }
+
+/* ============ PIXEL ? ============ */
+.q-mark { position: absolute; }
+.q-mark svg { image-rendering: pixelated; }
+
+/* ============ FLOAT PX ============ */
+.float-px {
+  position: absolute;
+  width: 7px; height: 7px;
+  border-radius: 1px;
+}
+
+/* ============ ERROR TEXT ============ */
+.err-text {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  color: #d85050;
+  font-size: 20px;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 4px;
+}
+
+/* ============ LAPTOP ============ */
+.cc-laptop {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+}
+.lt-body {
+  width: 64px; height: 40px;
+  background: #708898;
+  border-radius: 3px 3px 0 0;
+  display: flex; justify-content: center; align-items: center;
+}
+.lt-screen {
+  width: 52px; height: 32px;
+  background: #384858;
+  border-radius: 2px;
+  display: flex; justify-content: center; align-items: center;
+}
+.lt-dot {
+  width: 10px; height: 10px;
+  background: #4888d8;
+  border-radius: 2px;
+}
+.lt-base {
+  width: 70px; height: 5px;
+  background: #889098;
+  border-radius: 0 0 2px 2px;
+  margin-left: -3px;
+}
+
+/* ============ BROOM ============ */
+.cc-broom { position: absolute; }
+.broom-stick {
+  width: 5px; height: 60px;
+  background: #b09868;
+  border-radius: 2px;
+  margin-left: 8px;
+}
+.broom-head {
+  width: 24px; height: 16px;
+  background: #e8c030;
+  border-radius: 2px;
+  margin-top: -1px;
+}
+.broom-edge {
+  width: 24px; height: 3px;
+  background: #c8a020;
+  border-radius: 0 0 2px 2px;
+}
+
+/* ============ BLUE PX ============ */
+.blue-px {
+  width: 7px; height: 7px;
+  background: #4888d8;
+  border-radius: 1px;
+  position: absolute;
+  opacity: .5;
+}
+
+/* ============ WAND ============ */
+.wand-stick {
+  position: absolute;
+  width: 4px;
+  background: #3a3a3a;
+  border-radius: 1px;
+}
+
+/* Animations */
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+@keyframes bounce { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(-8px) rotate(-4deg)} 75%{transform:translateY(-8px) rotate(4deg)} }
+.bob { animation: bob 2s ease-in-out infinite; }
+.shake { animation: shake .3s ease-in-out infinite; }
+.bounce { animation: bounce .6s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<h1>CC v3 — bigger body, thin legs, smaller cuter features</h1>
+
+<div class="grid">
+
+<!-- IDLE -->
+<div class="card">
+  <label>idle — 待机</label>
+  <div class="cc bob">
+    <div class="cc-bubble">
+      <div class="bubble-box">
+        <div class="bubble-eye"></div>
+        <div class="bubble-eye"></div>
+      </div>
+      <div class="bubble-dot1"></div>
+      <div class="bubble-dot2"></div>
+    </div>
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body"></div>
+    <div class="cc-eyes"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+    <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow"></div>
+  </div>
+</div>
+
+<!-- SPARKLE -->
+<div class="card">
+  <label>normal — sparkle</label>
+  <div class="cc bob">
+    <div class="sparkle" style="top:10px;left:28px">
+      <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#e8c030"/></svg>
+    </div>
+    <div class="float-px" style="top:12px;right:14px;background:#e89050"></div>
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body"></div>
+    <div class="cc-eyes"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+    <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow"></div>
+  </div>
+</div>
+
+<!-- > < -->
+<div class="card">
+  <label>> < — 开心</label>
+  <div class="cc bounce">
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body"></div>
+    <div class="cc-eyes-gt-lt"><div class="eye-gt"></div><div class="eye-lt"></div></div>
+    <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow"></div>
+  </div>
+</div>
+
+<!-- ^_^ with wand -->
+<div class="card">
+  <label>^_^ — 仙女棒</label>
+  <div class="cc bounce">
+    <div class="sparkle" style="top:4px;left:56px">
+      <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#e8c030"/></svg>
+    </div>
+    <div class="sparkle" style="top:16px;left:78px">
+      <svg width="11" height="11" viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#e8c030" opacity=".7"/></svg>
+    </div>
+    <div class="wand-stick" style="top:20px;left:66px;height:44px"></div>
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body"></div>
+    <div class="cc-eyes-caret"><div class="eye-caret"></div><div class="eye-caret"></div></div>
+    <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow"></div>
+  </div>
+</div>
+
+<!-- LOOKING ? blue -->
+<div class="card">
+  <label>张望 — ? blue</label>
+  <div class="cc bob">
+    <div class="q-mark" style="top:2px;left:10px">
+      <svg width="28" height="36" viewBox="0 0 7 9" style="image-rendering:pixelated">
+        <rect x="1" y="0" width="4" height="1" fill="#4888d8"/>
+        <rect x="0" y="1" width="2" height="1" fill="#4888d8"/>
+        <rect x="4" y="1" width="2" height="1" fill="#4888d8"/>
+        <rect x="3" y="2" width="2" height="1" fill="#4888d8"/>
+        <rect x="2" y="3" width="2" height="1" fill="#4888d8"/>
+        <rect x="2" y="5" width="2" height="1" fill="#4888d8"/>
+      </svg>
+    </div>
+    <div class="float-px" style="top:56px;left:10px;background:#e8a878;opacity:.5"></div>
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R" style="width:10px;right:16px"></div>
+    <div class="cc-body" style="width:82px;left:32px;transform:none"></div>
+    <div class="cc-eyes" style="left:46px;transform:none;gap:0">
+      <div class="cc-eye"></div>
+    </div>
+    <div class="cc-legs" style="left:60px;transform:none">
+      <div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div>
+    </div>
+    <div class="cc-shadow" style="width:66px;left:34px;transform:none"></div>
+  </div>
+</div>
+
+<!-- LOOKING ? yellow -->
+<div class="card">
+  <label>张望 — ? yellow</label>
+  <div class="cc bob">
+    <div class="q-mark" style="top:2px;right:10px;left:auto">
+      <svg width="28" height="36" viewBox="0 0 7 9" style="image-rendering:pixelated">
+        <rect x="1" y="0" width="4" height="1" fill="#e8c030"/>
+        <rect x="0" y="1" width="2" height="1" fill="#e8c030"/>
+        <rect x="4" y="1" width="2" height="1" fill="#e8c030"/>
+        <rect x="3" y="2" width="2" height="1" fill="#e8c030"/>
+        <rect x="2" y="3" width="2" height="1" fill="#e8c030"/>
+        <rect x="2" y="5" width="2" height="1" fill="#e8c030"/>
+      </svg>
+    </div>
+    <div class="float-px" style="top:48px;right:10px;background:#e8a878;opacity:.5"></div>
+    <div class="float-px" style="top:60px;right:18px;background:#e8a878;opacity:.3"></div>
+    <div class="cc-claw L" style="width:10px;left:16px"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body" style="width:82px;left:28px;transform:none"></div>
+    <div class="cc-eyes" style="left:auto;right:42px;transform:none;gap:0">
+      <div class="cc-eye"></div>
+    </div>
+    <div class="cc-legs" style="left:48px;transform:none">
+      <div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div>
+    </div>
+    <div class="cc-shadow" style="width:66px;left:30px;transform:none"></div>
+  </div>
+</div>
+
+<!-- CODING -->
+<div class="card">
+  <label>写代码</label>
+  <div class="cc bob" style="height:170px">
+    <div class="blue-px" style="top:8px;left:22px"></div>
+    <div class="blue-px" style="top:2px;left:38px;opacity:.3"></div>
+    <div class="blue-px" style="top:12px;right:14px"></div>
+    <div class="blue-px" style="top:4px;right:28px;opacity:.3"></div>
+    <div class="blue-px" style="top:18px;right:8px;opacity:.4"></div>
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body"></div>
+    <div class="cc-eyes"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+    <div class="cc-laptop" style="top:34px">
+      <div class="lt-body"><div class="lt-screen"><div class="lt-dot"></div></div></div>
+      <div class="lt-base"></div>
+    </div>
+    <div class="cc-legs" style="bottom:18px"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow" style="bottom:12px"></div>
+  </div>
+</div>
+
+<!-- SWEEPING -->
+<div class="card">
+  <label>整理中</label>
+  <div class="cc bob">
+    <div class="cc-broom" style="right:-14px;top:24px">
+      <div class="broom-stick"></div>
+      <div class="broom-head"></div>
+      <div class="broom-edge"></div>
+    </div>
+    <div class="cc-claw L"></div>
+    <div class="cc-claw R"></div>
+    <div class="cc-body"></div>
+    <div class="cc-eyes"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+    <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow"></div>
+  </div>
+</div>
+
+<!-- ERROR -->
+<div class="card">
+  <label>报错了</label>
+  <div class="cc shake" style="height:150px">
+    <div class="blue-px" style="top:2px;left:24px;opacity:.4"></div>
+    <div class="blue-px" style="top:8px;left:42px;opacity:.3"></div>
+    <div class="blue-px" style="top:4px;right:18px;opacity:.4"></div>
+    <div class="blue-px" style="top:10px;right:32px;opacity:.3"></div>
+    <div class="err-text" style="top:16px">ERROR</div>
+    <div class="cc-claw L" style="display:none"></div>
+    <div class="cc-claw R" style="display:none"></div>
+    <div class="cc-body" style="top:40px;height:54px;background:#d89060;border-radius:3px"></div>
+    <div class="cc-eyes-xx" style="top:52px"><div class="eye-x"></div><div class="eye-x"></div></div>
+    <div class="cc-legs" style="bottom:16px"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+    <div class="cc-shadow" style="bottom:10px"></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

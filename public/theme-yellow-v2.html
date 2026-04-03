@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme: Golden Warm v2 (手帐风)</title>
+<style>
+/* === Theme: Golden Warm v2 — 手帐风 === */
+:root {
+  --c1: #FBF7E9; /* cream bg */
+  --c2: #F4DFA0; /* warm yellow */
+  --c3: #E8B84B; /* deep gold */
+  --c4: #9F8F82; /* brown-gray */
+  --brown: #8a7a68; /* deep brown for borders/headers */
+  --brown-light: #b8a890;
+  --text: #4a3a28;
+  --text-light: #8a7a68;
+  --text-on-brown: #faf6ee;
+  --card: #fefcf6;
+  --border: #9F8F82;
+  --border-light: #c8b8a0;
+  --shadow: 3px 3px 0 rgba(140,120,90,0.12);
+  --shadow-hover: 4px 4px 0 rgba(140,120,90,0.18), 0 4px 12px rgba(100,80,50,0.08);
+  --sidebar-w: 260px;
+  --scene-bg: url('/pictures/ChatGPT Image 2026年3月31日 14_51_17.png'); /* reserved for future theme scenes */
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+  background: var(--c1);
+  color: var(--text); min-height:100vh;
+}
+
+.app { display:flex; min-height:100vh; }
+.main { flex:1; padding:24px 28px; margin-right:var(--sidebar-w); padding-bottom:40px; }
+
+/* === Washi Tape === */
+.tape {
+  position:relative; display:inline-block;
+  height:26px; padding:0 14px; line-height:26px;
+  font-size:12px; font-weight:600; opacity:0.88;
+  clip-path: polygon(
+    1% 0%,4% 3%,8% 0%,12% 2%,16% 0%,20% 3%,24% 0%,28% 2%,32% 0%,36% 3%,40% 0%,44% 2%,48% 0%,52% 3%,56% 0%,60% 2%,64% 0%,68% 3%,72% 0%,76% 2%,80% 0%,84% 3%,88% 0%,92% 2%,96% 0%,100% 2%,
+    100% 98%,96% 100%,92% 97%,88% 100%,84% 97%,80% 100%,76% 97%,72% 100%,68% 97%,64% 100%,60% 97%,56% 100%,52% 97%,48% 100%,44% 97%,40% 100%,36% 97%,32% 100%,28% 97%,24% 100%,20% 97%,16% 100%,12% 97%,8% 100%,4% 97%,0% 100%
+  );
+}
+.tape::before {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 32%, transparent 35%),
+              linear-gradient(95deg, transparent 60%, rgba(255,255,255,0.1) 62%, transparent 65%);
+  pointer-events:none;
+}
+
+/* Plaid/dot complex tapes for sidebar headers */
+.tape-plaid-gold {
+  background:
+    linear-gradient(0deg, rgba(200,160,60,0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,160,60,0.2) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(200,160,60,0.1) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(200,160,60,0.1) 2px, transparent 2px),
+    linear-gradient(135deg, #F4E4B2, #F1CC74, #F4E4B2);
+  background-size: 6px 6px, 6px 6px, 16px 16px, 16px 16px, 100% 100%;
+  color:#7a6020;
+}
+
+.tape-dot-gold {
+  background:
+    radial-gradient(circle 2.5px, rgba(200,160,60,0.3) 70%, transparent 71%),
+    linear-gradient(135deg, #f5e6b8, #F1CC74, #f5e6b8);
+  background-size: 8px 8px, 100% 100%;
+  color:#7a6020;
+}
+
+.tape-stripe-gold {
+  background:
+    repeating-linear-gradient(45deg, rgba(200,160,60,0.15) 0px, rgba(200,160,60,0.15) 2px, transparent 2px, transparent 6px),
+    linear-gradient(135deg, #F4E4B2, #e8c868, #F4E4B2);
+  color:#7a6020;
+}
+
+/* === 10 Card Tapes (yellow/brown/white series) === */
+
+/* 1. 黄色burberry格子 — 粗细交替 */
+.tape-1 {
+  background:
+    /* 粗竖线 */
+    linear-gradient(90deg, transparent 18px, rgba(230,180,40,0.45) 18px, rgba(230,180,40,0.45) 22px, transparent 22px),
+    linear-gradient(90deg, transparent 48px, rgba(230,180,40,0.45) 48px, rgba(230,180,40,0.45) 52px, transparent 52px),
+    /* 细竖线 */
+    linear-gradient(90deg, transparent 8px, rgba(220,170,40,0.2) 8px, rgba(220,170,40,0.2) 10px, transparent 10px),
+    linear-gradient(90deg, transparent 32px, rgba(220,170,40,0.2) 32px, rgba(220,170,40,0.2) 34px, transparent 34px),
+    /* 粗横线 */
+    linear-gradient(0deg, transparent 6px, rgba(230,180,40,0.4) 6px, rgba(230,180,40,0.4) 10px, transparent 10px),
+    /* 细横线 */
+    linear-gradient(0deg, transparent 16px, rgba(220,170,40,0.18) 16px, rgba(220,170,40,0.18) 18px, transparent 18px),
+    /* 底色 */
+    linear-gradient(135deg, #fce888, #f8e068);
+  background-size: 60px 26px, 60px 26px, 60px 26px, 60px 26px, 60px 26px, 60px 26px, 100% 100%;
+  color:#7a5c10;
+}
+
+/* 2. 淡鹅黄 */
+.tape-2 { background: linear-gradient(135deg, #fff4c0, #f8e890, #fff4c0); color:#8a7030; }
+
+/* 3. 淡黄burberry格子 — 更柔和 */
+.tape-3 {
+  background:
+    linear-gradient(90deg, transparent 14px, rgba(210,170,50,0.35) 14px, rgba(210,170,50,0.35) 17px, transparent 17px),
+    linear-gradient(90deg, transparent 38px, rgba(210,170,50,0.35) 38px, rgba(210,170,50,0.35) 41px, transparent 41px),
+    linear-gradient(90deg, transparent 6px, rgba(200,160,40,0.15) 6px, rgba(200,160,40,0.15) 8px, transparent 8px),
+    linear-gradient(90deg, transparent 26px, rgba(200,160,40,0.15) 26px, rgba(200,160,40,0.15) 28px, transparent 28px),
+    linear-gradient(0deg, transparent 5px, rgba(210,170,50,0.3) 5px, rgba(210,170,50,0.3) 8px, transparent 8px),
+    linear-gradient(0deg, transparent 14px, rgba(200,160,40,0.12) 14px, rgba(200,160,40,0.12) 16px, transparent 16px),
+    linear-gradient(135deg, #fff4b8, #f8e890);
+  background-size: 48px 22px, 48px 22px, 48px 22px, 48px 22px, 48px 22px, 48px 22px, 100% 100%;
+  color:#7a5c10;
+}
+
+/* 4. 深棕格子 */
+.tape-4 {
+  background:
+    linear-gradient(0deg, rgba(120,90,50,0.25) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(120,90,50,0.25) 2px, transparent 2px),
+    linear-gradient(135deg, #c8b090, #b09878);
+  background-size:10px 10px, 10px 10px, 100% 100%; color:#4a3820;
+}
+
+/* 5. 白底黄条纹 (横纹) */
+.tape-5 {
+  background:
+    repeating-linear-gradient(0deg, rgba(220,180,60,0.25) 0px, rgba(220,180,60,0.25) 2px, transparent 2px, transparent 5px),
+    linear-gradient(135deg, #fef8e0, #f8f0c8);
+  color:#8a7030;
+}
+
+/* 6. 白底棕波点 */
+.tape-6 {
+  background:
+    radial-gradient(circle 2px, rgba(160,130,100,0.3) 70%, transparent 71%),
+    linear-gradient(135deg, #faf4e4, #f2e8d0);
+  background-size:8px 8px, 100% 100%; color:#6a5a40;
+}
+
+/* 7. 明黄白格子 — 像图2中间 */
+.tape-7 {
+  background:
+    linear-gradient(0deg, rgba(240,200,60,0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240,200,60,0.2) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(240,200,60,0.35) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(240,200,60,0.35) 2px, transparent 2px),
+    linear-gradient(135deg, #fef8d0, #fff4b8);
+  background-size:6px 6px, 6px 6px, 18px 18px, 18px 18px, 100% 100%; color:#7a6020;
+}
+
+/* 8. 纯棕色 */
+.tape-8 { background: linear-gradient(135deg, #c0a880, #a89068, #c0a880); color:#fff; }
+
+/* 9. 白底小花 (小雏菊) */
+.tape-9 {
+  background:
+    radial-gradient(circle 3px, rgba(255,255,255,0.9) 40%, transparent 41%),
+    radial-gradient(circle 1.5px, rgba(220,180,60,0.6) 60%, transparent 61%),
+    linear-gradient(135deg, #ffcc00, #f0b800);
+  background-size:12px 12px, 12px 12px, 100% 100%;
+  background-position:0 0, 0 0, 0 0; color:#6a5010;
+}
+
+/* 10. 白底爱心 */
+.tape-10 {
+  background:
+    repeating-linear-gradient(90deg, transparent 0px, transparent 14px, rgba(200,160,100,0.15) 14px, rgba(200,160,100,0.15) 15px),
+    linear-gradient(135deg, #fef6e0, #f8ecc8);
+  color:#8a7040;
+}
+
+/* Brighter sidebar tapes — vivid yellow/鹅黄/淡黄 */
+.tape-sidebar-1 {
+  background:
+    linear-gradient(0deg, rgba(220,180,40,0.25) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(220,180,40,0.25) 2px, transparent 2px),
+    linear-gradient(0deg, rgba(220,180,40,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(220,180,40,0.12) 1px, transparent 1px),
+    linear-gradient(135deg, #ffe066, #f5c830, #ffe066);
+  background-size:6px 6px, 6px 6px, 16px 16px, 16px 16px, 100% 100%;
+  color:#6a5010;
+}
+.tape-sidebar-2 {
+  background:
+    radial-gradient(circle 3px, rgba(240,200,80,0.35) 70%, transparent 71%),
+    linear-gradient(135deg, #fff0a0, #f8e060, #fff0a0);
+  background-size:10px 10px, 100% 100%;
+  color:#7a6020;
+}
+.tape-sidebar-3 {
+  background:
+    repeating-linear-gradient(45deg, rgba(230,190,50,0.2) 0px, rgba(230,190,50,0.2) 2px, transparent 2px, transparent 6px),
+    repeating-linear-gradient(-45deg, rgba(230,190,50,0.1) 0px, rgba(230,190,50,0.1) 2px, transparent 2px, transparent 6px),
+    linear-gradient(135deg, #fce888, #f0c840, #fce888);
+  color:#6a5010;
+}
+
+.tape-deco { width:100px; height:22px; padding:0; position:absolute; }
+
+/* === Binder Clip (精致版) === */
+.clip {
+  position:absolute; z-index:5;
+  width:48px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* Top handle with hole */
+.clip-handle {
+  position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+  width:18px; height:18px;
+  background: linear-gradient(180deg, #e8ddd0, #d8ccc0);
+  border-radius:4px 4px 2px 2px;
+  border:1.5px solid #c8bca8;
+}
+.clip-handle::after {
+  content:''; position:absolute; top:4px; left:50%; transform:translateX(-50%);
+  width:7px; height:7px; border-radius:50%;
+  border:1.5px solid #b8a898; background:var(--c1);
+}
+
+/* Main clip body — wide with wavy bottom */
+.clip-body {
+  width:48px; height:18px;
+  background: linear-gradient(180deg, #e0d4c4, #d0c4b4);
+  border:1.5px solid #c0b4a0;
+  border-radius:2px;
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 60%,
+    95% 100%, 88% 70%, 80% 100%, 72% 70%, 64% 100%, 56% 70%, 48% 100%, 40% 70%, 32% 100%, 24% 70%, 16% 100%, 8% 70%, 0% 100%
+  );
+}
+
+/* Gold clip */
+.clip-gold .clip-handle {
+  background: linear-gradient(180deg, #f5dfa0, #e8c878);
+  border-color:#d4b060;
+}
+.clip-gold .clip-handle::after { border-color:#c8a050; }
+.clip-gold .clip-body {
+  background: linear-gradient(180deg, #f0d888, #e4c468);
+  border-color:#d4b060;
+}
+
+/* === Stars (rounder, bigger) === */
+.star {
+  position:absolute; z-index:3;
+}
+.star::before {
+  content:'';
+  display:block;
+  /* Rounder 5-point star */
+  clip-path: polygon(50% 0%, 63% 30%, 98% 35%, 72% 58%, 80% 92%, 50% 72%, 20% 92%, 28% 58%, 2% 35%, 37% 30%);
+}
+
+.star-sm::before { width:18px; height:18px; }
+.star-md::before { width:26px; height:26px; }
+.star-lg::before { width:34px; height:34px; }
+
+.star-gold::before { background:linear-gradient(135deg, #F1CC74, #e0b858); }
+.star-yellow::before { background:linear-gradient(135deg, #ffcc00, #f0b800); }
+.star-brown::before { background:linear-gradient(135deg, #8a7a68, #6a5a48); }
+.star-light::before { background:linear-gradient(135deg, #f5ecd0, #e8dcc0); opacity:0.6; }
+
+/* === Digest Banner (Archive card style) === */
+.digest-banner {
+  position:relative;
+  margin-bottom:24px;
+  padding-top:16px;
+}
+
+.digest-bg {
+  position:absolute; bottom:-6px; left:-6px; right:20px; top:10px;
+  /* Burberry plaid — 鹅黄 */
+  background:
+    /* 粗竖线 */
+    repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(220,175,40,0.4) 28px, rgba(220,175,40,0.4) 32px),
+    /* 细竖线 */
+    repeating-linear-gradient(90deg, transparent, transparent 12px, rgba(210,165,40,0.18) 12px, rgba(210,165,40,0.18) 14px),
+    /* 粗横线 */
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(220,175,40,0.35) 28px, rgba(220,175,40,0.35) 32px),
+    /* 细横线 */
+    repeating-linear-gradient(0deg, transparent, transparent 12px, rgba(210,165,40,0.15) 12px, rgba(210,165,40,0.15) 14px),
+    /* 底色 鹅黄 */
+    linear-gradient(155deg, #fce888, #f8e070);
+  transform:rotate(-1.2deg);
+  z-index:0;
+}
+
+/* Paperclip — 奶黄色 */
+.paperclip {
+  position:absolute; z-index:6;
+  width:20px; height:48px;
+}
+.paperclip::before {
+  content:''; position:absolute; inset:0;
+  border:2.5px solid #f0d88a;
+  border-radius:10px 10px 8px 8px;
+  background:transparent;
+}
+.paperclip::after {
+  content:''; position:absolute; top:10px; left:4px;
+  width:12px; height:28px;
+  border:2.5px solid #f0d88a;
+  border-radius:6px 6px 5px 5px;
+  border-top:none;
+  background:transparent;
+}
+
+.digest-main {
+  position:relative; z-index:1;
+  background: var(--card);
+  border:1.5px solid var(--border-light);
+  border-radius:0;
+  box-shadow:var(--shadow);
+  margin:8px 30px 8px 16px;
+}
+
+.digest-main .clip-gold {
+  top:-14px; left:50%; transform:translateX(-50%);
+}
+
+.digest-main .tape-deco {
+  top:-8px; right:-10px; transform:rotate(30deg);
+}
+
+.digest-main .seal {
+  bottom:-8px; left:-8px;
+}
+
+.digest-header {
+  display:flex; align-items:center; gap:10px;
+  padding:20px 18px 0 18px; cursor:pointer;
+}
+.digest-header .icon { font-size:18px; }
+.digest-header h3 { font-size:14px; color:#9F8F82; font-weight:600; flex:1; }
+.digest-header .arrow { font-size:12px; color:var(--text-light); }
+
+.digest-body { padding:8px 18px 16px; }
+.digest-body p { font-size:14px; line-height:1.6; }
+
+.digest-tasks { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.digest-task-item {
+  background:var(--c2); padding:4px 10px;
+  border-radius:0; font-size:12px; color:var(--text);
+  border:1px solid var(--border-light);
+  box-shadow:1px 1px 0 rgba(140,120,90,0.08);
+}
+.digest-actions { display:flex; justify-content:flex-end; margin-top:10px; }
+
+/* === Filter === */
+.filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:nowrap; margin-bottom:4px; overflow:hidden; max-height:36px; transition:max-height 0.3s; }
+.filter-bar.expanded { flex-wrap:wrap; max-height:200px; }
+.filter-label { font-size:13px; font-weight:600; color:var(--text-light); white-space:nowrap; }
+.filter-expand { background:none; border:none; cursor:pointer; font-size:12px; color:var(--text-light); padding:4px 8px; white-space:nowrap; transition:transform 0.2s; }
+.filter-bar.expanded .filter-expand { transform:rotate(180deg); }
+/* filter-wavy is now integrated into cc-walk-strip */
+.filter-tag {
+  padding:5px 14px; border-radius:0; font-size:12px; cursor:pointer;
+  border:2px solid var(--brown); background:var(--card); color:var(--brown);
+  transition:all 0.2s; user-select:none; font-weight:600;
+  box-shadow:2px 2px 0 rgba(100,80,50,0.1);
+}
+.filter-tag:hover { background:var(--c2); }
+.filter-tag.active { background:#6a5a48; color:#fff; border-color:#6a5a48; box-shadow:2px 2px 0 rgba(80,60,40,0.2); }
+.filter-count { font-size:10px; opacity:0.6; margin-left:2px; }
+
+/* === Search === */
+.search-bar { padding:14px 18px; background:var(--card); border:1.5px solid var(--border-light); border-radius:0; margin-top:4px; margin-bottom:20px; box-shadow:var(--shadow); }
+.search-dual { display:flex; gap:0; }
+.search-half { flex:1; display:flex; flex-direction:column; gap:6px; }
+.search-label { font-size:12px; font-weight:600; color:var(--text-light); }
+.search-half-row { display:flex; gap:6px; }
+.search-half-row input { flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:0; font-size:13px; outline:none; background:rgba(255,255,255,0.5); }
+.search-half-row input:focus { border-color:var(--c3); }
+.search-divider { width:1px; background:var(--border); margin:0 16px; }
+
+/* === Memo Card (Paper Notes) === */
+.memo-card { position:relative; margin-top:16px; transition:transform 0.2s; }
+.memo-card:hover { transform:translateY(-2px); }
+
+.memo-card-tape { position:absolute; top:-8px; left:50%; transform:translateX(-50%); z-index:2; }
+
+.memo-card-body {
+  border-radius:0; padding:20px 18px 14px;
+  box-shadow: var(--shadow);
+  transition:box-shadow 0.2s; position:relative; border:1.5px solid var(--border-light);
+}
+.memo-card:hover .memo-card-body { box-shadow:var(--shadow-hover); }
+
+/* Paper 1: Cream lined (横线纸) */
+.paper-cream .memo-card-body {
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 22px, rgba(180,160,120,0.1) 22px, rgba(180,160,120,0.1) 23px),
+    linear-gradient(155deg, #fef8e8, #f8f0d0);
+}
+
+/* Paper 2: Warm grid (暖色格子) */
+.paper-grid .memo-card-body {
+  background:
+    linear-gradient(0deg, rgba(200,160,100,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,160,100,0.1) 1px, transparent 1px),
+    linear-gradient(155deg, #fef4e0, #f5e8c8);
+  background-size:18px 18px, 18px 18px, 100% 100%;
+}
+
+/* Paper 3: Plain warm */
+.paper-plain .memo-card-body {
+  background: linear-gradient(155deg, #fdf6e0, #f5ecd0);
+}
+
+/* Paper 4: Kraft */
+.paper-kraft .memo-card-body {
+  background: linear-gradient(155deg, #e8d8be, #dcc8a8);
+}
+.paper-kraft .memo-card-content { color:#4a3a28; }
+.paper-kraft .memo-card-meta { color:#8a7a60; }
+
+/* Spiral holes */
+.memo-spiral {
+  position:absolute; left:-1px; top:18px; bottom:18px;
+  display:flex; flex-direction:column; justify-content:space-between; z-index:1;
+}
+.memo-spiral span {
+  width:10px; height:10px; border-radius:50%;
+  background:var(--c1); border:1px solid rgba(0,0,0,0.05); margin-left:-5px;
+}
+
+.memo-card-content { font-size:14px; line-height:1.7; margin-bottom:10px; max-height:72px; overflow:hidden; position:relative; cursor:pointer; }
+.memo-card-meta { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-light); }
+.memo-tag { padding:2px 8px; border-radius:0; font-size:11px; font-weight:500; background:var(--c2); color:var(--text); border:1px solid var(--border-light); }
+.memo-card-actions { display:flex; gap:4px; }
+.memo-card-actions button { background:none; border:none; cursor:pointer; font-size:13px; opacity:0; transition:opacity 0.2s; padding:2px; }
+.memo-card:hover .memo-card-actions button { opacity:0.5; }
+.memo-card-actions button:hover { opacity:1 !important; }
+
+.kanban-grid { display:flex; flex-wrap:wrap; gap:24px; }
+.kanban-column { flex:1; min-width:260px; max-width:400px; }
+.kanban-cards { display:flex; flex-direction:column; gap:14px; }
+
+/* === Buttons === */
+.btn-primary { padding:8px 20px; background:var(--brown); color:var(--text-on-brown); border:1.5px solid var(--brown); border-radius:0; font-size:14px; cursor:pointer; transition:all 0.2s; box-shadow:2px 2px 0 rgba(100,80,50,0.15); }
+.btn-primary:hover { background:#7a6a58; }
+.btn-small { padding:6px 14px; background:var(--card); color:var(--text); border:1.5px solid var(--border-light); border-radius:0; font-size:12px; cursor:pointer; box-shadow:2px 2px 0 rgba(140,120,90,0.06); }
+.btn-small:hover { background:var(--c2); border-color:var(--brown); }
+.btn-cc { padding:8px 14px; background:var(--card); color:var(--text); border:1.5px solid var(--border-light); border-radius:0; font-size:13px; cursor:pointer; width:100%; text-align:left; transition:all 0.2s; box-shadow:2px 2px 0 rgba(140,120,90,0.06); }
+.btn-cc:hover { background:var(--c2); border-color:var(--brown); }
+.btn-fun { background:linear-gradient(135deg, var(--c2), rgba(241,204,116,0.5)); border-color:var(--c3); }
+.cc-buttons { display:flex; flex-direction:column; gap:8px; }
+
+textarea, input[type="text"], input[type="time"], select {
+  border:1.5px solid var(--border-light); border-radius:0; font-size:13px; font-family:inherit;
+  outline:none; background:var(--card); padding:8px 12px;
+}
+textarea:focus, input:focus { border-color:var(--brown); }
+textarea { width:100%; resize:vertical; min-height:60px; }
+
+.tag-chip { padding:4px 12px; border-radius:0; font-size:12px; cursor:pointer; border:1.5px solid var(--border-light); background:var(--card); user-select:none; box-shadow:1px 1px 0 rgba(140,120,90,0.06); }
+.tag-chip.selected { border-color:var(--brown); background:var(--c2); color:var(--text); font-weight:600; }
+.input-actions { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
+
+/* === Sidebar === */
+.sidebar {
+  position:fixed; top:0; right:0; width:var(--sidebar-w); height:100vh;
+  background:#faf6ee;
+  border-left:1.5px dashed var(--border-light); padding:16px; overflow-y:auto; overflow-x:hidden;
+  display:flex; flex-direction:column; gap:4px;
+}
+
+.sidebar-section { padding:14px 0; border-bottom:1.5px dashed var(--border-light); }
+.sidebar-section:last-child { border-bottom:none; }
+
+/* Sidebar section headers with tape */
+.sidebar-title {
+  position:relative; margin-bottom:12px; display:inline-block;
+}
+.sidebar-title .tape {
+  font-size:13px; font-weight:600; height:28px; line-height:28px;
+  padding:0 16px;
+}
+
+/* === CC Toast === */
+.cc-toast { position:fixed; top:16px; right:calc(var(--sidebar-w)+16px); z-index:200; }
+.cc-toast-content {
+  background:var(--card); border:1.5px solid var(--border-light);
+  border-left:3px solid var(--brown); border-radius:0;
+  padding:10px 18px; box-shadow:var(--shadow);
+  font-size:14px;
+}
+
+/* === CC Walk Strip (between filter bar and search bar) === */
+.cc-walk-strip {
+  position:relative; height:8px; margin:0 0 0 0;
+  width:100%; overflow:visible; z-index:2;
+}
+.cc-walk-strip::before {
+  content:''; position:absolute; left:0; top:0;
+  width:520px; max-width:55%; height:8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'%3E%3Cpath d='M0 4 Q5 0 10 4 Q15 8 20 4 Q25 0 30 4 Q35 8 40 4' fill='none' stroke='%236a5a48' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 40px 8px;
+}
+
+
+/* CC character walking on the strip */
+.cc-walk-strip .cc-container {
+  position:absolute; bottom:-14px; left:540px; z-index:10; cursor:pointer;
+  transition:left 2s ease-in-out; transform-origin:bottom center; scale:0.4;
+  filter:drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
+         drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
+}
+.cc-walk-strip .cc-container.walking { transition:left 2s ease-in-out; }
+.cc-walk-strip .cc-container.flip { scale:-0.4 0.4; }
+.cc-walk-strip .cc-container.flip .cc-bubble,
+.cc-walk-strip .cc-container.flip .cc-think { transform:translateX(-50%) scaleX(-1); }
+.cc-walk-strip .cc-container.flip .cc-qmark { transform:scaleX(-1); }
+.cc-walk-strip .cc-container.flip .cc-err { transform:translateX(-50%) scaleX(-1); }
+
+.cc-walk-strip .cc-inner { position:relative; width:150px; height:160px; }
+.cc-walk-strip .cc-sprite { position:relative; width:150px; height:160px; animation:ccBob 2.2s ease-in-out infinite; }
+@keyframes ccBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.cc-walk-strip .cc-container.walking .cc-sprite { animation:ccWalk .4s ease-in-out infinite; }
+@keyframes ccWalk{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+.cc-walk-strip .cc-body { position:absolute; left:50%; transform:translateX(-50%); top:36px; width:100px; height:68px; background:#e8a878; }
+.cc-walk-strip .cc-body::before { content:''; position:absolute; top:0; left:0; right:0; height:10px; background:#f0b890; }
+.cc-walk-strip .cc-claw { position:absolute; top:52px; width:16px; height:20px; background:#e8a878; }
+.cc-walk-strip .cc-claw.L { left:8px; animation:clawL 2s ease-in-out infinite; transform-origin:right center; }
+.cc-walk-strip .cc-claw.R { right:8px; animation:clawR 2s ease-in-out infinite; transform-origin:left center; }
+@keyframes clawL{0%,100%{transform:rotate(0)}30%{transform:rotate(-12deg)}70%{transform:rotate(8deg)}}
+@keyframes clawR{0%,100%{transform:rotate(0)}30%{transform:rotate(12deg)}70%{transform:rotate(-8deg)}}
+.cc-walk-strip .cc-container.st-happy .cc-claw.L { animation:clawLFast .5s ease-in-out infinite; }
+.cc-walk-strip .cc-container.st-happy .cc-claw.R { animation:clawRFast .5s ease-in-out infinite; }
+@keyframes clawLFast{0%,100%{transform:rotate(0)}50%{transform:rotate(-20deg)}}
+@keyframes clawRFast{0%,100%{transform:rotate(0)}50%{transform:rotate(20deg)}}
+.cc-walk-strip .cc-container.st-coding .cc-claw.L { animation:clawCode .4s ease-in-out infinite; }
+.cc-walk-strip .cc-container.st-coding .cc-claw.R { animation:clawCode .4s ease-in-out infinite .2s; }
+@keyframes clawCode{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-5deg) translateY(-2px)}}
+.cc-walk-strip .cc-container.st-sweeping .cc-claw.R { animation:clawSweep .7s ease-in-out infinite; }
+@keyframes clawSweep{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg) translateX(3px)}}
+.cc-walk-strip .cc-container.st-error .cc-claw.L { animation:clawDroop 1.5s ease-in-out infinite; }
+.cc-walk-strip .cc-container.st-error .cc-claw.R { animation:clawDroop 1.5s ease-in-out infinite .3s; }
+@keyframes clawDroop{0%,100%{transform:rotate(5deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(0)}}
+.cc-walk-strip .cc-container.walking .cc-claw.L { animation:clawWalkL .4s ease-in-out infinite; }
+.cc-walk-strip .cc-container.walking .cc-claw.R { animation:clawWalkR .4s ease-in-out infinite; }
+@keyframes clawWalkL{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes clawWalkR{0%,100%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}}
+
+.cc-walk-strip .cc-legs { position:absolute; top:102px; left:50%; transform:translateX(-50%); display:flex; gap:4px; }
+.cc-walk-strip .cc-leg { width:8px; height:22px; background:#d08858; }
+.cc-walk-strip .cc-shadow-bar { position:absolute; top:124px; left:50%; transform:translateX(-50%); width:80px; height:5px; background:#999; opacity:.6; }
+
+.cc-walk-strip .cc-eyes { position:absolute; top:52px; left:50%; transform:translateX(-50%); display:flex; gap:30px; }
+.cc-walk-strip .cc-eye { width:10px; height:13px; background:#2a2a2a; }
+.cc-walk-strip .cc-eyes-gt-lt { position:absolute; top:48px; left:50%; transform:translateX(-50%); display:none; gap:24px; }
+.cc-walk-strip .eye-gt,.cc-walk-strip .eye-lt { width:22px; height:22px; position:relative; }
+.cc-walk-strip .eye-gt::before,.cc-walk-strip .eye-gt::after { content:''; position:absolute; width:16px; height:4.5px; background:#2a2a2a; left:0; }
+.cc-walk-strip .eye-gt::before { top:1px; transform:rotate(26deg); transform-origin:left center; }
+.cc-walk-strip .eye-gt::after { bottom:1px; transform:rotate(-26deg); transform-origin:left center; }
+.cc-walk-strip .eye-lt::before,.cc-walk-strip .eye-lt::after { content:''; position:absolute; width:16px; height:4.5px; background:#2a2a2a; right:0; }
+.cc-walk-strip .eye-lt::before { top:1px; transform:rotate(-26deg); transform-origin:right center; }
+.cc-walk-strip .eye-lt::after { bottom:1px; transform:rotate(26deg); transform-origin:right center; }
+.cc-walk-strip .cc-eyes-caret { position:absolute; top:48px; left:50%; transform:translateX(-50%); display:none; gap:24px; }
+.cc-walk-strip .eye-caret { width:22px; height:16px; position:relative; }
+.cc-walk-strip .eye-caret::before,.cc-walk-strip .eye-caret::after { content:''; position:absolute; width:14px; height:4.5px; background:#2a2a2a; bottom:0; }
+.cc-walk-strip .eye-caret::before { left:0; transform:rotate(-30deg); transform-origin:right bottom; }
+.cc-walk-strip .eye-caret::after { right:0; transform:rotate(30deg); transform-origin:left bottom; }
+.cc-walk-strip .cc-eyes-xx { position:absolute; top:48px; left:50%; transform:translateX(-50%); display:none; gap:22px; }
+.cc-walk-strip .eye-x { width:20px; height:20px; position:relative; }
+.cc-walk-strip .eye-x::before,.cc-walk-strip .eye-x::after { content:''; position:absolute; width:20px; height:4.5px; background:#2a2a2a; top:50%; left:50%; }
+.cc-walk-strip .eye-x::before { transform:translate(-50%,-50%) rotate(45deg); }
+.cc-walk-strip .eye-x::after { transform:translate(-50%,-50%) rotate(-45deg); }
+
+/* CC overlays */
+.cc-walk-strip .cc-bubble { position:absolute; top:-6px; left:8px; opacity:0; transition:opacity .3s; pointer-events:none; }
+.cc-walk-strip .cc-bubble-box { width:52px; height:40px; background:#fff; border-radius:8px; display:flex; justify-content:center; align-items:center; gap:10px; }
+.cc-walk-strip .cc-bubble-eye { width:5px; height:7px; background:#5a9ee0; }
+.cc-walk-strip .cc-bubble .bdot { position:absolute; background:#fff; border:1px solid #e0d8d0; border-radius:50%; }
+.cc-walk-strip .cc-bubble .bdot1 { width:10px; height:8px; bottom:-8px; left:18px; }
+.cc-walk-strip .cc-bubble .bdot2 { width:6px; height:5px; bottom:-15px; left:24px; }
+
+.cc-walk-strip .cc-think { position:absolute; top:-10px; left:8px; opacity:0; transition:opacity .3s; pointer-events:none; }
+.cc-walk-strip .cc-think-box { min-width:52px; height:40px; background:#fff; border-radius:8px; display:flex; justify-content:center; align-items:center; padding:0 12px; }
+.cc-walk-strip .cc-think-txt { font-size:15px; color:#5a9ee0; font-weight:bold; }
+.cc-walk-strip .cc-think .bdot { position:absolute; background:#fff; border:1px solid #e0d8d0; border-radius:50%; }
+.cc-walk-strip .cc-think .bdot1 { width:10px; height:8px; bottom:-8px; left:10px; }
+.cc-walk-strip .cc-think .bdot2 { width:6px; height:5px; bottom:-15px; left:16px; }
+
+.cc-walk-strip .cc-laptop { position:absolute; top:34px; left:50%; transform:translateX(-50%); opacity:0; transition:opacity .3s; z-index:3; }
+.cc-walk-strip .lt-body { width:64px; height:40px; background:#708898; border-radius:3px 3px 0 0; display:flex; justify-content:center; align-items:center; }
+.cc-walk-strip .lt-screen { width:52px; height:32px; background:#384858; border-radius:2px; display:flex; justify-content:center; align-items:center; }
+.cc-walk-strip .lt-dot { width:10px; height:10px; background:#5a9ee0; border-radius:2px; animation:dp 1.2s ease-in-out infinite; }
+@keyframes dp{0%,100%{opacity:.3}50%{opacity:1}}
+.cc-walk-strip .lt-base { width:70px; height:5px; background:#889098; border-radius:0 0 2px 2px; margin-left:-3px; }
+
+.cc-walk-strip .cc-qmark { position:absolute; top:-2px; left:10px; opacity:0; transition:opacity .3s; }
+.cc-walk-strip .cc-err { position:absolute; top:10px; left:50%; transform:translateX(-50%); color:#e06060; font-size:20px; font-weight:bold; letter-spacing:4px; opacity:0; text-shadow:1px 1px 0 rgba(0,0,0,0.1); font-family:'Courier New',monospace; }
+.cc-walk-strip .cc-broom { position:absolute; right:-14px; top:24px; opacity:0; transition:opacity .3s; transform-origin:bottom center; }
+.cc-walk-strip .broom-stick { width:5px; height:60px; background:#b09868; border-radius:2px; margin-left:8px; }
+.cc-walk-strip .broom-head { width:24px; height:16px; background:#f0d868; border-radius:2px; margin-top:-1px; }
+.cc-walk-strip .broom-edge { width:24px; height:3px; background:#c8a020; border-radius:0 0 2px 2px; }
+
+.cc-walk-strip .spk { position:absolute; opacity:0; pointer-events:none; }
+.cc-walk-strip .spk svg { width:14px; height:14px; }
+.cc-walk-strip .spk:nth-child(1) { top:10px; right:-8px; }
+.cc-walk-strip .spk:nth-child(2) { top:4px; left:16px; }
+.cc-walk-strip .spk:nth-child(3) { top:26px; right:-14px; }
+.cc-walk-strip .fpx { position:absolute; width:6px; height:6px; opacity:0; pointer-events:none; }
+.cc-walk-strip .fpx:nth-child(1) { top:30px; left:-6px; background:#e8a878; }
+.cc-walk-strip .fpx:nth-child(2) { top:14px; right:12px; background:#f0b888; }
+.cc-walk-strip .blue-px { position:absolute; width:7px; height:7px; background:#5a9ee0; opacity:0; pointer-events:none; }
+
+/* CC states */
+.cc-walk-strip .cc-container.st-idle .cc-bubble { opacity:1; }
+.cc-walk-strip .cc-container.st-idle .spk { animation:spkA 2.5s ease-in-out infinite; }
+@keyframes spkA{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:.9;transform:scale(1.2) rotate(15deg)}}
+.cc-walk-strip .cc-container.st-thinking .cc-think { opacity:1; }
+.cc-walk-strip .cc-container.st-coding .cc-laptop { opacity:1; }
+.cc-walk-strip .cc-container.st-coding .blue-px { animation:bpxA 2s ease-in-out infinite; }
+@keyframes bpxA{0%,100%{opacity:0}50%{opacity:.5}}
+.cc-walk-strip .cc-container.st-coding .cc-sprite { animation:ccCode .45s ease-in-out infinite; }
+@keyframes ccCode{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-2px) rotate(-1.5deg)}75%{transform:translateY(-1px) rotate(1.5deg)}}
+.cc-walk-strip .cc-container.st-looking .cc-qmark { opacity:1; animation:qB 1.2s ease-in-out infinite; }
+@keyframes qB{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.cc-walk-strip .cc-container.st-looking .fpx { animation:fpxA 2s ease-in-out infinite; }
+@keyframes fpxA{0%,100%{opacity:0;transform:translateY(0)}50%{opacity:.6;transform:translateY(-12px)}}
+.cc-walk-strip .cc-container.st-sweeping .cc-broom { opacity:1; animation:swB .7s ease-in-out infinite; }
+@keyframes swB{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(15deg)}}
+.cc-walk-strip .cc-container.st-sweeping .cc-sprite { animation:swM .7s ease-in-out infinite; }
+@keyframes swM{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+.cc-walk-strip .cc-container.st-error .cc-err { opacity:1; animation:errF .7s ease-in-out infinite; }
+@keyframes errF{0%,100%{opacity:1}50%{opacity:.35}}
+.cc-walk-strip .cc-container.st-error .cc-sprite { animation:errS .25s ease-in-out infinite; }
+@keyframes errS{0%,100%{transform:translateX(0) scaleY(1)}25%{transform:translateX(-3px) scaleY(.88)}75%{transform:translateX(3px) scaleY(.88)}}
+.cc-walk-strip .cc-container.st-error .cc-body { background:#d89060; }
+.cc-walk-strip .cc-container.st-happy .cc-sprite { animation:hapB .55s ease-in-out infinite; }
+@keyframes hapB{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-4deg)}75%{transform:translateY(-8px) rotate(4deg)}}
+.cc-walk-strip .cc-container.st-happy .spk { animation:spkA 1.2s ease-in-out infinite; }
+.cc-walk-strip .cc-container.walking .cc-leg:nth-child(1),.cc-walk-strip .cc-container.walking .cc-leg:nth-child(3) { animation:legStep .4s ease-in-out infinite; }
+.cc-walk-strip .cc-container.walking .cc-leg:nth-child(2),.cc-walk-strip .cc-container.walking .cc-leg:nth-child(4) { animation:legStep .4s ease-in-out infinite .2s; }
+@keyframes legStep{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.cc-walk-strip .cc-label { display:none; }
+
+/* === Modals === */
+.modal-row { display:flex; flex-wrap:wrap; gap:20px; margin-top:16px; }
+.modal-preview {
+  flex:1; min-width:260px;
+  background:var(--card);
+  border:1.5px solid var(--border-light); border-radius:0;
+  padding:28px 20px; position:relative;
+  box-shadow:var(--shadow);
+}
+.modal-preview h4 { font-size:15px; color:var(--text); margin-bottom:14px; font-weight:600; }
+
+.summary-item {
+  background:var(--card); border:1.5px solid var(--border-light);
+  border-radius:0; padding:12px 14px; margin-top:10px;
+  box-shadow:2px 2px 0 rgba(140,120,90,0.06);
+}
+.summary-item-header { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-light); margin-bottom:6px; }
+.summary-item-tag { padding:2px 8px; border-radius:0; font-size:11px; font-weight:600; background:var(--brown); color:var(--text-on-brown); }
+.summary-item-actions { margin-left:auto; display:flex; gap:6px; }
+.summary-item-actions button { background:none; border:none; cursor:pointer; font-size:12px; color:var(--text-light); }
+.summary-item-content { font-size:13px; line-height:1.6; max-height:40px; overflow:hidden; position:relative; }
+.summary-item-content::after { content:''; position:absolute; bottom:0; left:0; right:0; height:18px; background:linear-gradient(transparent, rgba(254,248,232,0.9)); }
+
+.confirm-dialog { max-width:340px; text-align:center; padding:32px 24px 24px; }
+.confirm-dialog p { font-size:15px; line-height:1.6; margin-bottom:20px; }
+.confirm-actions { display:flex; gap:12px; justify-content:center; }
+.confirm-actions .btn-danger { background:var(--brown); color:var(--text-on-brown); border:1.5px solid var(--brown); padding:8px 20px; border-radius:0; cursor:pointer; box-shadow:2px 2px 0 rgba(100,80,50,0.15); }
+
+.tag-manager-new { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.emoji-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:22px; border:1.5px solid var(--border); border-radius:0; cursor:pointer; background:rgba(255,255,255,0.4); }
+.tag-manager-item { display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--card); border:1.5px solid var(--border-light); border-radius:0; margin-bottom:6px; box-shadow:2px 2px 0 rgba(140,120,90,0.06); }
+.tag-manager-item .tag-emoji { font-size:18px; }
+.tag-manager-item .tag-name { flex:1; font-size:14px; }
+.tag-manager-item .tag-count { font-size:12px; color:var(--text-light); }
+.tag-manager-item .tag-delete { background:none; border:none; cursor:pointer; font-size:14px; color:var(--text-light); }
+
+.graph-tag-picker { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.graph-container { width:100%; height:200px; border-radius:0; background:var(--card); border:1.5px solid var(--border-light); display:flex; align-items:center; justify-content:center; color:var(--text-light); box-shadow:inset 2px 2px 4px rgba(140,120,90,0.04); }
+.graph-date { font-size:12px; color:var(--text-light); margin-bottom:8px; }
+.graph-actions { display:flex; gap:8px; margin-top:12px; }
+
+.blindbox-tag-picker { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+
+.settings-panel { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+.settings-panel label { font-size:13px; color:var(--text-light); display:flex; flex-direction:column; gap:4px; }
+
+.demo-section { margin-bottom:32px; }
+.demo-title { font-size:12px; color:var(--text-light); font-weight:600; margin-bottom:10px; letter-spacing:1px; text-transform:uppercase; }
+
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:0; }
+/* === Modal Overlay === */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; z-index:100; backdrop-filter:blur(2px); }
+.modal.hidden { display:none; }
+.modal-content { background:var(--card); border:1.5px solid var(--border-light); border-radius:0; padding:32px 24px 24px; max-width:520px; width:90%; max-height:80vh; overflow-y:auto; position:relative; box-shadow:var(--shadow); }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.modal-header h3 { font-size:16px; color:var(--text); font-weight:600; }
+.modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-light); position:absolute; top:10px; right:12px; z-index:12; }
+.digest-collapsed .digest-body { display:none; }
+.digest-collapsed .arrow { transform:rotate(-90deg); }
+.hidden { display:none !important; }
+
+/* === Footer === */
+.app-footer {
+  position:fixed; bottom:0; left:0; right:0; z-index:50;
+  height:28px;
+  background:var(--brown);
+  display:flex; align-items:center; justify-content:flex-end;
+  padding-right:20px;
+}
+.app-copyright {
+  font-size:11px; color:rgba(255,255,255,0.75);
+  letter-spacing:0.5px;
+}
+
+/* === Collapsible sections === */
+.section-collapsed .section-body { display:none; }
+.section-toggle { cursor:pointer; user-select:none; }
+.section-toggle .arrow { font-size:11px; margin-left:4px; transition:transform 0.2s; display:inline-block; }
+.section-collapsed .section-toggle .arrow { transform:rotate(-90deg); }
+
+/* Extra star decorations */
+.deco-stars { pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="app">
+<div class="main">
+
+  <!-- Digest Banner -->
+  <div id="digestBanner" class="digest-banner">
+    <div class="digest-bg"></div>
+    <div class="digest-main">
+      <div class="tape tape-deco tape-4" style="width:110px;height:26px;top:-10px;right:-22px;transform:rotate(38deg)"></div>
+      <div class="tape tape-deco tape-9" style="width:100px;height:24px;top:-4px;right:-14px;transform:rotate(26deg)"></div>
+      <div class="paperclip" style="top:-12px;right:60px"></div>
+      <div class="star star-md star-gold" style="bottom:-8px;left:-6px"></div>
+      <div class="star star-sm star-light" style="bottom:4px;left:8px"></div>
+      <div class="digest-header" onclick="document.getElementById('digestBanner').classList.toggle('digest-collapsed')">
+        <span class="icon">📋</span>
+        <h3>2026-03-31 摘要</h3>
+        <span class="arrow">▾</span>
+      </div>
+      <div class="digest-body">
+        <p>今日主要围绕备忘录应用的创意构想，包括自动整理分类功能以及基于 D3.js 的知识图谱可视化方案。</p>
+        <div class="digest-tasks">
+          <span class="digest-task-item">调研备忘录自动整理方案</span>
+          <span class="digest-task-item">探索 D3.js 知识图谱可视化</span>
+          <span class="digest-task-item">整理零散想法，形成可执行计划</span>
+        </div>
+        <div class="digest-actions"><button class="btn-small" onclick="showToast('生成今日摘要')">重新生成</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div id="filterBar" class="filter-bar"></div>
+
+  <!-- CC Walk Strip (wavy line + CC walking) -->
+  <div class="cc-walk-strip">
+    <div class="cc-container st-idle" id="ccScene">
+      <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
+      <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
+      <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
+      <div class="fpx"></div><div class="fpx"></div>
+      <div class="blue-px" style="top:8px;left:22px"></div>
+      <div class="blue-px" style="top:2px;left:38px"></div>
+      <div class="blue-px" style="top:12px;right:10px"></div>
+      <div class="blue-px" style="top:4px;right:24px"></div>
+      <div class="cc-bubble">
+        <div class="cc-bubble-box"><div class="cc-bubble-eye"></div><div class="cc-bubble-eye"></div></div>
+        <span class="bdot bdot1"></span><span class="bdot bdot2"></span>
+      </div>
+      <div class="cc-think">
+        <div class="cc-think-box"><span class="cc-think-txt" id="sceneThinkTxt">...</span></div>
+        <span class="bdot bdot1"></span><span class="bdot bdot2"></span>
+      </div>
+      <div class="cc-laptop">
+        <div class="lt-body"><div class="lt-screen"><div class="lt-dot"></div></div></div>
+        <div class="lt-base"></div>
+      </div>
+      <div class="cc-qmark" id="sceneQmark">
+        <svg width="28" height="36" viewBox="0 0 7 9" style="image-rendering:pixelated">
+          <rect x="1" y="0" width="4" height="1" class="qr" fill="#4888d8"/>
+          <rect x="0" y="1" width="2" height="1" class="qr" fill="#4888d8"/>
+          <rect x="4" y="1" width="2" height="1" class="qr" fill="#4888d8"/>
+          <rect x="3" y="2" width="2" height="1" class="qr" fill="#4888d8"/>
+          <rect x="2" y="3" width="2" height="1" class="qr" fill="#4888d8"/>
+          <rect x="2" y="5" width="2" height="1" class="qr" fill="#4888d8"/>
+        </svg>
+      </div>
+      <div class="cc-err" style="font-family:'Courier New',monospace">ERROR</div>
+      <div class="cc-broom">
+        <div class="broom-stick"></div><div class="broom-head"></div><div class="broom-edge"></div>
+      </div>
+      <div class="cc-inner">
+        <div class="cc-sprite">
+          <div class="cc-claw L"></div>
+          <div class="cc-claw R"></div>
+          <div class="cc-body"></div>
+          <div class="cc-eyes" id="sceneEyesNormal"><div class="cc-eye"></div><div class="cc-eye"></div></div>
+          <div class="cc-eyes-gt-lt" id="sceneEyesGtLt"><div class="eye-gt"></div><div class="eye-lt"></div></div>
+          <div class="cc-eyes-caret" id="sceneEyesCaret"><div class="eye-caret"></div><div class="eye-caret"></div></div>
+          <div class="cc-eyes-xx" id="sceneEyesXx"><div class="eye-x"></div><div class="eye-x"></div></div>
+          <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
+          <div class="cc-shadow-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <div class="search-dual">
+      <div class="search-half">
+        <label class="search-label">关键词搜索</label>
+        <div class="search-half-row">
+          <input type="text" id="searchInput" placeholder="输入关键词..." onkeydown="if(event.key==='Enter')doSearch()">
+          <button class="btn-small" onclick="doSearch()">搜索</button>
+        </div>
+      </div>
+      <div class="search-divider"></div>
+      <div class="search-half">
+        <label class="search-label">🤖 问 CC</label>
+        <div class="search-half-row">
+          <input type="text" placeholder="描述你想找的内容...">
+          <button class="btn-small" onclick="showToast('搜索备忘录')">搜索</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div id="kanbanGrid" class="kanban-grid"></div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-title"><span class="tape tape-sidebar-1">智能助手</span></div>
+    <div class="cc-buttons">
+      <button class="btn-cc" onclick="openModal('tagSuggestModal')">🏷️ 标签整理建议</button>
+      <button class="btn-cc" onclick="openModal('graphModal')">🕸️ 关联图谱</button>
+      <button class="btn-cc" onclick="openModal('weeklyModal')">📊 本周总结</button>
+      <button class="btn-cc" onclick="openModal('tagSummaryModal')">📝 按标签总结</button>
+      <button class="btn-cc btn-fun" onclick="openModal('blindboxModal')">🎁 任务盲盒</button>
+    </div>
+  </div>
+
+  <div id="settingsSection" class="sidebar-section">
+    <div class="sidebar-title section-toggle" onclick="document.getElementById('settingsSection').classList.toggle('section-collapsed')"><span class="tape tape-sidebar-2">设置 <span class="arrow">▾</span></span></div>
+    <div class="section-body settings-panel">
+      <label>每日整理时间<input type="time" value="21:00"></label>
+      <label>每周总结<select><option>周日</option></select><input type="time" value="10:00"></label>
+      <button class="btn-small">保存设置</button>
+    </div>
+  </div>
+
+  <div class="sidebar-section" style="margin-top:auto;border-top:1.5px dashed var(--border-light)">
+    <div class="sidebar-title"><span class="tape tape-sidebar-3">快速记录</span></div>
+    <textarea id="memoInput" placeholder="写下你的碎碎念..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMemo()}"></textarea>
+    <div id="tagSelector" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
+    <div class="input-actions">
+      <button class="btn-small" onclick="openModal('tagManagerModal')">🏷️ 标签管理</button>
+      <button class="btn-primary" onclick="sendMemo()">发送</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Modals -->
+<div id="tagSuggestModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+    <div class="tape tape-deco tape-sidebar-1" style="width:110px;top:-8px;left:40%;transform:translateX(-50%) rotate(2deg)"></div>
+    <div class="modal-header"><h3>🏷️ 标签整理建议</h3></div>
+    <button class="btn-primary" onclick="showToast('生成标签建议')">生成建议</button>
+    <div class="summary-item" style="margin-top:12px"><div class="summary-item-header"><span>3/30 23:06</span><span class="summary-item-tag">标签建议</span><div class="summary-item-actions"><button onclick="toggleContent(this)">▸</button><button onclick="this.closest('.summary-item').remove()">✕</button></div></div><div class="summary-item-content">合并建议: 想法 + 灵感 — 内容高度重叠</div></div>
+  </div>
+</div>
+
+<div id="graphModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content" style="max-width:700px"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+    <div class="tape tape-deco tape-plaid-gold" style="width:100px;top:-8px;left:45%;transform:translateX(-50%) rotate(-1deg)"></div>
+    <div class="modal-header"><h3>🕸️ 关联图谱</h3></div>
+    <div id="graphTagPicker" class="graph-tag-picker"></div>
+    <div class="graph-date">生成于 3/31 01:23</div>
+    <div class="graph-container">[D3 力导向图]</div>
+    <div class="graph-actions"><button class="btn-small" onclick="showToast('生成关联图谱')">生成图谱</button><button class="btn-small" style="color:#c44">删除</button></div>
+  </div>
+</div>
+
+<div id="weeklyModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+    <div class="tape tape-deco tape-dot-gold" style="width:100px;top:-8px;left:50%;transform:translateX(-50%) rotate(-1deg)"></div>
+    <div class="modal-header"><h3>📊 本周总结</h3></div>
+    <button class="btn-primary" onclick="showToast('生成本周总结')">生成本周总结</button>
+    <div class="summary-item" style="margin-top:12px"><div class="summary-item-header"><span>3/30 01:23</span><span class="summary-item-tag">2026-W13</span><div class="summary-item-actions"><button onclick="toggleContent(this)">▸</button><button onclick="this.closest('.summary-item').remove()">✕</button></div></div><div class="summary-item-content">本周共记录8条备忘，主题集中在产品创意与技术探索方向...</div></div>
+  </div>
+</div>
+
+<div id="blindboxModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content" style="text-align:center"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+    <div class="tape tape-deco tape-stripe-gold" style="width:100px;top:-8px;left:50%;transform:translateX(-50%) rotate(-2deg)"></div>
+    <div id="bbStep1"><h3 style="margin-bottom:16px">🎁 选择盲盒范围</h3><p style="font-size:13px;color:var(--text-light);margin-bottom:16px">选择标签（不选 = 全部）</p><div id="bbTags" class="blindbox-tag-picker"></div><div style="margin-top:20px"><button class="btn-primary" style="padding:10px 32px;font-size:15px" onclick="openBlindbox()">开盲盒！</button></div></div>
+    <div id="bbStep2" class="hidden"><div style="font-size:64px;margin:20px 0">🎁</div><div id="bbResult" style="background:var(--c2);border:1.5px solid var(--border-light);padding:20px;text-align:left;margin-top:12px"><p id="bbContent" style="font-size:15px;line-height:1.7"></p></div><button class="btn-small" style="margin-top:16px" onclick="document.getElementById('bbStep1').classList.remove('hidden');document.getElementById('bbStep2').classList.add('hidden')">再来一次</button></div>
+  </div>
+</div>
+
+<div id="tagSummaryModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+    <div class="tape tape-deco tape-sidebar-2" style="width:100px;top:-8px;left:40%;transform:translateX(-50%) rotate(1deg)"></div>
+    <div class="modal-header"><h3>📝 按标签总结</h3></div>
+    <div id="tsPicker" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+    <button class="btn-primary" onclick="showToast('生成标签总结')">生成总结</button>
+    <div class="summary-item" style="margin-top:12px"><div class="summary-item-header"><span>3/30 23:06</span><span class="summary-item-tag">待办</span><div class="summary-item-actions"><button onclick="toggleContent(this)">▸</button><button onclick="this.closest('.summary-item').remove()">✕</button></div></div><div class="summary-item-content">"待办"标签下目前有3条备忘录，核心围绕两个方向：产品设计与技术探索...</div></div>
+  </div>
+</div>
+
+<div id="tagManagerModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button>
+    <div class="clip clip-gold" style="top:-22px;left:50%;transform:translateX(-50%)"><div class="clip-handle"></div><div class="clip-body"></div></div>
+    <div class="modal-header"><h3>🏷️ 标签管理</h3></div>
+    <div class="tag-manager-new"><div class="emoji-btn" id="emojiBtn" onclick="document.getElementById('emojiGrid').classList.toggle('hidden')">🌸</div><input type="text" id="newTagInput" placeholder="标签名称" style="flex:1" onkeydown="if(event.key==='Enter')addTag()"><button class="btn-primary" onclick="addTag()">添加</button></div>
+    <div id="emojiGrid" class="hidden" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.4);border:1px solid var(--border-light)"></div>
+    <div id="tagManagerList"></div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal hidden" style="z-index:300" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content confirm-dialog"><div class="clip clip-gold" style="top:-22px;left:50%;transform:translateX(-50%)"><div class="clip-handle"></div><div class="clip-body"></div></div><p id="confirmMsg" style="margin-top:16px"></p><div class="confirm-actions"><button class="btn-small" onclick="this.closest('.modal').classList.add('hidden')">取消</button><button class="btn-danger" id="confirmOk">确认</button></div></div>
+</div>
+
+<div id="memoDetailModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-content"><button class="modal-close" onclick="this.closest('.modal').classList.add('hidden')">&times;</button><div class="tape tape-deco tape-gold" style="width:80px;top:-8px;left:50%;transform:translateX(-50%) rotate(-1deg)"></div><div class="modal-header"><h3>备忘录详情</h3></div><p id="detailContent" style="font-size:15px;line-height:1.8;white-space:pre-wrap"></p><div id="detailMeta" style="margin-top:12px;font-size:12px;color:var(--text-light)"></div></div>
+</div>
+
+<!-- CC Toast -->
+<div id="ccToast" class="cc-toast hidden"><div class="cc-toast-content" id="ccToastText"></div></div>
+
+<!-- Footer -->
+<div class="app-footer"><span class="app-copyright">© Anselkocen</span></div>
+
+<!-- Scattered star decorations -->
+<div class="deco-stars" style="position:fixed;inset:0;z-index:0;pointer-events:none">
+  <div class="star star-md star-yellow" style="top:12%;left:4%"></div>
+  <div class="star star-sm star-brown" style="top:35%;left:2%"></div>
+  <div class="star star-sm star-light" style="top:65%;left:7%"></div>
+  <div class="star star-lg star-gold" style="top:82%;left:3%;opacity:0.4"></div>
+  <div class="star star-sm star-brown" style="top:22%;left:1%"></div>
+  <div class="star star-lg star-yellow" style="top:88%;left:42%;opacity:0.35"></div>
+  <div class="star star-sm star-gold" style="top:55%;left:60%"></div>
+</div>
+
+<script>
+// === Mock Data ===
+const TAPES = ['tape-1','tape-2','tape-3','tape-4','tape-5','tape-6','tape-7','tape-8','tape-9','tape-10'];
+const PAPERS = ['paper-cream','paper-grid','paper-plain','paper-kraft'];
+const EMOJIS = ['🌻','📋','🌿','📖','🔥','✨','💡','🎨','🍀','🐱'];
+const ALL_EMOJIS = '🏷️📖🖊️✏️📜🗂️📋🖇️📎💡⏳✨🌟💫⭐☄️🪄🔮💎☁️☀️🌙❄️🌈🌊🪐🌷🌸🌼🌻🍀🌿🍃🌵🌾🍄🌹🍓🍒🍑🍇🍋🍦🍰🍩🍪🎀🎈🧸💄💍💌🕯️🎨📚🖋️💖💗💓💞💘💝🐾🐱🐰🐣🦋🐝🦄🐧🐼🐨🦁🦢🐚🐌'.match(/./gu);
+
+let tags = ['想法','待办','灵感','笔记','问题'];
+let tagEmojis = {想法:'🌻',待办:'📋',灵感:'🌿',笔记:'📖',问题:'🔥'};
+let selectedTags = [];
+let filterTag = null;
+let memos = [
+  {id:1,content:'今天想到一个好点子：做一个备忘录应用，可以自动整理分类',tags:['想法'],time:'3/30 21:11'},
+  {id:2,content:'用蜡笔风格做 UI，感觉会很温馨可爱！配色可以用暖色系。',tags:['想法'],time:'3/30 23:30'},
+  {id:3,content:'明天记得买牛奶和面包，顺便取快递。下午 3 点有个会议。',tags:['待办','灵感'],time:'3/30 21:12'},
+  {id:4,content:'用 D3.js 做知识图谱可视化，节点颜色代表不同标签分类',tags:['灵感'],time:'3/30 22:05'},
+  {id:5,content:'Claude CLI 在 Node 子进程中调用时环境变量不同，需要排查原因',tags:['问题'],time:'3/30 23:00'},
+  {id:6,content:'D3.js 力导向图：节点用 circle，连线用 line，加 drag 交互',tags:['笔记'],time:'3/31 00:15'},
+];
+let nextId = 7;
+
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h);}
+
+// === Render ===
+function render() { renderFilters(); renderCards(); renderTagSelector(); renderTagPickers(); renderTagManager(); renderEmojiGrid(); }
+
+function renderFilters() {
+  const el = document.getElementById('filterBar');
+  const counts = {};
+  tags.forEach(t=>{counts[t]=0;});
+  memos.forEach(m=>m.tags.forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+  el.innerHTML = '<span class="filter-label">筛选</span>' +
+    '<span class="filter-tag '+(filterTag===null?'active':'')+'" data-tag="__all__">全部</span>' +
+    tags.map(t=>'<span class="filter-tag '+(filterTag===t?'active':'')+'" data-tag="'+t+'">'+t+' <span class="filter-count">'+(counts[t]||0)+'</span></span>').join('') +
+    '<button class="filter-expand" onclick="document.getElementById(\'filterBar\').classList.toggle(\'expanded\')">▼</button>';
+  el.querySelectorAll('.filter-tag').forEach(chip=>{
+    chip.addEventListener('click',()=>{filterTag=chip.dataset.tag==='__all__'?null:chip.dataset.tag;render();});
+  });
+}
+
+function renderCards() {
+  const el = document.getElementById('kanbanGrid');
+  const display = filterTag ? memos.filter(m=>m.tags.includes(filterTag)) : memos;
+  const cols = [[],[],[]];
+  display.forEach((m,i)=>cols[i%3].push(m));
+  el.innerHTML = cols.map(col=>'<div class="kanban-column"><div class="kanban-cards">' +
+    col.map(m=>{
+      const tag = m.tags[0]||'笔记';
+      const ti = hash(tag)%TAPES.length;
+      const pi = hash(m.id+'p')%PAPERS.length;
+      const rot = ((hash(m.id+'r')%7)-3)*0.4;
+      const tapeRot = ((hash(m.id+'t')%5)-2);
+      const hasSpiral = PAPERS[pi]==='paper-grid';
+      const hasStar = false;
+      const pl = hasSpiral?'padding-left:10px':'';
+      return '<div class="memo-card '+PAPERS[pi]+'" style="transform:rotate('+rot+'deg)">' +
+        '<div class="memo-card-tape"><span class="tape '+TAPES[ti]+'" style="transform:rotate('+tapeRot+'deg)">'+(tagEmojis[tag]||'🏷️')+' '+tag+'</span></div>' +
+        (hasStar?'<div class="star star-md star-gold" style="top:-8px;right:10px"></div><div class="star star-sm star-light" style="top:2px;right:24px"></div>':'') +
+        '<div class="memo-card-body">' +
+        (hasSpiral?'<div class="memo-spiral"><span></span><span></span><span></span><span></span><span></span></div>':'') +
+        '<div class="memo-card-content" style="'+pl+'" onclick="showDetail('+m.id+')">'+esc(m.content)+'</div>' +
+        '<div class="memo-card-meta" style="'+pl+'"><div>'+m.tags.map(t=>'<span class="memo-tag">'+t+'</span>').join(' ')+'</div><span>'+m.time+'</span></div>' +
+        '<div class="memo-card-actions" style="'+pl+'"><button onclick="event.stopPropagation()">✏️</button><button onclick="event.stopPropagation();confirmDelete('+m.id+')">🗑️</button></div>' +
+        '</div></div>';
+    }).join('') +
+    '</div></div>').join('');
+}
+
+function renderTagSelector() {
+  const el = document.getElementById('tagSelector');
+  el.innerHTML = tags.map(t=>
+    '<span class="tag-chip '+(selectedTags.includes(t)?'selected':'')+'" data-tag="'+t+'">'+t+'</span>'
+  ).join('');
+  el.querySelectorAll('.tag-chip').forEach(c=>{c.addEventListener('click',()=>{toggleSelect(c.dataset.tag);});});
+}
+
+function renderTagPickers() {
+  ['tsPicker','graphTagPicker','bbTags'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = tags.map(t=>'<span class="tag-chip" data-tag="'+t+'">'+t+'</span>').join('');
+    el.querySelectorAll('.tag-chip').forEach(c=>{c.addEventListener('click',()=>{c.classList.toggle('selected');});});
+  });
+}
+
+function renderTagManager() {
+  const el = document.getElementById('tagManagerList');
+  const counts = {};
+  tags.forEach(t=>{counts[t]=0;});
+  memos.forEach(m=>m.tags.forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+  el.innerHTML = tags.map(t=>
+    '<div class="tag-manager-item"><span class="tag-emoji">'+(tagEmojis[t]||'🏷️')+'</span><span class="tag-name">'+t+'</span><span class="tag-count">'+(counts[t]||0)+'条</span><button class="tag-delete" data-tag="'+t+'">✕</button></div>'
+  ).join('');
+  el.querySelectorAll('.tag-delete').forEach(b=>{b.addEventListener('click',()=>{deleteTag(b.dataset.tag);});});
+}
+
+function renderEmojiGrid() {
+  document.getElementById('emojiGrid').innerHTML = ALL_EMOJIS.map(e=>
+    '<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border-radius:0" onclick="document.getElementById(\'emojiBtn\').textContent=\''+e+'\';document.getElementById(\'emojiGrid\').classList.add(\'hidden\')">'+e+'</span>'
+  ).join('');
+}
+
+// === Actions ===
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+function toggleSelect(t){selectedTags=selectedTags.includes(t)?selectedTags.filter(x=>x!==t):[...selectedTags,t];renderTagSelector();}
+
+function sendMemo(){
+  const input=document.getElementById('memoInput');
+  const content=input.value.trim();
+  if(!content)return;
+  const now=new Date();
+  memos.unshift({id:nextId++,content,tags:[...selectedTags],time:(now.getMonth()+1)+'/'+now.getDate()+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')});
+  input.value='';
+  render();
+}
+
+function doSearch(){
+  const kw=document.getElementById('searchInput').value.trim().toLowerCase();
+  if(!kw){filterTag=null;render();return;}
+  // simple filter — just highlight matching
+  const orig=memos;
+  memos=memos.filter(m=>m.content.toLowerCase().includes(kw));
+  renderCards();
+  memos=orig;
+}
+
+function showDetail(id){
+  const m=memos.find(x=>x.id===id);if(!m)return;
+  document.getElementById('detailContent').textContent=m.content;
+  document.getElementById('detailMeta').textContent=m.tags.join(' · ')+' — '+m.time;
+  openModal('memoDetailModal');
+}
+
+function confirmDelete(id){
+  document.getElementById('confirmMsg').textContent='确定删除这条备忘录？';
+  const ok=document.getElementById('confirmOk');
+  ok.onclick=()=>{memos=memos.filter(m=>m.id!==id);render();document.getElementById('confirmModal').classList.add('hidden');};
+  openModal('confirmModal');
+}
+
+function deleteTag(t){
+  document.getElementById('confirmMsg').textContent='确定删除标签「'+t+'」吗？该标签下的所有备忘录都会被删除哦！';
+  const ok=document.getElementById('confirmOk');
+  ok.onclick=()=>{tags=tags.filter(x=>x!==t);delete tagEmojis[t];memos=memos.filter(m=>!m.tags.includes(t));render();document.getElementById('confirmModal').classList.add('hidden');renderTagManager();};
+  openModal('confirmModal');
+}
+
+function addTag(){
+  const name=document.getElementById('newTagInput').value.trim();
+  if(!name||tags.includes(name))return;
+  const emoji=document.getElementById('emojiBtn').textContent;
+  tags.push(name);
+  tagEmojis[name]=emoji;
+  document.getElementById('newTagInput').value='';
+  render();renderTagManager();
+}
+
+function openModal(id){document.getElementById(id).classList.remove('hidden');}
+
+function openBlindbox(){
+  document.getElementById('bbStep1').classList.add('hidden');
+  document.getElementById('bbStep2').classList.remove('hidden');
+  const pool=memos.length?memos:[{content:'盒子是空的！多记录一些备忘录吧～'}];
+  document.getElementById('bbContent').textContent=pool[Math.floor(Math.random()*pool.length)].content;
+}
+
+function toggleContent(btn){
+  const c=btn.closest('.summary-item').querySelector('.summary-item-content');
+  if(c.style.maxHeight==='none'){c.style.maxHeight='40px';btn.textContent='▸';}
+  else{c.style.maxHeight='none';btn.textContent='▾';}
+}
+
+let toastTimer;
+function showToast(task){
+  const t=document.getElementById('ccToast');
+  document.getElementById('ccToastText').textContent='(o´▽`o) cc，在努力'+task+'……';
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{
+    document.getElementById('ccToastText').textContent='cc，完成了'+task+'୧(´▽★)୨!!⭐';
+    setTimeout(()=>t.classList.add('hidden'),5000);
+  },2000);
+}
+
+// === CC Pixel Scene ===
+(function(){
+  const cc = document.getElementById('ccScene');
+  if (!cc) return;
+  const eyesNormal = document.getElementById('sceneEyesNormal');
+  const eyesGtLt = document.getElementById('sceneEyesGtLt');
+  const eyesCaret = document.getElementById('sceneEyesCaret');
+  const eyesXx = document.getElementById('sceneEyesXx');
+  const thinkTxt = document.getElementById('sceneThinkTxt');
+
+  const STATES = ['idle','thinking','coding','looking','sweeping','error','happy'];
+  const THOUGHTS = ['{ }','</>','...','fn()','0x1','>>>','npm','git','bug?'];
+  // Walk bounds: right half of the strip only (after the wavy line ends)
+  let WALK_MIN = 520, WALK_MAX = 900, WALK_STEP = 70;
+  let walkPos = 540, walkDir = 1, stateTimer = null;
+
+  // Measure actual strip width on load, CC walks in the right half
+  const strip = cc.parentElement;
+  if (strip) {
+    const totalW = strip.closest('.main') ? strip.closest('.main').offsetWidth : strip.offsetWidth;
+    WALK_MIN = 520; // wavy line is 520px wide
+    WALK_MAX = totalW - 80;
+    WALK_STEP = Math.max(50, Math.floor((WALK_MAX - WALK_MIN) / 5));
+    walkPos = WALK_MIN + 20;
+  }
+
+  function setEyes(type) {
+    eyesNormal.style.display = type === 'normal' ? 'flex' : 'none';
+    eyesXx.style.display = type === 'x' ? 'flex' : 'none';
+    const useGtLt = Math.random() > 0.5;
+    eyesGtLt.style.display = (type === 'happy' && useGtLt) ? 'flex' : 'none';
+    eyesCaret.style.display = (type === 'happy' && !useGtLt) ? 'flex' : 'none';
+  }
+
+  function setState(state) {
+    STATES.forEach(s => cc.classList.remove('st-' + s));
+    cc.classList.add('st-' + state);
+    if (state === 'error') setEyes('x');
+    else if (state === 'happy') setEyes('happy');
+    else setEyes('normal');
+    if (state === 'thinking') thinkTxt.textContent = THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)];
+    if (state === 'looking') {
+      const c = Math.random() > 0.5 ? '#4888d8' : '#e8c030';
+      cc.querySelectorAll('.qr').forEach(r => r.setAttribute('fill', c));
+    }
+  }
+
+  function walkCycleStep() {
+    cc.classList.add('walking');
+    let nextPos = walkPos + (walkDir * WALK_STEP);
+    if (nextPos > WALK_MAX) { nextPos = WALK_MAX; walkDir = -1; }
+    if (nextPos < WALK_MIN) { nextPos = WALK_MIN; walkDir = 1; }
+    walkPos = nextPos;
+    if (walkDir < 0) cc.classList.add('flip'); else cc.classList.remove('flip');
+    cc.style.left = walkPos + 'px';
+    stateTimer = setTimeout(() => {
+      cc.classList.remove('walking');
+      setState(STATES[Math.floor(Math.random() * STATES.length)]);
+      stateTimer = setTimeout(() => { setState('idle'); walkCycleStep(); }, 2500 + Math.random() * 1500);
+    }, 2000);
+  }
+
+  cc.addEventListener('click', () => {
+    clearTimeout(stateTimer);
+    cc.classList.remove('walking');
+    const next = STATES[Math.floor(Math.random() * STATES.length)];
+    setState(next);
+    stateTimer = setTimeout(walkCycleStep, 6000);
+  });
+
+  setTimeout(walkCycleStep, 2000);
+})();
+
+// Boot
+render();
+</script>
+</body>
+</html>
