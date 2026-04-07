@@ -39,7 +39,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "type": "commonjs",
   "dependencies": {
     "adm-zip": "^0.5.17",

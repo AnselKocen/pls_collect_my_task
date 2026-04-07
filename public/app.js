@@ -1307,6 +1307,21 @@ async function deleteWeeklyDigest(idx) {
 
 document.getElementById('weeklyClose').addEventListener('click', () => { document.getElementById('weeklyModal').classList.add('hidden'); });
 
+// === Guide Modal ===
+(function setupGuideModal() {
+  const modal = document.getElementById('guideModal');
+  if (!modal) return;
+  const open = () => modal.classList.remove('hidden');
+  const close = () => modal.classList.add('hidden');
+  document.getElementById('btnGuide')?.addEventListener('click', open);
+  document.getElementById('guideClose')?.addEventListener('click', close);
+  document.getElementById('guideOk')?.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+  });
+})();
+
 // === Blind Box ===
 let blindboxPickedTags = [];
 

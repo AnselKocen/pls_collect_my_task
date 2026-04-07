@@ -140,7 +140,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-section">
-        <div class="sidebar-title"><span class="tape tape-sidebar-1">智能助手</span></div>
+        <div class="sidebar-title"><span class="tape tape-sidebar-1" id="btnGuide" style="cursor:pointer" title="点击查看使用指南">智能助手</span></div>
         <div class="cc-buttons">
           <button id="btnTagSuggest" class="btn-cc">✨ 整理标签</button>
           <button id="btnTagGraph" class="btn-cc">🌾 任务图谱</button>
@@ -529,6 +529,64 @@
           <p style="font-size:11px;color:var(--t-text-light);margin-top:4px">通知将以「Memo's CC:」开头。不填日期则每天重复。</p>
         </div>
         <div id="scheduledList" class="scheduled-list"></div>
+      </div>
+    </div>
+
+    <!-- Guide Modal -->
+    <div id="guideModal" class="modal hidden">
+      <div class="modal-content modal-guide">
+        <div class="guide-banner">
+          <div class="theme-dots">
+            <span class="dot dot-1"></span>
+            <span class="dot dot-2"></span>
+            <span class="dot dot-3"></span>
+            <span class="dot dot-4"></span>
+          </div>
+          <div class="digest-bg"></div>
+          <div class="digest-main">
+            <div class="tape tape-clock tape-2" style="top:-12px;left:6px;transform:rotate(-2deg)"><span>📖 使用指南</span></div>
+            <div class="tape tape-deco tape-4" style="width:110px;height:26px;top:-10px;right:-22px;transform:rotate(38deg)"></div>
+            <div class="tape tape-deco tape-9" style="width:100px;height:24px;top:-4px;right:-14px;transform:rotate(26deg)"></div>
+            <div class="paperclip" style="top:-12px;right:60px"></div>
+            <div class="star star-md star-gold" style="bottom:-8px;left:-6px"></div>
+            <div class="star star-sm star-light" style="bottom:4px;left:8px"></div>
+            <div class="digest-header">
+              <span class="digest-icon">📖</span>
+              <h3>记忆手帐 · 使用指南</h3>
+              <button class="modal-close" id="guideClose" style="position:static;font-size:20px">&times;</button>
+            </div>
+            <div class="digest-body guide-body">
+              <div class="guide-section">
+                <h4>✨ 基础功能</h4>
+                <p>• <b>快速记录</b>：左侧「快速记录」框写下碎碎念，选择标签后点保存</p>
+                <p>• <b>便签管理</b>：支持编辑、删除、置顶，点击便签可查看详情</p>
+                <p>• <b>标签筛选</b>：顶部标签栏可按标签过滤便签</p>
+              </div>
+              <div class="guide-section">
+                <h4>🤖 智能助手（需要 Claude Code CLI）</h4>
+                <p>• <b>智能查找</b>：输入你想找的东西，AI 帮你找出相关的任务</p>
+                <p>• <b>整理标签</b>：AI 自动分析便签，建议合并或新增标签</p>
+                <p>• <b>任务图谱</b>：可视化展示便签之间的关联关系</p>
+                <p>• <b>本周总结</b>：每周日 23:59 自动生成过去一周的深度总结与标签趋势（也可手动点击生成）</p>
+                <p>• <b>今日摘要</b>：每天定时汇总最近两天的手帐内容</p>
+              </div>
+              <div class="guide-section">
+                <h4>🌻 特色玩法</h4>
+                <p>• <b>习惯养成</b>：上传书籍 ZIP（饮食、运动、观鸟手册等），每天抽取习惯卡打卡</p>
+                <p>• <b>任务盲盒</b>：迷茫时随机抽取一条待办，让 AI 帮你做决定</p>
+                <p>• <b>定时提醒</b>：设置未来时间点，到点会收到系统通知</p>
+              </div>
+              <div class="guide-section">
+                <h4>💡 小技巧</h4>
+                <p>• 按 <b>Cmd/Ctrl + R</b> 刷新页面</p>
+                <p>• AI 一次只能处理一个任务，请耐心等待</p>
+              </div>
+              <div class="digest-actions">
+                <button id="guideOk" class="btn-small">知道了</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

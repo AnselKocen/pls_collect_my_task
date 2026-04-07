@@ -8,7 +8,7 @@ const multer = require('multer');
 const AdmZip = require('adm-zip');
 
 const app = express();
-const PORT = 3013;
+const PORT = process.env.PORT || 3013;
 const DATA_DIR = process.env.MEMO_DATA_DIR || path.join(__dirname, 'data');
 
 // Auto-detect Claude CLI path
@@ -77,7 +77,7 @@ function ensureDataFiles() {
     'memos.json': { memos: [
       {
         id: 'welcome-1',
-        content: '欢迎来到记忆手帐Memo Journal ~ 尽情探索吧 ❤️',
+        content: '欢迎来到记忆手帐Memo Journal ~ 尽情探索吧 ❤️ 点击「智能助手」tag查看指南',
         tags: ['欢迎'],
         createdAt: now, updatedAt: now, pinned: true
       },
@@ -109,7 +109,7 @@ function ensureDataFiles() {
     'settings.json': {
       dailyDigestTime: '23:55',
       weeklyDigestDay: 'sunday',
-      weeklyDigestTime: '10:00',
+      weeklyDigestTime: '23:59',
       tags: ['欢迎', '特色玩法', '指南', 'cc', 'tips'],
       tagOrder: ['欢迎', '特色玩法', '指南', 'cc', 'tips'],
       tagEmojis: { '欢迎': '🍮', '特色玩法': '🍯', '指南': '🍩', 'cc': '🧁', 'tips': '💫' },
@@ -149,6 +149,14 @@ function ensureDataFiles() {
       fs.writeFileSync(fp, JSON.stringify(data, null, 2), 'utf-8');
     }
   }
+  // Migrate old weekly digest time (10:00) to new default (23:59)
+  try {
+    const settings = readJSON('settings.json');
+    if (settings.weeklyDigestTime === '10:00') {
+      settings.weeklyDigestTime = '23:59';
+      writeJSON('settings.json', settings);
+    }
+  } catch {}
 }
 
 ensureDataFiles();

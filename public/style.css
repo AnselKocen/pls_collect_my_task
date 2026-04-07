@@ -7271,3 +7271,63 @@ button[title="编辑"] { transform:scaleX(-1); }
   from { opacity:0; transform:translateY(10px); }
   to { opacity:1; transform:translateY(0); }
 }
+
+/* === Guide Modal === */
+.modal-content.modal-guide {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 20px 10px;
+  max-width: 640px;
+  width: 92%;
+  max-height: 88vh;
+  overflow: visible;
+}
+.guide-banner {
+  position: relative;
+  padding-top: 16px;
+}
+.guide-banner .digest-main {
+  max-height: calc(88vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+.guide-banner .digest-header {
+  cursor: default;
+  flex-shrink: 0;
+}
+.guide-banner .digest-header .modal-close {
+  cursor: pointer;
+  color: var(--t-text-light);
+  background: none;
+  border: none;
+  padding: 0 4px;
+  line-height: 1;
+}
+.guide-banner .digest-header .modal-close:hover { color: var(--t-text); }
+.guide-body {
+  overflow-y: auto;
+  flex: 1;
+}
+.guide-section {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--t-border-light);
+}
+.guide-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 8px;
+}
+.guide-section h4 {
+  font-size: 13px;
+  color: var(--t-neutral);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.guide-section p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--t-text);
+  margin: 2px 0;
+}
+.guide-section p b { color: var(--t-neutral); font-weight: 600; }
