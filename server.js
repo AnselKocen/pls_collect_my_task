@@ -873,10 +873,12 @@ function scheduleCronJobs() {
       const todayText = todayMemos.map(m => `- (${m.tags.join(',')}) ${m.content}`).join('\n');
       const prompt = `你是一个手帐助手。请根据以下两天的手帐内容生成摘要。返回JSON对象，包含date、summary、tasks(数组)字段。\nsummary的格式要求：\n· ${yesterdayLabel}，概述当天的主要内容\n· ${todayLabel}，概述当天的主要内容\n每个日期单独一段，前面用"· "开头。如果某天没有内容就写"暂无记录"。\n只返回JSON。\n\n${yesterdayLabel}的手帐:\n${yesterdayText || '(暂无记录)'}\n\n${todayLabel}的手帐:\n${todayText || '(暂无记录)'}`;
       const result = await callClaude(prompt, '定时今日摘要');
-      const suggestions = readJSON('ai_suggestions.json');
-      const jsonMatch = result.match(/\{[\s\S]*\}/);
-      suggestions.dailyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { date: today, summary: result, tasks: [] };
-      writeJSON('ai_suggestions.json', suggestions);
+      await withFileLock('ai_suggestions.json', () => {
+        const suggestions = readJSON('ai_suggestions.json');
+        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        suggestions.dailyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { date: today, summary: result, tasks: [] };
+        writeJSON('ai_suggestions.json', suggestions);
+      });
       console.log('[Cron] Daily digest done.');
     } catch (err) { console.error('[Cron] Daily digest error:', err.message); }
   });
@@ -894,10 +896,12 @@ function scheduleCronJobs() {
       const memosText = weekMemos.map(m => `- (${m.tags.join(',')}) ${m.content} [${m.createdAt.split('T')[0]}]`).join('\n');
       const prompt = `你是一个手帐助手。总结过去一周的手帐，分析标签趋势，生成深度总结。返回JSON对象，包含week、summary、tagTrends(对象)字段。只返回JSON。\n\n本周备忘:\n${memosText || '(本周暂无手帐)'}`;
       const result = await callClaude(prompt, '定时本周总结');
-      const suggestions = readJSON('ai_suggestions.json');
-      const jsonMatch = result.match(/\{[\s\S]*\}/);
-      suggestions.weeklyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { summary: result };
-      writeJSON('ai_suggestions.json', suggestions);
+      await withFileLock('ai_suggestions.json', () => {
+        const suggestions = readJSON('ai_suggestions.json');
+        const jsonMatch = result.match(/\{[\s\S]*\}/);
+        suggestions.weeklyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { summary: result };
+        writeJSON('ai_suggestions.json', suggestions);
+      });
       console.log('[Cron] Weekly digest done.');
     } catch (err) { console.error('[Cron] Weekly digest error:', err.message); }
   });

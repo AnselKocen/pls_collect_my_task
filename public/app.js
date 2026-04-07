@@ -257,6 +257,8 @@ async function init() {
     loadSettings();
     renderKanban();
     loadSuggestions();
+    // Poll for cron-generated digest updates every 5 minutes
+    setInterval(loadSuggestions, 5 * 60 * 1000);
   } catch (err) { console.error('Init error:', err); }
 }
 
@@ -1085,13 +1087,21 @@ function renderGraph(data) {
   }
   const width = container.clientWidth || 700;
   const height = container.clientHeight || 460;
+  // Validate edges: filter out edges referencing non-existent node IDs
+  const nodeIds = new Set(data.nodes.map(n => n.id));
+  const edges = (data.edges || []).filter(e => {
+    const src = typeof e.source === 'object' ? e.source?.id : e.source;
+    const tgt = typeof e.target === 'object' ? e.target?.id : e.target;
+    return src && tgt && nodeIds.has(src) && nodeIds.has(tgt);
+  });
+  try {
   const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
   const simulation = d3.forceSimulation(data.nodes)
-    .force('link', d3.forceLink(data.edges).id(d => d.id).distance(90))
+    .force('link', d3.forceLink(edges).id(d => d.id).distance(90))
     .force('charge', d3.forceManyBody().strength(-180))
     .force('center', d3.forceCenter(width / 2, height / 2));
-  const link = svg.append('g').selectAll('line').data(data.edges).join('line').attr('class', 'graph-link');
-  const linkLabel = svg.append('g').selectAll('text').data(data.edges).join('text')
+  const link = svg.append('g').selectAll('line').data(edges).join('line').attr('class', 'graph-link');
+  const linkLabel = svg.append('g').selectAll('text').data(edges).join('text')
     .attr('class', 'graph-link-label').text(d => d.relation || '');
   const node = svg.append('g').selectAll('g').data(data.nodes).join('g')
     .call(d3.drag()
@@ -1130,6 +1140,10 @@ function renderGraph(data) {
              .attr('y', d => (d.source.y + d.target.y) / 2);
     node.attr('transform', d => `translate(${d.x},${d.y})`);
   });
+  } catch (e) {
+    console.error('Graph render error:', e);
+    container.innerHTML = '<p style="text-align:center;padding:40px;color:var(--t-text-light)">图谱渲染出错，请重新生成</p>';
+  }
 }
 
 // Generate graph (single CC call)
@@ -1144,12 +1158,16 @@ async function generateGraph() {
     const res = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'graph', params: graphParams }) });
     hideCCTask('生成关联图谱');
     if (res && res.graph) {
+      if (!res.graph.nodes || res.graph.nodes.length === 0) {
+        showToast('图谱生成结果为空，请稍后重试');
+      }
       graphHistory.push(res.graph);
       graphIndex = graphHistory.length - 1;
       renderCurrentGraph();
     }
   } catch (err) {
     hideCCTask('生成关联图谱');
+    if (!err.ccBusy) showToast('图谱生成失败: ' + (err.message || '未知错误'));
     console.error(err);
   }
   btn.disabled = false; btn.textContent = '生成图谱';
@@ -2173,13 +2191,18 @@ if (!window.electronAPI) {
 }
 
 // === Load Suggestions ===
+let _lastDigestSummary = null;
 async function loadSuggestions() {
   try {
     const data = await api('/api/cc/suggestions');
     if (data.dailyDigest) {
-      showDigest(data.dailyDigest);
-    } else {
-      // Show empty digest banner so user can generate one
+      const newSummary = data.dailyDigest.summary || '';
+      if (newSummary !== _lastDigestSummary) {
+        _lastDigestSummary = newSummary;
+        showDigest(data.dailyDigest);
+      }
+    } else if (_lastDigestSummary === null) {
+      _lastDigestSummary = '';
       showDigest({ date: new Date().toISOString().split('T')[0], summary: '还没有摘要，点击「重新生成」来创建今日摘要吧～', tasks: [] });
     }
   } catch {}
