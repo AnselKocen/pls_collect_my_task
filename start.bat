@@ -126,10 +126,15 @@ echo   启动服务...
 start /b node server.js > .server.log 2>&1
 timeout /t 2 /nobreak >nul
 
-:: Get PID of node process
-for /f "tokens=2" %%p in ('tasklist /FI "IMAGENAME eq node.exe" /FO LIST ^| find "PID:"') do (
-    echo %%p> "%PID_FILE%"
-    set SERVER_PID=%%p
+:: Get PID by looking up which process is listening on our port.
+:: This is reliable even when multiple node.exe processes are running,
+:: because only our server.js can be listening on port %PORT%.
+set SERVER_PID=
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":%PORT% " ^| findstr "LISTENING"') do (
+    if not defined SERVER_PID (
+        set SERVER_PID=%%p
+        echo %%p> "%PID_FILE%"
+    )
 )
 
 :: --- 6. Wait for server ---

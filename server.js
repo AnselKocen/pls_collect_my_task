@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const cron = require('node-cron');
 const { execFile } = require('child_process');
 const multer = require('multer');
@@ -18,8 +18,10 @@ const CLAUDE_CLI_CANDIDATES = [
   '/usr/local/bin/claude',                                                   // Mac (Intel) / Linux
   '/usr/bin/claude',                                                         // Linux
   (process.env.HOME || '') + '/.claude/local/claude',                        // Mac/Linux local
-  (process.env.APPDATA || '') + '/claude/claude.exe',                        // Windows
-  (process.env.LOCALAPPDATA || '') + '/Programs/claude/claude.exe',          // Windows
+  (process.env.APPDATA || '') + '\\npm\\claude.cmd',                         // Windows (npm global)
+  (process.env.APPDATA || '') + '\\npm\\claude.ps1',                         // Windows (npm global, ps)
+  (process.env.APPDATA || '') + '/claude/claude.exe',                        // Windows (legacy)
+  (process.env.LOCALAPPDATA || '') + '/Programs/claude/claude.exe',          // Windows (legacy)
 ].filter(Boolean);
 
 function findClaudeCli() {
@@ -341,15 +343,29 @@ function callClaude(prompt, taskName = '') {
   ccCurrentTask = taskName;
   return new Promise((resolve, reject) => {
     console.log(`[CC] Calling claude, task=${taskName}, prompt length: ${prompt.length}, HOME=${process.env.HOME}`);
-    const child = spawn(CLAUDE_CLI, ['--output-format', 'text', '-p', prompt], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        HOME: process.env.HOME || process.env.USERPROFILE,
-        PATH: ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', process.env.PATH || ''].join(':'),
-      },
-      cwd: DATA_DIR
-    });
+    let child;
+    if (process.platform === 'win32') {
+      // Windows: spawn .cmd/.ps1 requires shell:true; PATH uses ';' separator, keep as-is
+      child = spawn(CLAUDE_CLI, ['--output-format', 'text', '-p', prompt], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true,
+        env: {
+          ...process.env,
+          HOME: process.env.HOME || process.env.USERPROFILE,
+        },
+        cwd: DATA_DIR
+      });
+    } else {
+      child = spawn(CLAUDE_CLI, ['--output-format', 'text', '-p', prompt], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          HOME: process.env.HOME || process.env.USERPROFILE,
+          PATH: ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', process.env.PATH || ''].join(':'),
+        },
+        cwd: DATA_DIR
+      });
+    }
 
     let stdout = '';
     let stderr = '';
@@ -466,7 +482,7 @@ ${memosText}`;
           const graphData = jsonMatch ? JSON.parse(jsonMatch[0]) : { nodes: [], edges: [], summaries: [], insights: '' };
           if (!suggestions.graphHistory) suggestions.graphHistory = [];
           const entry = {
-            id: require('uuid').v4(),
+            id: uuidv4(),
             nodes: graphData.nodes || [],
             edges: graphData.edges || [],
             summaries: graphData.summaries || [],

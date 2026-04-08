@@ -45,8 +45,7 @@
     "adm-zip": "^0.5.17",
     "express": "^5.2.1",
     "multer": "^2.1.1",
-    "node-cron": "^4.2.1",
-    "uuid": "^13.0.0"
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
     "electron": "^35.7.5",
