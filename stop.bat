@@ -12,4 +12,4 @@ if not exist "%PID_FILE%" (
 set /p PID=<"%PID_FILE%"
 taskkill /PID %PID% /F >nul 2>&1
 del "%PID_FILE%"
-echo √ 服务已停止 (PID %PID%)
+echo √ 服务已停止 [PID %PID%]

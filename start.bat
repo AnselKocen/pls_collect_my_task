@@ -20,8 +20,8 @@ if %ERRORLEVEL% equ 0 (
 ) else (
     echo   ✗ 未找到 Node.js
     echo.
-    echo     请先安装 Node.js (v18+):
-    echo     → https://nodejs.org
+    echo     请先安装 Node.js [v18+]:
+    echo     -^> https://nodejs.org
     echo     下载 LTS 版本，安装后重新运行此脚本
     echo.
     set FAIL=1
@@ -32,26 +32,26 @@ set CLAUDE_FOUND=0
 if defined CLAUDE_CLI (
     if exist "%CLAUDE_CLI%" (
         set CLAUDE_FOUND=1
-        echo   √ Claude CLI (自定义路径: %CLAUDE_CLI%)
+        echo   √ Claude CLI [自定义路径: %CLAUDE_CLI%]
     )
 )
 if %CLAUDE_FOUND% equ 0 (
     where claude >nul 2>&1
     if %ERRORLEVEL% equ 0 (
         set CLAUDE_FOUND=1
-        echo   √ Claude CLI (PATH)
+        echo   √ Claude CLI [PATH]
     )
 )
 if %CLAUDE_FOUND% equ 0 (
     if exist "%APPDATA%\claude\claude.exe" (
         set CLAUDE_FOUND=1
-        echo   √ Claude CLI (%APPDATA%\claude\claude.exe)
+        echo   √ Claude CLI [%APPDATA%\claude\claude.exe]
     )
 )
 if %CLAUDE_FOUND% equ 0 (
     if exist "%LOCALAPPDATA%\Programs\claude\claude.exe" (
         set CLAUDE_FOUND=1
-        echo   √ Claude CLI (%LOCALAPPDATA%\Programs\claude\claude.exe)
+        echo   √ Claude CLI [%LOCALAPPDATA%\Programs\claude\claude.exe]
     )
 )
 if %CLAUDE_FOUND% equ 0 (
@@ -65,7 +65,7 @@ if %CLAUDE_FOUND% equ 0 (
         if exist "%USER_PATH%" (
             set CLAUDE_FOUND=1
             set CLAUDE_CLI=%USER_PATH%
-            echo   √ Claude CLI (%USER_PATH%)
+            echo   √ Claude CLI [%USER_PATH%]
         ) else (
             echo   路径不存在: %USER_PATH%
         )
@@ -75,10 +75,10 @@ if %CLAUDE_FOUND% equ 0 (
         echo   ✗ 未找到 Claude CLI
         echo.
         echo     请先安装 Claude CLI:
-        echo     → npm install -g @anthropic-ai/claude-code
+        echo     -^> npm install -g @anthropic-ai/claude-code
         echo.
         echo     安装后请在终端运行一次 claude 完成首次登录
-        echo     (需要登录你的 Anthropic 账号，否则 AI 功能无法使用^)
+        echo     [需要登录你的 Anthropic 账号，否则 AI 功能无法使用]
         echo.
         set FAIL=1
     )
@@ -113,7 +113,7 @@ if exist "%PID_FILE%" (
     set /p OLD_PID=<"%PID_FILE%"
     tasklist /FI "PID eq %OLD_PID%" 2>nul | find "%OLD_PID%" >nul
     if %ERRORLEVEL% equ 0 (
-        echo   服务已在运行 (PID %OLD_PID%)
+        echo   服务已在运行 [PID %OLD_PID%]
         start http://localhost:%PORT%
         exit /b 0
     ) else (
