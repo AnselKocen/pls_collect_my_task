@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul 2>&1
 title 记忆手帐
 
@@ -9,7 +9,7 @@ set PID_FILE=.server.pid
 
 echo.
 echo   ☕ 记忆手帐 — 环境检查
-echo   ────────────────────────────────
+echo   --------------------------------
 
 set FAIL=0
 
@@ -86,7 +86,7 @@ if %CLAUDE_FOUND% equ 0 (
 
 :: --- Exit if checks failed ---
 if %FAIL% neq 0 (
-    echo   ────────────────────────────────
+    echo   --------------------------------
     echo   提示：本工具的 AI 功能依赖 Claude Code CLI
     echo   需要 Anthropic Max 订阅 或 API Key 才能使用
     echo   详情：https://docs.anthropic.com/en/docs/claude-code
@@ -106,7 +106,7 @@ if not exist "node_modules" (
     echo   √ 依赖已就绪
 )
 
-echo   ────────────────────────────────
+echo   --------------------------------
 
 :: --- 4. Check if already running ---
 if exist "%PID_FILE%" (
@@ -154,10 +154,10 @@ for /l %%i in (1,1,15) do (
 start http://localhost:%PORT%
 
 echo.
-echo   ────────────────────────────────
+echo   --------------------------------
 echo   ☕ 记忆手帐已在后台运行！
 echo      地址: http://localhost:%PORT%
 echo      日志: type .server.log
 echo      停止: stop.bat
-echo   ────────────────────────────────
+echo   --------------------------------
 echo.
