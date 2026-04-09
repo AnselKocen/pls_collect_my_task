@@ -655,7 +655,13 @@ app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req,
           const ext = path.extname(item).toLowerCase();
           if (['.txt', '.md', '.html', '.htm', '.csv', '.json', '.xml', '.epub'].includes(ext) || !ext) {
             try {
-              let text = fs.readFileSync(fullPath, 'utf-8');
+              const buf = fs.readFileSync(fullPath);
+              let text;
+              try {
+                text = new TextDecoder('utf-8', { fatal: true }).decode(buf);
+              } catch {
+                text = new TextDecoder('gbk').decode(buf);
+              }
               if (text.length > 30000) text = text.substring(0, 30000) + '\n...(截断)';
               content += `\n--- ${item} ---\n${text}\n`;
             } catch {}
