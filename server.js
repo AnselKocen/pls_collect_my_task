@@ -343,28 +343,31 @@ function callClaude(prompt, taskName = '') {
   ccCurrentTask = taskName;
   return new Promise((resolve, reject) => {
     console.log(`[CC] Calling claude, task=${taskName}, prompt length: ${prompt.length}, HOME=${process.env.HOME}`);
-    let child;
-    if (process.platform === 'win32') {
-      // Windows: spawn .cmd/.ps1 requires shell:true; PATH uses ';' separator, keep as-is
-      child = spawn(CLAUDE_CLI, ['--output-format', 'text', '-p', prompt], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        shell: true,
-        env: {
-          ...process.env,
-          HOME: process.env.HOME || process.env.USERPROFILE,
-        },
-        cwd: DATA_DIR
-      });
-    } else {
-      child = spawn(CLAUDE_CLI, ['--output-format', 'text', '-p', prompt], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          HOME: process.env.HOME || process.env.USERPROFILE,
-          PATH: ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', process.env.PATH || ''].join(':'),
-        },
-        cwd: DATA_DIR
-      });
+    // Pass prompt via stdin to avoid OS command-line length limits
+    // (Windows CreateProcessW limit ~32K; cmd.exe ~8K; macOS ARG_MAX ~1MB).
+    // Using stdin unifies cross-platform behavior and supports prompts of any size.
+    const isWin = process.platform === 'win32';
+    const child = spawn(CLAUDE_CLI, ['-p', '--output-format', 'text'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: isWin, // Windows needs shell to execute .cmd files
+      env: {
+        ...process.env,
+        HOME: process.env.HOME || process.env.USERPROFILE,
+        PATH: isWin
+          ? (process.env.PATH || '')
+          : ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', process.env.PATH || ''].join(':'),
+      },
+      cwd: DATA_DIR
+    });
+    // Write prompt to stdin and close the pipe
+    child.stdin.on('error', (err) => {
+      console.error('[CC] stdin write error:', err.message);
+    });
+    try {
+      child.stdin.write(prompt);
+      child.stdin.end();
+    } catch (err) {
+      console.error('[CC] stdin write exception:', err.message);
     }
 
     let stdout = '';
@@ -663,7 +666,7 @@ app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req,
     }
 
     let bookContent = readDirRecursive(extractDir);
-    if (bookContent.length > 80000) bookContent = bookContent.substring(0, 80000) + '\n...(内容过长，已截断)';
+    if (bookContent.length > 200000) bookContent = bookContent.substring(0, 200000) + '\n...(内容过长，已截断)';
     if (!bookContent.trim()) throw new Error('ZIP中没有找到可读的文本文件');
 
     // Call CC with the actual content
