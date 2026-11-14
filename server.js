@@ -1,3 +1,4 @@
+require('./storage/runtime')();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -10,30 +11,18 @@ const AdmZip = require('adm-zip');
 const app = express();
 const PORT = process.env.PORT || 3013;
 const DATA_DIR = process.env.MEMO_DATA_DIR || path.join(__dirname, 'data');
+const { Store } = require('./storage/store');
+const { TaskService } = require('./tasks/service');
+const { LiveTask } = require('./tasks/live');
+const liveTask = new LiveTask();
+const { errorMessage: friendlyError } = require('./public/messages');
+const { localDate, parseLocalDate } = require('./tasks/dates');
+let store;
+let storageReady = false;
+let storageMaintenance = false;
 
-// Auto-detect Claude CLI path
-const CLAUDE_CLI_CANDIDATES = [
-  process.env.CLAUDE_CLI,                                                    // User override
-  '/opt/homebrew/bin/claude',                                                // Mac (Apple Silicon)
-  '/usr/local/bin/claude',                                                   // Mac (Intel) / Linux
-  '/usr/bin/claude',                                                         // Linux
-  (process.env.HOME || '') + '/.claude/local/claude',                        // Mac/Linux local
-  (process.env.APPDATA || '') + '\\npm\\claude.cmd',                         // Windows (npm global)
-  (process.env.APPDATA || '') + '\\npm\\claude.ps1',                         // Windows (npm global, ps)
-  (process.env.APPDATA || '') + '/claude/claude.exe',                        // Windows (legacy)
-  (process.env.LOCALAPPDATA || '') + '/Programs/claude/claude.exe',          // Windows (legacy)
-].filter(Boolean);
-
-function findClaudeCli() {
-  for (const p of CLAUDE_CLI_CANDIDATES) {
-    if (fs.existsSync(p)) return p;
-  }
-  // fallback: hope it's in PATH
-  return 'claude';
-}
-
-const CLAUDE_CLI = findClaudeCli();
-
+const { getAgent, resolveCli, saveCliPath, invokeAgent, stopAgents } = require('./agents');
+const CONFIG_DIR = process.env.MEMO_CONFIG_DIR || process.env.MEMO_DATA_DIR || __dirname;
 app.use(express.json());
 // In packaged app, server.js is in app.asar.unpacked/ but public/ is in app.asar
 // Resolve by replacing 'app.asar.unpacked' with 'app.asar' for static files
@@ -43,148 +32,34 @@ app.use(express.static(STATIC_DIR));
 // Multer for habit ZIP upload
 const habitUpload = multer({ dest: path.join(DATA_DIR, 'habit_upload') });
 
-// --- Helpers ---
-function readJSON(file) {
-  return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), 'utf-8'));
-}
+// --- Data access ---
+const readData = section => store.read(section);
+const writeData = (section, data) => store.write(section, data);
+const transaction = fn => store.transaction(fn);
 
-function writeJSON(file, data) {
-  fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2), 'utf-8');
-}
-
-// ISO 8601 week number (Monday-based)
-function getISOWeek(d) {
-  const date = new Date(d.getTime());
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-  const week1 = new Date(date.getFullYear(), 0, 4);
-  return 1 + Math.round(((date - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-}
-
-// Per-file promise queue to serialize read-modify-write operations
-const fileLocks = {};
-function withFileLock(file, fn) {
-  if (!fileLocks[file]) fileLocks[file] = Promise.resolve();
-  const prev = fileLocks[file];
-  const next = prev.then(fn, fn);
-  fileLocks[file] = next.catch(() => {});
-  return next;
-}
-
-// Ensure data files exist on first run
-function ensureDataFiles() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  const now = new Date().toISOString();
-  const defaults = {
-    'memos.json': { memos: [
-      {
-        id: 'welcome-1',
-        content: '欢迎来到记忆手帐Memo Journal ~ 尽情探索吧 ❤️ 点击「智能助手」tag查看指南',
-        tags: ['欢迎'],
-        createdAt: now, updatedAt: now, pinned: true
-      },
-      {
-        id: 'welcome-2',
-        content: '习惯养成✨ - 上传任何你想养成习惯的书籍，例如饮食、运动，甚至观鸟手册。每天抽取你的习惯卡片🃏，坚持然后填满打卡日历吧！',
-        tags: ['特色玩法'],
-        createdAt: now, updatedAt: now, pinned: true
-      },
-      {
-        id: 'welcome-3',
-        content: '这是一个专属于你的便签手帐本，cc作为你的小助理，能帮你完成一系列任务。需要先登录Claude code CLI才能使用cc相关功能哦💗',
-        tags: ['指南'],
-        createdAt: now, updatedAt: now, pinned: true
-      },
-      {
-        id: 'welcome-4',
-        content: 'cc一次只能做一件事……',
-        tags: ['cc'],
-        createdAt: now, updatedAt: now
-      },
-      {
-        id: 'welcome-5',
-        content: '小技巧：按CMD+R可以刷新噢',
-        tags: ['tips'],
-        createdAt: now, updatedAt: now
-      }
-    ] },
-    'settings.json': {
-      dailyDigestTime: '23:55',
-      weeklyDigestDay: 'sunday',
-      weeklyDigestTime: '23:59',
-      tags: ['欢迎', '特色玩法', '指南', 'cc', 'tips'],
-      tagOrder: ['欢迎', '特色玩法', '指南', 'cc', 'tips'],
-      tagEmojis: { '欢迎': '🍮', '特色玩法': '🍯', '指南': '🍩', 'cc': '🧁', 'tips': '💫' },
-      tagTapes: { '欢迎': 'tape-3', '特色玩法': 'tape-4', '指南': 'tape-1', 'cc': 'tape-6', 'tips': 'tape-8' }
-    },
-    'ai_suggestions.json': {
-      dailyDigest: null,
-      weeklyDigest: null,
-      tagSuggestions: [],
-      graphHistory: []
-    },
-    'habit_pools.json': { pools: [{
-      id: 'default-pool',
-      name: '每天一个小习惯',
-      description: '每天微小改变，积累非凡人生力量',
-      habits: [
-        '每天阅读十页书','起床后立刻叠被子','记录今日三件好事',
-        '喝水前先深呼吸三次','手机放到另一个房间','出门前默念今日目标',
-        '饭后散步十分钟','睡前写一句反思日记','用两分钟整理桌面',
-        '每餐先吃蔬菜','晨起做五个俯卧撑','提前准备明天衣物',
-        '专注工作前戴上耳机','用习惯打卡表记录进度','对镜微笑说一句肯定',
-        '把零食换到高处柜子','新习惯绑定旧习惯后','完成任务后奖励自己',
-        '睡前远离所有屏幕','每周回顾一次习惯清单','站立办公十五分钟',
-        '午饭后冥想两分钟','随身带一瓶水','学一个新单词或概念',
-        '主动向一个人表达感谢','把困难任务拆成小步','固定时间固定地点学习',
-        '运动前播放专属歌曲','睡前提前准备运动装备','对坏习惯大声说出理由'
-      ],
-      sourceFile: '内置卡池',
-      createdAt: now
-    }] },
-    'habit_log.json': { logs: [] },
-    'scheduled_tasks.json': { tasks: [] }
-  };
-  for (const [file, data] of Object.entries(defaults)) {
-    const fp = path.join(DATA_DIR, file);
-    if (!fs.existsSync(fp)) {
-      fs.writeFileSync(fp, JSON.stringify(data, null, 2), 'utf-8');
-    }
+// Pause mutations during restore, including AI launches and notification consumption.
+app.use('/api', (req, res, next) => {
+  if (!storageReady) return res.status(503).json({error:'数据库正在初始化，请稍后再试'});
+  if (storageMaintenance && (req.method !== 'GET' || req.path === '/scheduled/pending')) {
+    return res.status(503).json({ error: '正在恢复数据，请稍后再试' });
   }
-  // Migrate old weekly digest time (10:00) to new default (23:59)
-  try {
-    const settings = readJSON('settings.json');
-    if (settings.weeklyDigestTime === '10:00') {
-      settings.weeklyDigestTime = '23:59';
-      writeJSON('settings.json', settings);
-    }
-  } catch {}
-}
-
-ensureDataFiles();
+  next();
+});
 
 // --- Memos ---
 app.get('/api/memos', (req, res) => {
-  const { memos } = readJSON('memos.json');
-  const { tag, keyword } = req.query;
-  let result = memos;
-  if (tag) {
-    const tags = tag.split(',');
-    result = result.filter(m => m.tags.some(t => tags.includes(t)));
-  }
-  if (keyword) {
-    const kw = keyword.toLowerCase();
-    result = result.filter(m => m.content.toLowerCase().includes(kw));
-  }
-  result.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.createdAt) - new Date(a.createdAt));
-  res.json(result);
+  try {
+    const { tag, tags:tagArray, keyword = '', mode = 'exact' } = req.query;
+    const tags = tagArray !== undefined ? JSON.parse(tagArray) : tag ? String(tag).split(',') : [];
+    res.json(store.queryMemos({tags,keyword,mode,sort:'display'}));
+  } catch (error) { res.status(400).json({error:error.message}); }
 });
 
 app.post('/api/memos', async (req, res) => {
   const { content, tags } = req.body;
-  if (!content) return res.status(400).json({ error: '内容不能为空' });
-  const memo = await withFileLock('memos.json', () => {
-    const data = readJSON('memos.json');
+  if (typeof content!=='string' || !content.trim()) return res.status(400).json({ error: '内容不能为空' });
+  const memo = await transaction(() => {
+    const data = readData('memos');
     const m = {
       id: uuidv4(),
       content,
@@ -193,14 +68,14 @@ app.post('/api/memos', async (req, res) => {
       updatedAt: new Date().toISOString()
     };
     data.memos.push(m);
-    writeJSON('memos.json', data);
+    writeData('memos', data);
     return m;
   });
   res.json(memo);
 });
 
 app.get('/api/memos/random', (req, res) => {
-  const { memos } = readJSON('memos.json');
+  const { memos } = readData('memos');
   let pool = memos;
   if (req.query.tags) {
     const tags = req.query.tags.split(',');
@@ -211,9 +86,10 @@ app.get('/api/memos/random', (req, res) => {
 });
 
 app.put('/api/memos/:id', async (req, res) => {
+  if(req.body.content!==undefined && (typeof req.body.content!=='string' || !req.body.content.trim()))return res.status(400).json({error:'内容不能为空'});
   try {
-    const result = await withFileLock('memos.json', () => {
-      const data = readJSON('memos.json');
+    const result = await transaction(() => {
+      const data = readData('memos');
       const idx = data.memos.findIndex(m => m.id === req.params.id);
       if (idx === -1) return null;
       const { content, tags, pinned } = req.body;
@@ -221,7 +97,7 @@ app.put('/api/memos/:id', async (req, res) => {
       if (tags !== undefined) data.memos[idx].tags = tags;
       if (pinned !== undefined) data.memos[idx].pinned = pinned;
       data.memos[idx].updatedAt = new Date().toISOString();
-      writeJSON('memos.json', data);
+      writeData('memos', data);
       return data.memos[idx];
     });
     if (!result) return res.status(404).json({ error: '未找到' });
@@ -230,25 +106,26 @@ app.put('/api/memos/:id', async (req, res) => {
 });
 
 app.delete('/api/memos/:id', async (req, res) => {
-  await withFileLock('memos.json', () => {
-    const data = readJSON('memos.json');
+  await transaction(() => {
+    const data = readData('memos');
     data.memos = data.memos.filter(m => m.id !== req.params.id);
-    writeJSON('memos.json', data);
+    writeData('memos', data);
   });
   res.json({ ok: true });
 });
 
 // --- Tags ---
 app.get('/api/tags', (req, res) => {
-  const settings = readJSON('settings.json');
+  const settings = readData('settings');
   res.json(settings.tags);
 });
 
 app.post('/api/tags', async (req, res) => {
-  const { tag, emoji } = req.body;
+  const { tag:rawTag, emoji } = req.body;
+  const tag=typeof rawTag==='string' ? rawTag.trim() : '';
   if (!tag) return res.status(400).json({ error: '标签不能为空' });
-  const tags = await withFileLock('settings.json', () => {
-    const settings = readJSON('settings.json');
+  const tags = await transaction(() => {
+    const settings = readData('settings');
     if (!settings.tags.includes(tag)) {
       settings.tags.push(tag);
     }
@@ -258,7 +135,7 @@ app.post('/api/tags', async (req, res) => {
       if (!settings.tagEmojis) settings.tagEmojis = {};
       settings.tagEmojis[tag] = emoji;
     }
-    writeJSON('settings.json', settings);
+    writeData('settings', settings);
     return settings.tags;
   });
   res.json(tags);
@@ -266,19 +143,17 @@ app.post('/api/tags', async (req, res) => {
 
 app.delete('/api/tags/:tag', async (req, res) => {
   const tag = decodeURIComponent(req.params.tag);
-  const tags = await withFileLock('settings.json', () => {
-    const settings = readJSON('settings.json');
+  const tags = await transaction(() => {
+    const settings = readData('settings');
     settings.tags = settings.tags.filter(t => t !== tag);
     if (settings.tagEmojis) delete settings.tagEmojis[tag];
     if (settings.tagTapes) delete settings.tagTapes[tag];
     if (settings.tagOrder) settings.tagOrder = settings.tagOrder.filter(t => t !== tag);
-    writeJSON('settings.json', settings);
-    return settings.tags;
-  });
-  await withFileLock('memos.json', () => {
-    const data = readJSON('memos.json');
+    writeData('settings', settings);
+    const data = readData('memos');
     data.memos = data.memos.filter(m => !m.tags.includes(tag));
-    writeJSON('memos.json', data);
+    writeData('memos', data);
+    return settings.tags;
   });
   res.json({ ok: true, tags });
 });
@@ -288,310 +163,137 @@ app.put('/api/tags/:tag', async (req, res) => {
   const { newTag } = req.body;
   if (!newTag || !newTag.trim()) return res.status(400).json({ error: 'empty' });
   const name = newTag.trim();
-  const result = await withFileLock('settings.json', () => {
-    const settings = readJSON('settings.json');
+  const result = await transaction(() => {
+    const settings = readData('settings');
     if (!settings.tags) settings.tags = [];
     if (settings.tags.includes(name) && name !== oldTag) return { error: 'exists' };
     settings.tags = settings.tags.map(t => t === oldTag ? name : t);
     if (settings.tagTapes && settings.tagTapes[oldTag] !== undefined) { settings.tagTapes[name] = settings.tagTapes[oldTag]; delete settings.tagTapes[oldTag]; }
     if (settings.tagEmojis && settings.tagEmojis[oldTag] !== undefined) { settings.tagEmojis[name] = settings.tagEmojis[oldTag]; delete settings.tagEmojis[oldTag]; }
     if (settings.tagOrder) settings.tagOrder = settings.tagOrder.map(t => t === oldTag ? name : t);
-    writeJSON('settings.json', settings);
+    writeData('settings', settings);
+    const data = readData('memos');
+    data.memos.forEach(m => { m.tags = m.tags.map(t => t === oldTag ? name : t); });
+    writeData('memos', data);
     return { tags: settings.tags };
   });
   if (result.error) return res.status(409).json({ error: result.error });
-  await withFileLock('memos.json', () => {
-    const data = readJSON('memos.json');
-    data.memos.forEach(m => { m.tags = m.tags.map(t => t === oldTag ? name : t); });
-    writeJSON('memos.json', data);
-  });
   res.json({ ok: true, tags: result.tags });
 });
 
 // --- Settings ---
+function currentAgent() { return readData('settings').agent || 'cc'; }
+function agentStatus() {
+  const agent = currentAgent(), info = getAgent(agent);
+  return {agent,name:info.name,configured:Boolean(resolveCli(agent,{configDir:CONFIG_DIR})),busy:ccBusy,task:ccCurrentTask,startedAt:aiStartedAt,elapsedMs:ccBusy ? Math.max(0,Date.now()-aiStartedAt) : 0,maintenance:storageMaintenance};
+}
 app.get('/api/settings', (req, res) => {
-  res.json(readJSON('settings.json'));
+  res.json({...readData('settings'),agent:currentAgent()});
 });
 
 app.put('/api/settings', async (req, res) => {
-  const updated = await withFileLock('settings.json', () => {
-    const settings = readJSON('settings.json');
-    const allowed = ['dailyDigestTime', 'weeklyDigestDay', 'weeklyDigestTime', 'tagOrder', 'tagTapes', 'tagEmojis', 'theme', 'customColors'];
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) settings[key] = req.body[key];
-    }
-    writeJSON('settings.json', settings);
-    return settings;
-  });
-  scheduleCronJobs();
-  res.json(updated);
+  if (Object.hasOwn(req.body,'agent')) {
+    try { getAgent(req.body.agent); }
+    catch (error) { return res.status(400).json({error:error.message}); }
+  }
+  try {
+    const updated = await transaction(() => {
+      const settings = readData('settings');
+      if (Object.hasOwn(req.body,'agent') && req.body.agent !== (settings.agent || 'cc') && ccBusy) {
+        const error = new Error('AI_BUSY:任务进行中，暂时不能切换助手');error.busy=true;throw error;
+      }
+      const allowed = ['agent','dailyDigestTime', 'weeklyDigestDay', 'weeklyDigestTime', 'tagOrder', 'tagTapes', 'tagEmojis', 'theme', 'customColors'];
+      for (const key of allowed) if (req.body[key] !== undefined) settings[key] = req.body[key];
+      writeData('settings', settings);
+      return {...settings,agent:settings.agent || 'cc'};
+    });
+    if (['dailyDigestTime','weeklyDigestDay','weeklyDigestTime'].some(key => Object.hasOwn(req.body,key))) scheduleCronJobs();
+    res.json(updated);
+  } catch (error) {
+    if (error.busy) return res.status(409).json({error:error.message,busy:true});
+    throw error;
+  }
 });
 
-// --- CC (Claude Code) Integration ---
-const { spawn } = require('child_process');
+app.get('/api/ai/status', (req,res) => res.json(agentStatus()));
+liveTask.mount(app,PORT);
+app.post('/api/ai/path', (req,res) => {
+  const host = req.get('host');
+  if (![`localhost:${PORT}`,`127.0.0.1:${PORT}`].includes(host) ||
+      (req.get('origin') && req.get('origin') !== `http://${host}`) || req.get('X-Memo-AI') !== '1') {
+    return res.status(403).json({error:'请在这台电脑上配置 AI 助手'});
+  }
+  if (ccBusy) return res.status(409).json({error:'AI_BUSY:任务进行中，暂时不能配置助手',busy:true});
+  if (req.body.agent !== currentAgent()) return res.status(409).json({error:'AI 助手已切换，请重试'});
+  try {
+    saveCliPath(req.body.agent,req.body.path,{configDir:CONFIG_DIR});
+    res.json(agentStatus());
+  } catch (error) { res.status(400).json({error:error.message}); }
+});
 
+// --- AI tasks (legacy /api/cc routes remain compatible) ---
 let ccBusy = false;
 let ccCurrentTask = '';
+let aiStartedAt = null;
+app.get('/api/cc/status', (req,res) => res.json(agentStatus()));
 
-app.get('/api/cc/status', (req, res) => {
-  res.json({ busy: ccBusy, task: ccCurrentTask });
-});
+async function withAITask(taskName, work) {
+  if (storageMaintenance) throw new Error('正在恢复数据，请稍后再试');
+  if (ccBusy) throw new Error(`CC_BUSY:${ccCurrentTask}`);
+  const agent = currentAgent();
+  ccBusy = true;ccCurrentTask = taskName;aiStartedAt = Date.now();
+  liveTask.start(agent,taskName);
+  try {
+    const result = await work(agent);
+    liveTask.finish();
+    console.log(`[AI:${agent}] ${taskName} completed in ${Date.now()-aiStartedAt}ms`);
+    return result;
+  } catch(error) {
+    liveTask.finish(friendlyError(error.message,agent));throw error;
+  } finally { ccBusy = false;ccCurrentTask = '';aiStartedAt = null; }
+}
 
-function callClaude(prompt, taskName = '') {
-  if (ccBusy) return Promise.reject(new Error(`CC_BUSY:${ccCurrentTask}`));
-  ccBusy = true;
-  ccCurrentTask = taskName;
-  return new Promise((resolve, reject) => {
-    console.log(`[CC] Calling claude, task=${taskName}, prompt length: ${prompt.length}, HOME=${process.env.HOME}`);
-    // Pass prompt via stdin to avoid OS command-line length limits
-    // (Windows CreateProcessW limit ~32K; cmd.exe ~8K; macOS ARG_MAX ~1MB).
-    // Using stdin unifies cross-platform behavior and supports prompts of any size.
-    const isWin = process.platform === 'win32';
-    const child = spawn(CLAUDE_CLI, ['-p', '--output-format', 'text'], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: isWin, // Windows needs shell to execute .cmd files
-      env: {
-        ...process.env,
-        HOME: process.env.HOME || process.env.USERPROFILE,
-        PATH: isWin
-          ? (process.env.PATH || '')
-          : ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', process.env.PATH || ''].join(':'),
-      },
-      cwd: DATA_DIR
-    });
-    // Write prompt to stdin and close the pipe
-    child.stdin.on('error', (err) => {
-      console.error('[CC] stdin write error:', err.message);
-    });
-    try {
-      child.stdin.write(prompt);
-      child.stdin.end();
-    } catch (err) {
-      console.error('[CC] stdin write exception:', err.message);
-    }
+function callAI(prompt, taskName = '') {
+  return withAITask(taskName, agent => invokeAgent(agent,prompt,{cwd:DATA_DIR,configDir:CONFIG_DIR,onEvent:event => liveTask.accept(event)}));
+}
 
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', d => { stdout += d.toString(); });
-    child.stderr.on('data', d => { stderr += d.toString(); });
-
-    child.on('close', (code, signal) => {
-      ccBusy = false; ccCurrentTask = '';
-      console.log(`[CC] Claude exited: code=${code}, signal=${signal}, stdout=${stdout.length}bytes, stderr=${stderr.substring(0, 200)}`);
-      // Use stdout if available, even if exit code is non-zero
-      if (stdout.trim()) {
-        resolve(stdout.trim());
-      } else if (code !== 0) {
-        reject(new Error(`Claude exited with code ${code}: ${stderr}`));
-      } else {
-        resolve('');
-      }
-    });
-
-    child.on('error', (err) => {
-      ccBusy = false; ccCurrentTask = '';
-      console.error('[CC] Spawn error:', err);
-      reject(err);
-    });
-
-    // Manual timeout
-    const timer = setTimeout(() => {
-      console.log('[CC] Timeout, killing process');
-      child.kill('SIGTERM');
-    }, 300000);
-
-    child.on('close', () => clearTimeout(timer));
-  });
+function runTask(action, params = {}, now = new Date()) {
+  const names = {'graph':'生成思绪图谱','tag-suggestions':'整理标签','daily-digest':'今日摘要','weekly-digest':'本周总结'};
+  if (!names[action]) throw new Error('未知操作');
+  return withAITask(names[action], agent => new TaskService(store, {
+    ask:prompt => invokeAgent(agent,prompt,{cwd:DATA_DIR,configDir:CONFIG_DIR,onEvent:event => liveTask.accept(event)}),
+    onProgress:label => { ccCurrentTask = label;liveTask.progress(label); }
+  }).run(action,params,now));
 }
 
 app.post('/api/cc/ask', async (req, res) => {
-  const { action, params } = req.body;
-  const taskNames = { 'search':'智能搜索', 'tag-suggestions':'整理标签建议', 'graph':'生成知识图谱', 'discuss-tag':'标签总结', 'daily-digest':'今日摘要', 'weekly-digest':'本周总结' };
-  const taskName = taskNames[action] || action;
+  const { action, params = {} } = req.body;
   try {
-    const { memos } = readJSON('memos.json');
-    const settings = readJSON('settings.json');
-    const suggestions = readJSON('ai_suggestions.json');
-    let prompt, result;
-
-    switch (action) {
-      case 'search': {
-        const memosText = memos.map(m => `(${m.tags.join(',')}) ${m.content}`).join('\n');
-        prompt = `你是一个手帐助手。用户想找: "${params.query}"。根据以下手帐内容，提取最可能匹配的搜索关键词（中文）。返回JSON数组，只包含关键词字符串，例如["关键词1","关键词2"]。最多5个关键词。只返回JSON。\n\n手帐:\n${memosText}`;
-        result = await callClaude(prompt, taskName);
-        try {
-          const jsonMatch = result.match(/\[[\s\S]*?\]/);
-          const keywords = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-          // Use keywords to filter memos locally
-          const matched = memos.filter(m => {
-            const text = m.content.toLowerCase();
-            return keywords.some(kw => text.includes(kw.toLowerCase()));
-          });
-          return res.json({ type: 'search', keywords, results: matched.map(m => m.id) });
-        } catch { return res.json({ type: 'search', keywords: [], results: [] }); }
-      }
-
-      case 'tag-suggestions': {
-        const tagCounts = {};
-        settings.tags.forEach(t => { tagCounts[t] = 0; });
-        memos.forEach(m => m.tags.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
-        const tagInfo = Object.entries(tagCounts).map(([t, c]) => `${t}: ${c}条`).join('\n');
-        const tagMemosDetail = settings.tags.map(t => {
-          const tagMemos = memos.filter(m => m.tags.includes(t));
-          const items = tagMemos.slice(0, 20).map(m => `  - ${m.content}`).join('\n');
-          return `【${t}】(${tagMemos.length}条)\n${items || '  (空)'}`;
-        }).join('\n\n');
-        prompt = `你是一个手帐助手。分析以下标签的使用情况和具体内容，给出合并或清理建议。返回JSON数组，每项包含action("merge"或"review")、tags(数组)、reason字段。只返回JSON。\n\n标签统计:\n${tagInfo}\n\n各标签下的具体内容:\n${tagMemosDetail}`;
-        result = await callClaude(prompt, taskName);
-        try {
-          const jsonMatch = result.match(/\[[\s\S]*\]/);
-          const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-          suggestions.tagSuggestions = parsed;
-          if (!suggestions.tagSuggestionHistory) suggestions.tagSuggestionHistory = [];
-          suggestions.tagSuggestionHistory.unshift({ suggestions: parsed, generatedAt: new Date().toISOString() });
-          writeJSON('ai_suggestions.json', suggestions);
-          return res.json({ type: 'tag-suggestions', suggestions: parsed });
-        } catch { return res.json({ type: 'tag-suggestions', suggestions: [], raw: result }); }
-      }
-
-      case 'graph': {
-        let graphMemos = memos;
-        const scopeTags = (params && params.tags && params.tags.length > 0) ? params.tags : [...new Set(memos.flatMap(m => m.tags))];
-        if (params && params.tags && params.tags.length > 0) {
-          graphMemos = memos.filter(m => m.tags.some(t => params.tags.includes(t)));
-        }
-        const memosText = graphMemos.slice(0, 100).map(m => `[${m.id}] (${m.tags.join(',')}) ${m.content}`).join('\n');
-        const tagsListStr = scopeTags.join('、');
-        prompt = `你是一个手帐助手。请完成以下分析任务，一次性返回所有结果。
-
-任务1：分析以下手帐之间的内容关联，生成知识图谱的节点和边。
-任务2：针对以下每个标签（${tagsListStr}）下的内容进行整理和讨论，总结要点、发现规律、给出建议。
-任务3：跨标签发散思考，找出隐藏的关联、有趣的发现、或者可以进一步探索的方向。
-
-返回JSON对象，格式如下（只返回JSON，不要其他内容）：
-{
-  "nodes": [{"id": "1", "label": "节点名", "tag": "所属标签"}],
-  "edges": [{"source": "1", "target": "2", "relation": "关系描述"}],
-  "summaries": [{"tag": "标签名", "summary": "该标签的总结分析"}],
-  "insights": "跨标签的发散思考和关联发现（用markdown格式）"
-}
-
-手帐内容:
-${memosText}`;
-        result = await callClaude(prompt, taskName);
-        let cleanGraphResult = result.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-        let graphData;
-        try {
-          const jsonMatch = cleanGraphResult.match(/\{[\s\S]*\}/);
-          graphData = jsonMatch ? JSON.parse(jsonMatch[0]) : { nodes: [], edges: [], summaries: [], insights: '' };
-        } catch {
-          graphData = { nodes: [], edges: [], summaries: [], insights: '' };
-        }
-        if (!suggestions.graphHistory) suggestions.graphHistory = [];
-        const entry = {
-          id: uuidv4(),
-          nodes: graphData.nodes || [],
-          edges: graphData.edges || [],
-          summaries: graphData.summaries || [],
-          insights: graphData.insights || '',
-          tags: scopeTags,
-          generatedAt: new Date().toISOString()
-        };
-        suggestions.graphHistory.push(entry);
-        writeJSON('ai_suggestions.json', suggestions);
-        return res.json({ type: 'graph', graph: entry });
-      }
-
-      case 'daily-digest': {
-        const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
-        const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const yesterday = new Date(now - 86400000);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        const fmtDate = (d) => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-        const yesterdayLabel = fmtDate(yesterday);
-        const todayLabel = fmtDate(now);
-        const yesterdayMemos = memos.filter(m => m.createdAt.startsWith(yesterdayStr));
-        const todayMemos = memos.filter(m => m.createdAt.startsWith(today));
-        const yesterdayText = yesterdayMemos.map(m => `- (${m.tags.join(',')}) ${m.content}`).join('\n');
-        const todayText = todayMemos.map(m => `- (${m.tags.join(',')}) ${m.content}`).join('\n');
-        prompt = `你是一个手帐助手。请根据以下两天的手帐内容生成摘要。返回JSON对象，包含date、summary、tasks(数组)字段。
-summary的格式要求：
-· ${yesterdayLabel}，概述当天的主要内容
-· ${todayLabel}，概述当天的主要内容
-每个日期单独一段，前面用"· "开头。如果某天没有内容就写"暂无记录"。
-只返回JSON。\n\n${yesterdayLabel}的手帐:\n${yesterdayText || '(暂无记录)'}\n\n${todayLabel}的手帐:\n${todayText || '(暂无记录)'}`;
-        result = await callClaude(prompt, taskName);
-        let cleanDailyResult = result.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-        try {
-          const jsonMatch = cleanDailyResult.match(/\{[\s\S]*\}/);
-          suggestions.dailyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { date: today, summary: cleanDailyResult, tasks: [] };
-        } catch {
-          suggestions.dailyDigest = { date: today, summary: cleanDailyResult, tasks: [] };
-        }
-        writeJSON('ai_suggestions.json', suggestions);
-        return res.json({ type: 'daily-digest', digest: suggestions.dailyDigest });
-      }
-
-      case 'weekly-digest': {
-        const now = new Date();
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        let weekMemos = memos.filter(m => new Date(m.createdAt) >= weekAgo);
-        const filterTags = params && params.tags && params.tags.length > 0 ? params.tags : null;
-        if (filterTags) {
-          weekMemos = weekMemos.filter(m => m.tags.some(t => filterTags.includes(t)));
-        }
-        const tagLabel = filterTags ? `（范围：${filterTags.join('、')}）` : '';
-        const memosText = weekMemos.map(m => `- (${m.tags.join(',')}) ${m.content} [${m.createdAt.split('T')[0]}]`).join('\n');
-        prompt = `你是一个手帐助手。总结过去一周的手帐${tagLabel}，分析标签趋势，生成深度总结。返回JSON对象，包含week、summary、tagTrends(对象)字段。只返回JSON。\n\n本周备忘:\n${memosText || '(本周暂无手帐)'}`;
-        result = await callClaude(prompt, taskName);
-        // Strip markdown code fences if present
-        let cleanResult = result.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-        const weekStr = `${now.getFullYear()}-W${String(getISOWeek(now)).padStart(2, '0')}`;
-        let digest;
-        try {
-          const jsonMatch = cleanResult.match(/\{[\s\S]*\}/);
-          digest = jsonMatch ? JSON.parse(jsonMatch[0]) : { week: weekStr, summary: cleanResult };
-        } catch {
-          // JSON parse failed (e.g. unescaped quotes in summary) — use raw text
-          digest = { week: weekStr, summary: cleanResult };
-        }
-        if (filterTags) digest.tags = filterTags;
-        digest.generatedAt = new Date().toISOString();
-        // Save to array (always, even if JSON parse failed)
-        if (!suggestions.weeklyDigests) suggestions.weeklyDigests = [];
-        suggestions.weeklyDigests.unshift(digest);
-        suggestions.weeklyDigest = digest; // backward compat
-        writeJSON('ai_suggestions.json', suggestions);
-        return res.json({ type: 'weekly-digest', digest });
-      }
-
-      default:
-        return res.status(400).json({ error: '未知操作' });
+    // Compatibility for older clients: searching no longer starts or waits for an AI task.
+    if (action === 'search') {
+      const results = store.queryMemos({keyword:params.query || '',mode:params.mode || 'exact',tags:params.tags || [],sort:'display'});
+      return res.json({type:'search',mode:params.mode || 'exact',keywords:[],results:results.map(memo => memo.id)});
     }
-  } catch (err) {
-    console.error('CC error:', err.message);
-    if (err.message.startsWith('CC_BUSY:')) {
-      const busyTask = err.message.replace('CC_BUSY:', '');
-      return res.status(409).json({ error: `CC正在忙「${busyTask}」，等它忙完吧～`, busy: true, currentTask: busyTask });
-    }
-    res.status(500).json({ error: 'CC 调用失败: ' + err.message });
+    res.json(await runTask(action,params));
+  } catch (error) {
+    console.error('[Task]',error.message);
+    if (error.message.startsWith('CC_BUSY:')) return res.status(409).json({error:`正在处理「${ccCurrentTask}」，请稍后再试`,busy:true,currentTask:ccCurrentTask});
+    res.status(400).json({error:error.message});
   }
 });
 
 app.get('/api/cc/suggestions', (req, res) => {
-  res.json(readJSON('ai_suggestions.json'));
+  res.json(readData('suggestions'));
 });
 
 // Delete tag summary by index
 app.delete('/api/cc/tag-summary/:index', async (req, res) => {
-  await withFileLock('ai_suggestions.json', () => {
-    const suggestions = readJSON('ai_suggestions.json');
+  await transaction(() => {
+    const suggestions = readData('suggestions');
     const idx = parseInt(req.params.index);
     if (suggestions.tagSummaries && idx >= 0 && idx < suggestions.tagSummaries.length) {
       suggestions.tagSummaries.splice(idx, 1);
-      writeJSON('ai_suggestions.json', suggestions);
+      writeData('suggestions', suggestions);
     }
   });
   res.json({ ok: true });
@@ -599,12 +301,12 @@ app.delete('/api/cc/tag-summary/:index', async (req, res) => {
 
 // Delete weekly digest by index
 app.delete('/api/cc/weekly-digest/:index', async (req, res) => {
-  await withFileLock('ai_suggestions.json', () => {
-    const suggestions = readJSON('ai_suggestions.json');
+  await transaction(() => {
+    const suggestions = readData('suggestions');
     const idx = parseInt(req.params.index);
     if (suggestions.weeklyDigests && idx >= 0 && idx < suggestions.weeklyDigests.length) {
       suggestions.weeklyDigests.splice(idx, 1);
-      writeJSON('ai_suggestions.json', suggestions);
+      writeData('suggestions', suggestions);
     }
   });
   res.json({ ok: true });
@@ -612,12 +314,12 @@ app.delete('/api/cc/weekly-digest/:index', async (req, res) => {
 
 // Delete tag suggestion by index
 app.delete('/api/cc/tag-suggestion/:index', async (req, res) => {
-  await withFileLock('ai_suggestions.json', () => {
-    const suggestions = readJSON('ai_suggestions.json');
+  await transaction(() => {
+    const suggestions = readData('suggestions');
     const idx = parseInt(req.params.index);
     if (suggestions.tagSuggestionHistory && idx >= 0 && idx < suggestions.tagSuggestionHistory.length) {
       suggestions.tagSuggestionHistory.splice(idx, 1);
-      writeJSON('ai_suggestions.json', suggestions);
+      writeData('suggestions', suggestions);
     }
   });
   res.json({ ok: true });
@@ -625,22 +327,22 @@ app.delete('/api/cc/tag-suggestion/:index', async (req, res) => {
 
 // Delete a specific graph from history
 app.delete('/api/cc/graph/:id', async (req, res) => {
-  await withFileLock('ai_suggestions.json', () => {
-    const suggestions = readJSON('ai_suggestions.json');
+  await transaction(() => {
+    const suggestions = readData('suggestions');
     if (!suggestions.graphHistory) suggestions.graphHistory = [];
     suggestions.graphHistory = suggestions.graphHistory.filter(g => g.id !== req.params.id);
     // Also clean up legacy taskGraph if the migrated entry is being deleted
     if (req.params.id === 'migrated' && suggestions.taskGraph) {
       delete suggestions.taskGraph;
     }
-    writeJSON('ai_suggestions.json', suggestions);
+    writeData('suggestions', suggestions);
   });
   res.json({ ok: true });
 });
 
 // --- Habit Building ---
 app.get('/api/habit/pools', (req, res) => {
-  res.json(readJSON('habit_pools.json'));
+  res.json(readData('pools'));
 });
 
 app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req, res) => {
@@ -688,7 +390,7 @@ app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req,
     if (bookContent.length > 200000) bookContent = bookContent.substring(0, 200000) + '\n...(内容过长，已截断)';
     if (!bookContent.trim()) throw new Error('ZIP中没有找到可读的文本文件');
 
-    // Call CC with the actual content
+    // Analyze the book with the selected AI assistant
     const prompt = `以下是一本书的内容：
 
 ${bookContent}
@@ -699,11 +401,12 @@ ${bookContent}
 再用一句话（不超过20个字）介绍这个卡池是关于什么的。
 返回JSON: {"name": "五字名", "description": "一句话介绍", "habits": ["习惯1", "习惯2", ...]}。只返回JSON，不要其他内容。`;
 
-    const result = await callClaude(prompt, '生成习惯卡池');
+    const result = await callAI(prompt, '生成习惯卡池');
     const jsonMatch = result.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('CC返回格式错误');
+    if (!jsonMatch) throw new Error('AI返回格式错误');
 
     const parsed = JSON.parse(jsonMatch[0]);
+    if(!Array.isArray(parsed.habits) || !parsed.habits.length || parsed.habits.some(habit=>typeof habit!=='string' || !habit.trim()))throw new Error('AI没有生成可用的习惯');
     const pool = {
       id: uuidv4(),
       name: parsed.name || '习惯卡池',
@@ -713,16 +416,14 @@ ${bookContent}
       createdAt: new Date().toISOString()
     };
 
-    const data = readJSON('habit_pools.json');
-    data.pools.push(pool);
-    writeJSON('habit_pools.json', data);
+    store.update('pools', data => { data.pools.push(pool); });
 
     res.json({ pool });
   } catch (err) {
     console.error('[Habit] Generate error:', err.message);
     if (err.message.startsWith('CC_BUSY:')) {
       const busyTask = err.message.replace('CC_BUSY:', '');
-      return res.status(409).json({ error: `CC正在忙「${busyTask}」，等它忙完吧～`, busy: true });
+      return res.status(409).json({ error: `正在处理「${busyTask}」，请稍等～`, busy: true });
     }
     res.status(500).json({ error: '生成失败: ' + err.message });
   } finally {
@@ -733,13 +434,13 @@ ${bookContent}
 });
 
 app.put('/api/habit/pools/:id', async (req, res) => {
-  const result = await withFileLock('habit_pools.json', () => {
-    const data = readJSON('habit_pools.json');
+  const result = await transaction(() => {
+    const data = readData('pools');
     const pool = data.pools.find(p => p.id === req.params.id);
     if (!pool) return null;
     if (req.body.name) pool.name = req.body.name;
     if (req.body.habits) pool.habits = req.body.habits;
-    writeJSON('habit_pools.json', data);
+    writeData('pools', data);
     return pool;
   });
   if (!result) return res.status(404).json({ error: '卡池不存在' });
@@ -747,17 +448,17 @@ app.put('/api/habit/pools/:id', async (req, res) => {
 });
 
 app.delete('/api/habit/pools/:id', async (req, res) => {
-  await withFileLock('habit_pools.json', () => {
-    const data = readJSON('habit_pools.json');
+  await transaction(() => {
+    const data = readData('pools');
     data.pools = data.pools.filter(p => p.id !== req.params.id);
-    writeJSON('habit_pools.json', data);
+    writeData('pools', data);
   });
   res.json({ ok: true });
 });
 
 app.get('/api/habit/today', (req, res) => {
-  const { logs } = readJSON('habit_log.json');
-  const today = new Date().toISOString().split('T')[0];
+  const { logs } = readData('logs');
+  const today = localDate();
   const todayLogs = logs.filter(l => l.date === today);
   res.json({ logs: todayLogs });
 });
@@ -766,14 +467,14 @@ app.post('/api/habit/draw', async (req, res) => {
   const { poolId } = req.body;
   if (!poolId) return res.status(400).json({ error: '请选择卡池' });
 
-  const poolData = readJSON('habit_pools.json');
+  const poolData = readData('pools');
   const pool = poolData.pools.find(p => p.id === poolId);
   if (!pool) return res.status(404).json({ error: '卡池不存在' });
   if (!pool.habits.length) return res.status(400).json({ error: '卡池为空' });
 
-  const entry = await withFileLock('habit_log.json', () => {
-    const logData = readJSON('habit_log.json');
-    const today = new Date().toISOString().split('T')[0];
+  const entry = await transaction(() => {
+    const logData = readData('logs');
+    const today = localDate();
     const habit = pool.habits[Math.floor(Math.random() * pool.habits.length)];
     const e = {
       id: uuidv4(),
@@ -786,14 +487,14 @@ app.post('/api/habit/draw', async (req, res) => {
       completedAt: null
     };
     logData.logs.push(e);
-    writeJSON('habit_log.json', logData);
+    writeData('logs', logData);
     return e;
   });
   res.json({ log: entry });
 });
 
 app.get('/api/habit/log', (req, res) => {
-  const { logs } = readJSON('habit_log.json');
+  const { logs } = readData('logs');
   const { month, date } = req.query;
   let result = logs;
   if (date) result = result.filter(l => l.date === date);
@@ -803,13 +504,13 @@ app.get('/api/habit/log', (req, res) => {
 });
 
 app.put('/api/habit/log/:id/complete', async (req, res) => {
-  const result = await withFileLock('habit_log.json', () => {
-    const data = readJSON('habit_log.json');
+  const result = await transaction(() => {
+    const data = readData('logs');
     const entry = data.logs.find(l => l.id === req.params.id);
     if (!entry) return null;
     entry.completed = true;
     entry.completedAt = new Date().toISOString();
-    writeJSON('habit_log.json', data);
+    writeData('logs', data);
     return entry;
   });
   if (!result) return res.status(404).json({ error: '记录不存在' });
@@ -817,10 +518,10 @@ app.put('/api/habit/log/:id/complete', async (req, res) => {
 });
 
 app.delete('/api/habit/log/:id', async (req, res) => {
-  await withFileLock('habit_log.json', () => {
-    const data = readJSON('habit_log.json');
+  await transaction(() => {
+    const data = readData('logs');
     data.logs = data.logs.filter(l => l.id !== req.params.id);
-    writeJSON('habit_log.json', data);
+    writeData('logs', data);
   });
   res.json({ ok: true });
 });
@@ -829,8 +530,8 @@ app.get('/api/habit/calendar', (req, res) => {
   const { year, month } = req.query;
   if (!year || !month) return res.status(400).json({ error: '需要year和month参数' });
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
-  const { logs } = readJSON('habit_log.json');
-  const today = new Date().toISOString().split('T')[0];
+  const { logs } = readData('logs');
+  const today = localDate();
   const result = {};
   logs.filter(l => l.date.startsWith(prefix)).forEach(l => {
     // Any completed entry marks the day as completed
@@ -844,36 +545,37 @@ app.get('/api/habit/calendar', (req, res) => {
 
 // --- Scheduled Reminders ---
 app.get('/api/scheduled', (req, res) => {
-  res.json(readJSON('scheduled_tasks.json'));
+  res.json(readData('scheduled'));
 });
 
 app.get('/api/scheduled/pending', (req, res) => {
-  const data = readJSON('scheduled_tasks.json');
-  const pending = data.pending || [];
-  if (pending.length > 0) {
+  const pending = store.update('scheduled', data => {
+    const pending = data.pending || [];
     data.pending = [];
-    writeJSON('scheduled_tasks.json', data);
-  }
+    return pending;
+  });
   res.json({ pending });
 });
 
 // Test endpoint: manually push a pending notification
 app.post('/api/scheduled/test', (req, res) => {
-  const data = readJSON('scheduled_tasks.json');
-  if (!data.pending) data.pending = [];
-  data.pending.push({ id: 'test', message: "Memo's CC: 这是一条测试通知", firedAt: new Date().toISOString() });
-  writeJSON('scheduled_tasks.json', data);
+  store.update('scheduled', data => {
+    if (!data.pending) data.pending = [];
+    data.pending.push({ id: 'test', message: "记忆手帐： 这是一条测试通知", firedAt: new Date().toISOString() });
+  });
   res.json({ ok: true });
 });
 
 app.post('/api/scheduled', async (req, res) => {
   const { date, time, content } = req.body;
-  if (!time || !content) return res.status(400).json({ error: '时间和内容不能为空' });
-  const task = await withFileLock('scheduled_tasks.json', () => {
-    const data = readJSON('scheduled_tasks.json');
+  if (typeof content!=='string' || !content.trim() || !time) return res.status(400).json({ error: '时间和内容不能为空' });
+  if(typeof time!=='string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return res.status(400).json({error:'时间格式需要 HH:mm'});
+  if(date)try { parseLocalDate(date); } catch(error) { return res.status(400).json({error:'提醒日期无效：'+error.message}); }
+  const task = await transaction(() => {
+    const data = readData('scheduled');
     const t = { id: uuidv4(), date: date || null, time, content, createdAt: new Date().toISOString() };
     data.tasks.push(t);
-    writeJSON('scheduled_tasks.json', data);
+    writeData('scheduled', data);
     return t;
   });
   scheduleReminders();
@@ -881,10 +583,10 @@ app.post('/api/scheduled', async (req, res) => {
 });
 
 app.delete('/api/scheduled/:id', async (req, res) => {
-  await withFileLock('scheduled_tasks.json', () => {
-    const data = readJSON('scheduled_tasks.json');
+  await transaction(() => {
+    const data = readData('scheduled');
     data.tasks = data.tasks.filter(t => t.id !== req.params.id);
-    writeJSON('scheduled_tasks.json', data);
+    writeData('scheduled', data);
   });
   scheduleReminders();
   res.json({ ok: true });
@@ -895,123 +597,90 @@ let dailyJob = null;
 let weeklyJob = null;
 
 function scheduleCronJobs() {
-  const settings = readJSON('settings.json');
-
+  const settings = readData('settings');
   if (dailyJob) dailyJob.stop();
   if (weeklyJob) weeklyJob.stop();
-
-  const [dH, dM] = settings.dailyDigestTime.split(':');
-  dailyJob = cron.schedule(`${parseInt(dM)} ${parseInt(dH)} * * *`, async () => {
-    console.log('[Cron] Running daily digest...');
-    try {
-      const { memos } = readJSON('memos.json');
-      const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
-      const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      const yesterday = new Date(now - 86400000);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      const fmtDate = (d) => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-      const yesterdayLabel = fmtDate(yesterday);
-      const todayLabel = fmtDate(now);
-      const yesterdayMemos = memos.filter(m => m.createdAt.startsWith(yesterdayStr));
-      const todayMemos = memos.filter(m => m.createdAt.startsWith(today));
-      const yesterdayText = yesterdayMemos.map(m => `- (${m.tags.join(',')}) ${m.content}`).join('\n');
-      const todayText = todayMemos.map(m => `- (${m.tags.join(',')}) ${m.content}`).join('\n');
-      const prompt = `你是一个手帐助手。请根据以下两天的手帐内容生成摘要。返回JSON对象，包含date、summary、tasks(数组)字段。\nsummary的格式要求：\n· ${yesterdayLabel}，概述当天的主要内容\n· ${todayLabel}，概述当天的主要内容\n每个日期单独一段，前面用"· "开头。如果某天没有内容就写"暂无记录"。\n只返回JSON。\n\n${yesterdayLabel}的手帐:\n${yesterdayText || '(暂无记录)'}\n\n${todayLabel}的手帐:\n${todayText || '(暂无记录)'}`;
-      const result = await callClaude(prompt, '定时今日摘要');
-      await withFileLock('ai_suggestions.json', () => {
-        const suggestions = readJSON('ai_suggestions.json');
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
-        suggestions.dailyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { date: today, summary: result, tasks: [] };
-        writeJSON('ai_suggestions.json', suggestions);
-      });
-      console.log('[Cron] Daily digest done.');
-    } catch (err) { console.error('[Cron] Daily digest error:', err.message); }
-  });
-
-  const dayMap = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
-  const [wH, wM] = settings.weeklyDigestTime.split(':');
-  const wDay = dayMap[settings.weeklyDigestDay] ?? 0;
-  weeklyJob = cron.schedule(`${parseInt(wM)} ${parseInt(wH)} * * ${wDay}`, async () => {
-    console.log('[Cron] Running weekly digest...');
-    try {
-      const { memos } = readJSON('memos.json');
-      const now = new Date();
-      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-      const weekMemos = memos.filter(m => new Date(m.createdAt) >= weekAgo);
-      const memosText = weekMemos.map(m => `- (${m.tags.join(',')}) ${m.content} [${m.createdAt.split('T')[0]}]`).join('\n');
-      const prompt = `你是一个手帐助手。总结过去一周的手帐，分析标签趋势，生成深度总结。返回JSON对象，包含week、summary、tagTrends(对象)字段。只返回JSON。\n\n本周备忘:\n${memosText || '(本周暂无手帐)'}`;
-      const result = await callClaude(prompt, '定时本周总结');
-      await withFileLock('ai_suggestions.json', () => {
-        const suggestions = readJSON('ai_suggestions.json');
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
-        suggestions.weeklyDigest = jsonMatch ? JSON.parse(jsonMatch[0]) : { summary: result };
-        writeJSON('ai_suggestions.json', suggestions);
-      });
-      console.log('[Cron] Weekly digest done.');
-    } catch (err) { console.error('[Cron] Weekly digest error:', err.message); }
-  });
-
-  console.log(`[Cron] Scheduled daily at ${settings.dailyDigestTime}, weekly on ${settings.weeklyDigestDay} at ${settings.weeklyDigestTime}`);
+  const scheduled = action => async () => {
+    if (storageMaintenance) return;
+    const now = new Date();
+    try { await runTask(action,{},now); console.log(`[Cron] ${action} done`); }
+    catch (error) { console.error(`[Cron] ${action}:`,error.message); }
+  };
+  const [dH,dM] = settings.dailyDigestTime.split(':');
+  dailyJob = cron.schedule(`${Number(dM)} ${Number(dH)} * * *`,scheduled('daily-digest'));
+  const dayMap = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+  const [wH,wM] = settings.weeklyDigestTime.split(':');
+  weeklyJob = cron.schedule(`${Number(wM)} ${Number(wH)} * * ${dayMap[settings.weeklyDigestDay]}`,scheduled('weekly-digest'));
+  console.log(`[Cron] Local timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}; daily ${settings.dailyDigestTime}, weekly ${settings.weeklyDigestDay} ${settings.weeklyDigestTime}`);
   scheduleReminders();
 }
 
 // --- Scheduled Reminders (interval-based, more reliable in Electron fork) ---
 let reminderInterval = null;
-let lastReminderMinute = '';
 
 function scheduleReminders() {
   if (reminderInterval) return; // already running
   reminderInterval = setInterval(() => {
+    if (storageMaintenance) return;
     try {
       const now = new Date();
       const currentMinute = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      if (currentMinute === lastReminderMinute) return; // already checked this minute
-      lastReminderMinute = currentMinute;
       const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
-      const data = readJSON('scheduled_tasks.json');
-      if (!data.tasks || data.tasks.length === 0) return;
-      if (!data.pending) data.pending = [];
-
-      let changed = false;
-      const toRemove = [];
-
-      data.tasks.forEach(t => {
-        if (t.time !== currentMinute) return;
-        if (t.date && t.date !== today) return;
-        const msg = `Memo's CC: ${t.content}`;
-        console.log(`[Reminder] Firing: ${msg} (time=${t.time} date=${t.date || 'daily'})`);
-        data.pending.push({ id: t.id, message: msg, firedAt: now.toISOString() });
-        if (t.date) toRemove.push(t.id);
-        changed = true;
-      });
-
-      if (toRemove.length > 0) {
-        data.tasks = data.tasks.filter(x => !toRemove.includes(x.id));
-      }
-      if (changed) {
-        writeJSON('scheduled_tasks.json', data);
-      }
+      const count = store.fireReminders(today, currentMinute, now.toISOString());
+      if (count) console.log(`[Reminder] Queued ${count} notification(s)`);
     } catch (err) { console.error('[Reminder] Error:', err.message); }
   }, 15000); // check every 15 seconds
   console.log(`[Reminder] Interval checker started`);
 }
 
 // --- Start ---
-app.listen(PORT, () => {
-  console.log(`Memo server running at http://localhost:${PORT}`);
-  console.log(`Claude CLI: ${CLAUDE_CLI}`);
-  scheduleCronJobs();
-
-  // Auto-open browser (skip if running inside Electron)
-  if (!process.env.ELECTRON_RUN_AS_NODE && !process.env.MEMO_ELECTRON) {
-    const { exec } = require('child_process');
-    const url = `http://localhost:${PORT}`;
-    switch (process.platform) {
-      case 'darwin': exec(`open "${url}"`); break;
-      case 'win32': exec(`start "${url}"`); break;
-      default: exec(`xdg-open "${url}"`); break;
+async function start() {
+  // Reserve the local port before opening/migrating data. An old server must exit first.
+  const server = app.listen(PORT, '127.0.0.1');
+  try {
+    await new Promise((resolve,reject) => { server.once('listening',resolve); server.once('error',reject); });
+    store = new Store(DATA_DIR);
+    await store.startupBackup();
+    require('./storage/routes')(app, {
+      store, port:PORT,
+      isBusy:() => ccBusy || storageMaintenance,
+      setMaintenance:value => { storageMaintenance=value; },
+      onRestored:() => { liveTask.reset();scheduleCronJobs(); }
+    });
+    app.use('/api', (error, req, res, next) => {
+      if (res.headersSent) return next(error);
+      console.error('[API]', error.message);
+      res.status(500).json({error:error.message || '数据操作失败'});
+    });
+    scheduleCronJobs();
+    storageReady = true;
+    console.log(`Memo server running at http://localhost:${PORT}`);
+    console.log(`AI assistant: ${currentAgent()}`);
+    if (!process.env.ELECTRON_RUN_AS_NODE && !process.env.MEMO_ELECTRON) {
+      const { exec } = require('child_process');
+      const url = `http://localhost:${PORT}`;
+      switch (process.platform) {
+        case 'darwin': exec(`open "${url}"`); break;
+        case 'win32': exec(`start "${url}"`); break;
+        default: exec(`xdg-open "${url}"`); break;
+      }
     }
+    let stopping = false;
+    const stop = () => {
+      if (stopping) return;
+      stopping = true;storageReady = false;stopAgents();liveTask.close();
+      dailyJob?.stop(); weeklyJob?.stop();
+      clearInterval(reminderInterval);
+      server.close(() => { store.close(); process.exit(0); });
+      setTimeout(() => process.exit(0), 3000).unref();
+    };
+    process.once('SIGTERM', stop);
+    process.once('SIGINT', stop);
+  } catch (error) {
+    server.close();
+    store?.close();
+    throw error;
   }
-});
+}
+start().catch(error => { console.error('[Startup]', error.message); process.exitCode = 1; });

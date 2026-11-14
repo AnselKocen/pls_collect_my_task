@@ -1,13 +1,14 @@
 {
   "name": "memo-app",
   "version": "1.0.0",
-  "description": "Memo Journal with CC — personal journal app with Claude Code CLI integration",
+  "description": "Memo Journal — personal journal app with Claude Code, Codex and CodeBuddy CLI integration",
   "main": "electron-main.js",
   "scripts": {
     "start": "node server.js",
     "electron": "electron .",
     "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win"
+    "build:win": "electron-builder --win",
+    "test": "node --test test/*.test.js"
   },
   "build": {
     "appId": "com.memo.journal",
@@ -17,6 +18,9 @@
     },
     "files": [
       "server.js",
+      "storage/**/*",
+      "tasks/**/*",
+      "agents/**/*",
       "electron-main.js",
       "electron-preload.js",
       "package.json",
@@ -25,6 +29,10 @@
     ],
     "asarUnpack": [
       "server.js",
+      "public/messages.js",
+      "storage/**/*",
+      "tasks/**/*",
+      "agents/**/*",
       "node_modules/**/*"
     ],
     "mac": {
@@ -50,5 +58,8 @@
   "devDependencies": {
     "electron": "^35.7.5",
     "electron-builder": "^26.8.1"
+  },
+  "engines": {
+    "node": ">=22.16.0"
   }
 }

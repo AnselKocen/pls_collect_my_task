@@ -5,10 +5,11 @@ const { fork, execFileSync } = require('child_process');
 
 let mainWindow = null;
 let serverProcess = null;
-const PORT = 3013;
+const PORT = Number(process.env.PORT || 3013);
 
 // --- Config Paths ---
 function getConfigDir() {
+  if (process.env.MEMO_CONFIG_DIR) return path.resolve(process.env.MEMO_CONFIG_DIR);
   // In packaged app: ~/Library/Application Support/记忆手帐/
   // In dev: project dir
   if (app.isPackaged) {
@@ -18,258 +19,77 @@ function getConfigDir() {
 }
 
 function getDataDir() {
+  if (process.env.MEMO_DATA_DIR) return path.resolve(process.env.MEMO_DATA_DIR);
   if (app.isPackaged) {
     return path.join(app.getPath('userData'), 'data');
   }
   return path.join(__dirname, 'data');
 }
 
-function getConfigFile() {
-  return path.join(getConfigDir(), 'claude-config.json');
-}
+const { getAgent } = require('./agents');
 
-function readConfig() {
-  try {
-    return JSON.parse(fs.readFileSync(getConfigFile(), 'utf-8'));
-  } catch {
-    return {};
-  }
-}
-
-function writeConfig(config) {
-  const dir = getConfigDir();
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(getConfigFile(), JSON.stringify(config, null, 2), 'utf-8');
-}
-
-// --- CC Detection ---
-
-// Packaged macOS apps launched from Finder have a minimal PATH (/usr/bin:/bin).
-// Build a full PATH that includes common Node/Homebrew locations.
+// Finder launches apps with a minimal PATH; inherit the user's login-shell PATH once.
 function getFullEnv() {
-  const extraPaths = [
-    '/opt/homebrew/bin',
-    '/usr/local/bin',
-    '/usr/bin',
-    '/bin',
-    (process.env.HOME || '') + '/.nvm/current/bin',
-    (process.env.HOME || '') + '/.local/bin',
-  ];
-  const currentPath = process.env.PATH || '';
-  const fullPath = [...new Set([...extraPaths, ...currentPath.split(':')])].join(':');
-  return { ...process.env, PATH: fullPath };
+  let loginPath = '';
+  if (process.platform !== 'win32') {
+    try { loginPath = execFileSync(process.env.SHELL || '/bin/zsh',['-l','-c','printf "%s" "$PATH"'],{encoding:'utf8',timeout:3000}).trim(); } catch {}
+  }
+  const extraPaths = ['/opt/homebrew/bin','/usr/local/bin','/usr/bin','/bin',path.join(app.getPath('home'),'.local','bin')];
+  const entries = [...(process.env.PATH || '').split(path.delimiter),...loginPath.split(path.delimiter),...extraPaths].filter(Boolean);
+  return {...process.env,PATH:[...new Set(entries)].join(path.delimiter)};
 }
 
-function findClaudeAuto() {
-  // 1. Saved config
-  const config = readConfig();
-  if (config.claudePath && fs.existsSync(config.claudePath)) {
-    return config.claudePath;
-  }
-
-  // 2. PATH (use login shell to get full PATH including homebrew etc.)
-  try {
-    const sh = process.env.SHELL || '/bin/zsh';
-    const result = require('child_process').execSync(`${sh} -l -c "which claude"`, { encoding: 'utf-8', timeout: 5000, env: getFullEnv() }).trim();
-    if (result && fs.existsSync(result)) return result;
-  } catch {}
-
-  // 3. Common paths
-  const candidates = [
-    '/opt/homebrew/bin/claude',
-    '/usr/local/bin/claude',
-    '/usr/bin/claude',
-    (process.env.HOME || '') + '/.claude/local/claude',
-  ];
-  for (const p of candidates) {
-    if (p && fs.existsSync(p)) return p;
-  }
-
-  return null;
-}
-
-function verifyClaudePath(claudePath) {
-  // Returns: { ok: true, version } or { ok: false, reason }
-  if (!claudePath || !fs.existsSync(claudePath)) {
-    return { ok: false, reason: 'not_found' };
-  }
-  try {
-    const ver = execFileSync(claudePath, ['--version'], { encoding: 'utf-8', timeout: 5000, env: getFullEnv() }).trim();
-    if (ver) return { ok: true, version: ver };
-    return { ok: false, reason: 'no_output' };
-  } catch {
-    return { ok: false, reason: 'not_executable' };
-  }
-}
-
-// --- Dialogs ---
-// Returns: claudePath string or null (user skipped)
-function showSetupDialog(initialMessage) {
-  // Dialog A: Main setup
-  const result = dialog.showMessageBoxSync(mainWindow, {
-    type: 'warning',
-    title: 'Claude Code CLI',
-    message: initialMessage || '未检测到 Claude Code CLI',
-    detail:
-      '本工具的 AI 功能（智能搜索、图谱、摘要等）需要 Claude Code CLI。\n' +
-      '需要 Anthropic Max 订阅或 API Key。\n\n' +
-      '安装方法：\n' +
-      '1. 打开终端\n' +
-      '2. 运行: npm install -g @anthropic-ai/claude-code\n' +
-      '3. 运行: claude   (完成首次登录)\n\n' +
-      '如果你已安装但未被识别，请点击「手动输入路径」。\n' +
-      '（在终端运行 which claude 可查到路径）',
-    buttons: ['手动输入路径', '跳过，先用基础功能'],
-    defaultId: 0,
-    cancelId: 1,
-  });
-
-  if (result === 1) {
-    // User skipped
-    return null;
-  }
-
-  // User chose to input path — show input dialog
-  return showPathInputLoop();
-}
-
-function showPathInputLoop() {
-  // Electron doesn't have a native text input dialog, use file picker
-  const files = dialog.showOpenDialogSync(mainWindow, {
-    title: '选择 claude 可执行文件',
-    message: '请选择 claude 可执行文件的位置\n（通常在 /opt/homebrew/bin/claude 或 /usr/local/bin/claude）',
-    properties: ['openFile', 'showHiddenFiles'],
-    defaultPath: '/opt/homebrew/bin/',
-    buttonLabel: '选择此文件',
-  });
-
-  if (!files || files.length === 0) {
-    // User cancelled file picker — ask what to do
-    const retry = dialog.showMessageBoxSync(mainWindow, {
-      type: 'question',
-      title: 'Claude CLI',
-      message: '未选择文件',
-      detail: '你可以重新选择，或跳过先使用基础功能。',
-      buttons: ['重新选择', '跳过'],
-      defaultId: 0,
-      cancelId: 1,
+function aiRequest(method,route,body) {
+  return new Promise((resolve,reject) => {
+    const payload = body && JSON.stringify(body);
+    const request = require('http').request({hostname:'127.0.0.1',port:PORT,path:route,method,
+      headers:{'Content-Type':'application/json','X-Memo-AI':'1',...(payload ? {'Content-Length':Buffer.byteLength(payload)} : {})}},response => {
+      let text = '';
+      response.on('data',chunk => {text+=chunk;});
+      response.on('end',() => {
+        try {
+          const result = JSON.parse(text);
+          if (response.statusCode >= 400) return reject(new Error(result.error || 'AI 助手配置失败'));
+          resolve(result);
+        } catch(error) {reject(error);}
+      });
     });
-    if (retry === 0) return showPathInputLoop();
-    return null;
-  }
-
-  const selectedPath = files[0];
-  const check = verifyClaudePath(selectedPath);
-
-  if (!check.ok) {
-    // Dialog B/C: Invalid path or not executable
-    const msg = check.reason === 'not_found'
-      ? '路径无效，文件不存在'
-      : 'Claude CLI 无法执行，可能需要重新安装';
-
-    const retry = dialog.showMessageBoxSync(mainWindow, {
-      type: 'error',
-      title: '验证失败',
-      message: msg,
-      detail: `路径：${selectedPath}`,
-      buttons: ['重新选择', '跳过'],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    if (retry === 0) return showPathInputLoop();
-    return null;
-  }
-
-  // Dialog D: Success
-  writeConfig({ claudePath: selectedPath });
-
-  dialog.showMessageBoxSync(mainWindow, {
-    type: 'info',
-    title: 'Claude CLI 已配置',
-    message: `已找到 Claude CLI (${check.version})`,
-    detail:
-      `路径：${selectedPath}\n` +
-      `路径已保存，下次启动自动识别。\n\n` +
-      `提醒：如果你还没登录过，请先在终端运行一次 claude 完成登录，\n` +
-      `否则 AI 功能将无法使用。\n` +
-      `（登录后不需要重启本应用）`,
-    buttons: ['好的'],
+    request.setTimeout(10000,() => request.destroy(new Error('AI 助手连接超时')));
+    request.on('error',reject);request.end(payload);
   });
-
-  return selectedPath;
-}
-
-// --- CC State ---
-let ccConfigured = false;
-let ccPath = null;
-
-function checkAndSetupCC() {
-  // Auto detect
-  const autoPath = findClaudeAuto();
-  if (autoPath) {
-    const check = verifyClaudePath(autoPath);
-    if (check.ok) {
-      ccPath = autoPath;
-      ccConfigured = true;
-      // Save if not already saved
-      const config = readConfig();
-      if (config.claudePath !== autoPath) {
-        writeConfig({ claudePath: autoPath });
-      }
-      return;
-    }
-  }
-
-  // Not found — show dialog
-  const userPath = showSetupDialog();
-  if (userPath) {
-    ccPath = userPath;
-    ccConfigured = true;
-  }
-  // else: user skipped, ccConfigured stays false
 }
 
 // --- Server ---
 function startServer() {
-  return new Promise((resolve) => {
-    const env = {
-      ...process.env,
-      MEMO_ELECTRON: '1',
-      MEMO_DATA_DIR: getDataDir(),
+  return new Promise((resolve, reject) => {
+    const env = { ...getFullEnv(), MEMO_ELECTRON:'1', MEMO_DATA_DIR:getDataDir(), MEMO_CONFIG_DIR:getConfigDir() };
+    let serverPath = path.join(__dirname,'server.js');
+    if (app.isPackaged) serverPath = serverPath.replace('app.asar','app.asar.unpacked');
+    const child = fork(serverPath, [], {env,silent:true});
+    serverProcess = child;
+    let ready = false;
+    let errorOutput = '';
+    const fail = error => {
+      clearTimeout(timer);
+      if (!ready) { child.kill(); reject(error); }
     };
-    // Pass CC path if configured
-    if (ccPath) env.CLAUDE_CLI = ccPath;
-
-    // In packaged app, server.js is in app.asar.unpacked (via asarUnpack config)
-    let serverPath = path.join(__dirname, 'server.js');
-    if (app.isPackaged) {
-      serverPath = serverPath.replace('app.asar', 'app.asar.unpacked');
-    }
-    serverProcess = fork(serverPath, [], { env, silent: true });
-
-    serverProcess.stdout.on('data', (data) => {
-      const msg = data.toString();
-      console.log('[Server]', msg.trim());
-      if (msg.includes('Memo server running')) resolve();
-    });
-
-    serverProcess.stderr.on('data', (data) => {
-      console.error('[Server Error]', data.toString().trim());
-    });
-
-    serverProcess.on('error', (err) => {
-      console.error('[Server] Failed to start:', err);
-      resolve(); // Don't block app startup
-    });
-
-    serverProcess.on('exit', (code) => {
-      if (code !== 0 && code !== null) {
-        console.error(`Server exited with code ${code}`);
+    const timer = setTimeout(() => fail(new Error('数据库初始化超时，请关闭旧版应用并检查数据目录权限。')),60000);
+    child.stdout.on('data', data => {
+      const message = data.toString();
+      console.log('[Server]',message.trim());
+      if (!ready && message.includes('Memo server running')) {
+        ready = true;clearTimeout(timer);resolve();
       }
     });
-
-    // Timeout fallback
-    setTimeout(resolve, 5000);
+    child.stderr.on('data', data => {
+      errorOutput = (errorOutput + data.toString()).slice(-4000);
+      console.error('[Server]',data.toString().trim());
+    });
+    child.on('error',fail);
+    child.on('exit', code => {
+      clearTimeout(timer);
+      if (!ready) reject(new Error(errorOutput || `本地服务启动失败（${code}）`));
+    });
   });
 }
 
@@ -324,26 +144,25 @@ function createWindow() {
   });
 }
 
-// --- IPC: Frontend asks if CC is configured ---
-ipcMain.handle('cc-check', () => {
-  return { configured: ccConfigured, path: ccPath };
-});
-
-ipcMain.handle('cc-setup', async () => {
-  // Frontend triggered CC setup (user clicked AI button without CC)
-  const userPath = showSetupDialog('AI 功能需要 Claude Code CLI');
-  if (userPath) {
-    ccPath = userPath;
-    ccConfigured = true;
-    // Restart server with new CC path
-    if (serverProcess) {
-      serverProcess.kill();
-      serverProcess = null;
-    }
-    await startServer();
-    return { configured: true, path: ccPath };
-  }
-  return { configured: false };
+// Configuration applies to the currently selected assistant without restarting the server.
+ipcMain.handle('ai-setup', async (event,id) => {
+  const agent = getAgent(id);
+  const status = await aiRequest('GET','/api/ai/status');
+  if (status.agent !== id) throw new Error('AI 助手已切换，请重试');
+  if (status.busy || status.maintenance) throw new Error('AI_BUSY:任务进行中，暂时不能配置助手');
+  if (status.configured) return status;
+  const {response} = await dialog.showMessageBox(mainWindow,{
+    type:'info',title:agent.name,
+    message:`未检测到 ${agent.name} CLI`,
+    detail:`请先安装并在终端运行 ${agent.command} 完成登录。\n安装说明：${agent.install}\n\n已经安装的话，可以选择可执行文件。也可以回到设置，选择其他 AI 助手。`,
+    buttons:['选择可执行文件','稍后配置'],defaultId:0,cancelId:1
+  });
+  if (response !== 0) return {configured:false};
+  const {canceled,filePaths} = await dialog.showOpenDialog(mainWindow,{
+    title:`选择 ${agent.name} 可执行文件`,properties:['openFile','showHiddenFiles'],buttonLabel:'选择此文件'
+  });
+  if (canceled || !filePaths.length) return {configured:false};
+  return aiRequest('POST','/api/ai/path',{agent:id,path:filePaths[0]});
 });
 
 // --- Data Directory Setup ---
@@ -384,12 +203,16 @@ function startNotificationPoller() {
 }
 
 // --- App Lifecycle ---
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   ensureDataDir();
-  checkAndSetupCC();
-  await startServer();
-  createWindow();
-  startNotificationPoller();
+  try {
+    await startServer();
+    createWindow();
+    startNotificationPoller();
+  } catch (error) {
+    dialog.showErrorBox('本地数据服务启动失败',`${error.message}\n\n原始数据不会被自动清空。数据目录：${getDataDir()}`);
+    app.quit();
+  }
 });
 
 app.on('window-all-closed', () => {

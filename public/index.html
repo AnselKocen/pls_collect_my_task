@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>记忆手帐 ♥ — Memo Journal with CC</title>
+  <title>记忆手帐 ♥ — Memo Journal</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -116,21 +116,18 @@
       <div class="search-bar">
         <div class="search-dual">
           <div class="search-half">
-            <label class="search-label">关键词搜索</label>
+            <label class="search-label">本地便签查找</label>
             <div class="search-half-row search-input-wrap">
-              <input type="text" id="searchInput" placeholder="输入关键词查找便签">
+              <input type="text" id="searchInput" maxlength="200" placeholder="输入内容或标签查找便签">
               <button id="searchClearBtn" class="search-clear-btn hidden" title="清空">✕</button>
             </div>
           </div>
-          <div class="search-divider"></div>
-          <div class="search-half">
-            <label class="search-label">问 CC</label>
-            <div class="search-half-row">
-              <input type="text" id="ccSearchInput" placeholder="描述你想找的任务，CC会帮你找哦">
-              <button id="smartSearchBtn" class="btn-small btn-cc btn-search-sm">查找</button>
-            </div>
+          <div class="search-mode-control">
+            <label class="search-label" for="searchMode">匹配方式</label>
+            <select id="searchMode"><option value="exact">精确匹配</option><option value="fuzzy">模糊匹配</option></select>
           </div>
         </div>
+        <p id="searchHint" class="search-hint" aria-live="polite">连续文字匹配，忽略大小写与全角差异；查找不使用 AI。</p>
         <button id="clearSearchBtn" class="btn-small hidden" style="display:none!important"></button>
       </div>
 
@@ -153,8 +150,19 @@
       <div class="sidebar-section collapsible" id="settingsSection">
         <div class="sidebar-title section-toggle" id="settingsToggle"><span class="tape tape-sidebar-2">设置 <span class="arrow">▾</span></span></div>
         <div id="settingsPanel" class="section-body settings-panel">
+          <div class="agent-setting-row">
+            <label for="agentSelect">AI 助手</label>
+            <select id="agentSelect" disabled aria-describedby="agentHint">
+              <option value="cc">cc</option>
+              <option value="codex">codex</option>
+              <option value="codebuddy">codebuddy</option>
+            </select>
+          </div>
+          <p id="agentHint" class="agent-setting-hint" role="status" aria-live="polite"></p>
+          <button id="aiTaskDetailsBtn" class="btn-small" type="button" disabled>查看任务详情</button>
           <div style="font-size:12px;color:var(--t-text-light);margin-bottom:2px">每日整理时间 <span id="dailyTimeDisplay" style="font-weight:700;color:var(--t-text)">23:00</span></div>
           <button id="btnScheduledTasks" class="btn-small" style="width:100%;margin-bottom:6px">更多定时任务</button>
+          <button id="btnDataManagement" class="btn-small" style="width:100%;margin-bottom:6px">数据与备份</button>
           <label>主题配色</label>
           <div class="theme-nav">
             <button id="themePrev" class="theme-arrow" title="上一个">‹</button>
@@ -202,6 +210,26 @@
       </div>
     </div>
 
+    <div id="dataManagementModal" class="modal hidden">
+      <div class="modal-content modal-tag-summary">
+        <div class="modal-header">
+          <h3>数据与备份</h3>
+          <button id="dataManagementClose" class="modal-close" aria-label="关闭数据管理">&times;</button>
+        </div>
+        <p id="storageStatus" class="storage-status" aria-live="polite">正在读取数据…</p>
+        <p id="storagePath" class="storage-path"></p>
+        <div class="storage-actions">
+          <button id="storageBackup" class="btn-primary">立即备份</button>
+          <a href="/api/storage/export" class="btn-small" download>导出记录</a>
+          <button id="storageUpload" class="btn-small">从文件恢复</button>
+          <input id="storageBackupFile" type="file" accept=".sqlite,.db" hidden>
+        </div>
+        <p class="storage-hint">每天第一次启动时会自动备份，保留最近 7 份。手动备份和恢复前的备份会单独保留。导出的记录适合查看，想恢复手帐时请使用备份文件哦～</p>
+        <p id="storageMessage" class="storage-message" role="status"></p>
+        <div id="storageBackupList" class="storage-backup-list"></div>
+      </div>
+    </div>
+
     <!-- Tag Suggestions History Modal -->
     <div id="tagSuggestModal" class="modal hidden">
       <div class="modal-content modal-tag-summary">
@@ -229,6 +257,12 @@
             <span class="ga-tag-hint">范围</span>
             <div class="ga-tag-picker" id="graphTagPicker"></div>
           </div>
+          <div class="ga-range-row">
+            <label>记录日期 <input id="graphFrom" type="date" aria-label="图谱开始日期"></label>
+            <label>至 <input id="graphTo" type="date" aria-label="图谱结束日期"></label>
+            <button id="graphCollapseAll" class="btn-small" type="button">一键折叠</button>
+          </div>
+          <p id="graphCoverage" class="ga-coverage" aria-live="polite"></p>
         </div>
 
         <!-- Navigation: prev/next + meta + delete -->
@@ -252,7 +286,7 @@
               <div class="ga-panel-label">💡 发散思考</div>
               <div class="ga-insights-content" id="graphInsightsContent"></div>
             </div>
-            <div class="ga-panel-label">标签总结</div>
+            <div class="ga-panel-label">主题概括与原始便签</div>
             <div id="graphSummaryPanel" class="graph-summary-panel">
               <p class="ga-empty-hint">选择标签后点击生成，或查看历史总结</p>
             </div>
@@ -526,7 +560,7 @@
             <input type="text" id="scheduledContent" placeholder="任务内容" style="flex:1">
             <button id="scheduledAddBtn" class="btn-primary">添加</button>
           </div>
-          <p style="font-size:11px;color:var(--t-text-light);margin-top:4px">通知将以「Memo's CC:」开头。不填日期则每天重复。</p>
+          <p style="font-size:11px;color:var(--t-text-light);margin-top:4px">通知将以「记忆手帐：」开头。不填日期则每天重复。</p>
         </div>
         <div id="scheduledList" class="scheduled-list"></div>
       </div>
@@ -563,12 +597,12 @@
                 <p>• <b>标签筛选</b>：顶部标签栏可按标签过滤便签</p>
               </div>
               <div class="guide-section">
-                <h4>🤖 智能助手（需要 Claude Code CLI）</h4>
-                <p>• <b>智能查找</b>：输入你想找的东西，AI 帮你找出相关的任务</p>
+                <h4>🤖 智能助手（在设置里选择 AI 助手）</h4>
+                <p>• <b>本地查找</b>：精确匹配连续文字，模糊匹配关键词组合；无需 AI</p>
                 <p>• <b>整理标签</b>：AI 自动分析便签，建议合并或新增标签</p>
                 <p>• <b>任务图谱</b>：可视化展示便签之间的关联关系</p>
-                <p>• <b>本周总结</b>：每周日 23:59 自动生成过去一周的深度总结与标签趋势（也可手动点击生成）</p>
-                <p>• <b>今日摘要</b>：每天定时汇总最近两天的手帐内容</p>
+                <p>• <b>本周总结</b>：按电脑本地自然周（周一至周日）整理，截至生成时刻；默认周日 23:59 自动生成</p>
+                <p>• <b>今日摘要</b>：按电脑本地当天整理，手动与定时生成使用相同日期范围</p>
               </div>
               <div class="guide-section">
                 <h4>🌻 特色玩法</h4>
@@ -587,6 +621,21 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="aiTaskModal" class="modal hidden ai-task-modal" role="dialog" aria-modal="true" aria-labelledby="aiTaskTitle">
+      <div class="modal-content ai-task-dialog">
+        <button id="aiTaskClose" class="modal-close" type="button" aria-label="关闭任务详情">&times;</button>
+        <div class="ai-task-header">
+          <h3 id="aiTaskTitle">任务详情</h3>
+          <span id="aiTaskStatus" class="ai-task-status">等待任务</span>
+        </div>
+        <p id="aiTaskMeta" class="ai-task-meta"></p>
+        <div id="aiTaskStage" class="ai-task-stage" role="status" aria-live="polite"></div>
+        <p id="aiTaskConnection" class="ai-task-connection" role="status"></p>
+        <div id="aiTaskOutput" class="ai-task-output" tabindex="0" aria-label="实时回答"></div>
+        <p class="ai-task-footnote">关闭窗口后任务继续运行。回答通过校验后才会保存。</p>
       </div>
     </div>
 
@@ -625,6 +674,9 @@
     <div class="star star-sm star-gold" style="top:55%;left:60%"></div>
   </div>
 
+  <script src="graph-layout.js"></script>
+  <script src="messages.js"></script>
   <script src="app.js"></script>
+  <script src="task-stream.js"></script>
 </body>
 </html>

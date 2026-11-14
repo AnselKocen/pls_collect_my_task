@@ -1452,7 +1452,7 @@ html[data-theme="mintchoc"] .tape-sidebar-3 {
 
         <h1 class="hero-title">记忆手帐 <small>Memo Journal</small></h1>
         <p class="hero-sub">一个带 AI 助理的个人便签手帐应用 ♥</p>
-        <p class="hero-desc">用 Claude Code CLI 作为后端大脑，帮你整理碎碎念、追踪习惯、生成日/周摘要、绘制任务关联图谱。</p>
+        <p class="hero-desc">支持选择 Claude Code、Codex 或 CodeBuddy CLI 作为 AI 后端，帮你整理碎碎念、追踪习惯、生成日/周摘要、绘制任务关联图谱。</p>
 
         <div class="hero-actions">
           <button class="btn-primary hero-try" onclick="enterApp()">✨ 点击试用 Demo</button>
@@ -1479,7 +1479,7 @@ html[data-theme="mintchoc"] .tape-sidebar-3 {
         <div class="feature-card">
           <div class="tape tape-deco tape-6" style="width:60px;height:18px;top:-8px;right:14px;transform:rotate(4deg)"></div>
           <h3>🤖 AI 整理思路</h3>
-          <p>CC 帮你智能查找、整理标签、生成日/周摘要、绘制任务关联图谱。</p>
+          <p>AI 帮你智能查找、整理标签、生成日/周摘要、绘制任务关联图谱。</p>
         </div>
         <div class="feature-card">
           <div class="tape tape-deco tape-1" style="width:60px;height:18px;top:-8px;left:14px;transform:rotate(-3deg)"></div>
@@ -1516,7 +1516,7 @@ html[data-theme="mintchoc"] .tape-sidebar-3 {
           <h3>🍎 方法一：下载 Mac App</h3>
           <p class="install-sub">目前仅支持 Mac ARM64（Apple Silicon）。Intel Mac / Windows / Linux 请走方法二。</p>
           <ol class="install-steps">
-            <li>先在终端安装并登录 Claude Code CLI：<code>claude</code> → <code>/login</code></li>
+            <li>安装并登录 Claude Code、Codex 或 CodeBuddy CLI，然后在设置里选择 AI 助手</li>
             <li>从 Releases 下载最新 <code>.dmg</code></li>
             <li>拖到「应用程序」文件夹</li>
             <li>首次打开去「系统设置 → 隐私与安全性」点「仍要打开」</li>
@@ -1527,7 +1527,7 @@ html[data-theme="mintchoc"] .tape-sidebar-3 {
           <div class="tape tape-deco tape-stripe-gold" style="width:80px;height:22px;top:-10px;right:-8px;transform:rotate(28deg)"></div>
           <div class="star star-md star-yellow" style="bottom:-8px;left:-6px"></div>
           <h3>💻 方法二：Git Clone 运行源码</h3>
-          <p class="install-sub">Mac / Windows / Linux 都支持。需要 Node.js v18+ 和（可选）Claude Code CLI。</p>
+          <p class="install-sub">Mac / Windows / Linux 都支持。需要 Node.js v22.16+ 和（可选）AI 助手 CLI。</p>
           <pre class="install-code"><code>git clone https://github.com/AnselKocen/pls_collect_my_task.git
 cd pls_collect_my_task
 npm install
@@ -1551,7 +1551,7 @@ start.bat      <span class="code-comment"># Windows（或直接双击）</span><
       <div class="tips-grid">
         <div class="tip-card">
           <strong>AI 按钮没反应？</strong>
-          <span>大概率是 Claude CLI 登录态过期。终端跑一次 <code>claude</code> 重新登录即可。</span>
+          <span>请检查设置里选中的助手，并在终端运行对应 CLI 重新登录。</span>
         </div>
         <div class="tip-card">
           <strong>不想用 AI 也能用吗？</strong>
@@ -1625,7 +1625,7 @@ start.bat      <span class="code-comment"># Windows（或直接双击）</span><
 
   <!-- CC Suggestions Banner -->
   <div id="suggestBanner" class="suggest-banner">
-    <div class="suggest-content">💡 CC 发现了 2 条相似便签，要帮你合并吗？</div>
+    <div class="suggest-content">💡 发现了 2 条相似便签，要帮你合并吗？</div>
     <button class="suggest-close" onclick="this.parentElement.classList.add('hidden')">&times;</button>
   </div>
 
@@ -1697,9 +1697,9 @@ start.bat      <span class="code-comment"># Windows（或直接双击）</span><
       </div>
       <div class="search-divider"></div>
       <div class="search-half">
-        <label class="search-label">问 CC</label>
+        <label class="search-label">本地查找</label>
         <div class="search-half-row">
-          <input type="text" placeholder="描述你想找的任务，CC会帮你找哦">
+          <input type="text" placeholder="描述你想找的任务，查找便签">
           <button class="btn-small btn-cc btn-search-sm" onclick="showToast('智能查找')">查找</button>
         </div>
       </div>
@@ -1726,6 +1726,12 @@ start.bat      <span class="code-comment"># Windows（或直接双击）</span><
   <div id="settingsSection" class="sidebar-section">
     <div class="sidebar-title section-toggle" onclick="document.getElementById('settingsSection').classList.toggle('section-collapsed')"><span class="tape tape-sidebar-2">设置 <span class="arrow">▾</span></span></div>
     <div class="section-body settings-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <label for="demoAgentSelect">AI 助手</label>
+        <select id="demoAgentSelect" onchange="chooseDemoAgent(this)" style="width:112px;font:inherit;font-size:12px;padding:5px 7px;background:var(--card);color:var(--text);border:1px solid var(--border-light)">
+          <option value="cc">cc</option><option value="codex">codex</option><option value="codebuddy">codebuddy</option>
+        </select>
+      </div>
       <div style="font-size:12px;color:var(--text-light);margin-bottom:2px">每日整理时间 <span id="dailyTimeDisplay" style="font-weight:700;color:var(--text)">23:00</span></div>
       <button class="btn-small" style="width:100%;margin-bottom:6px" onclick="openModal('scheduledModal')">更多定时任务</button>
       <label>主题配色</label>
@@ -1988,7 +1994,7 @@ start.bat      <span class="code-comment"># Windows（或直接双击）</span><
         <input type="text" placeholder="任务内容" style="flex:1;min-width:160px">
         <button class="btn-primary" onclick="addScheduled()">添加</button>
       </div>
-      <p style="font-size:11px;color:var(--text-light);margin-top:4px">通知将以「Memo's CC:」开头。不填日期则每天重复。</p>
+      <p style="font-size:11px;color:var(--text-light);margin-top:4px">通知将以「记忆手帐：」开头。不填日期则每天重复。</p>
     </div>
     <div id="scheduledList" class="scheduled-list"></div>
   </div>
@@ -2040,7 +2046,7 @@ start.bat      <span class="code-comment"># Windows（或直接双击）</span><
             <p>• <b>标签筛选</b>：顶部标签栏可按标签过滤便签</p>
           </div>
           <div class="guide-section">
-            <h4>🤖 智能助手（需要 Claude Code CLI）</h4>
+            <h4>🤖 智能助手（在设置里选择 AI 助手）</h4>
             <p>• <b>智能查找</b>：输入你想找的东西，AI 帮你找出相关的任务</p>
             <p>• <b>整理标签</b>：AI 自动分析便签，建议合并或新增标签</p>
             <p>• <b>任务图谱</b>：可视化展示便签之间的关联关系</p>
@@ -2255,14 +2261,21 @@ function toggleContent(btn){
   else{c.style.maxHeight='none';btn.textContent='▾';}
 }
 
+let demoAgent = 'cc';
+function chooseDemoAgent(field) {
+  if (field.disabled) {field.value=demoAgent;return;}
+  demoAgent=field.value;
+}
 let toastTimer;
 function showToast(task){
   const t=document.getElementById('ccToast');
-  document.getElementById('ccToastText').textContent='(o´▽`o) cc，在努力'+task+'……';
+  document.getElementById('demoAgentSelect').disabled=true;
+  document.getElementById('ccToastText').textContent='(o´▽`o) 正在'+task+'……';
   t.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>{
-    document.getElementById('ccToastText').textContent='cc，完成了'+task+'୧(´▽★)୨!!⭐';
+    document.getElementById('demoAgentSelect').disabled=false;
+    document.getElementById('ccToastText').textContent='已完成：'+task+'୧(´▽★)୨!!⭐';
     setTimeout(()=>t.classList.add('hidden'),5000);
   },2000);
 }

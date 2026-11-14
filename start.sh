@@ -24,95 +24,28 @@ FAIL=0
 
 # --- 1. Check Node.js ---
 if command -v node &>/dev/null; then
+  if ! node storage/runtime.js; then
+    echo -e "${RED}✗ Node.js 版本不受支持${NC}"
+    exit 1
+  fi
   NODE_VER=$(node -v)
   echo -e "${GREEN}✓${NC} Node.js ${NODE_VER}"
 else
   echo -e "${RED}✗ 未找到 Node.js${NC}"
   echo ""
-  echo -e "  请先安装 Node.js (v18+)："
+  echo -e "  请先安装 Node.js (v22.16+)："
   echo -e "  ${YELLOW}→ https://nodejs.org${NC}"
   echo -e "  下载 LTS 版本，安装后重新运行此脚本"
   echo ""
   FAIL=1
 fi
 
-# --- 2. Check Claude CLI ---
-CLAUDE_PATH=""
-if [ -n "$CLAUDE_CLI" ] && [ -f "$CLAUDE_CLI" ]; then
-  CLAUDE_PATH="$CLAUDE_CLI"
-elif command -v claude &>/dev/null; then
-  CLAUDE_PATH=$(which claude)
-else
-  for p in /opt/homebrew/bin/claude /usr/local/bin/claude "$HOME/.claude/local/claude"; do
-    if [ -f "$p" ]; then
-      CLAUDE_PATH="$p"
-      break
-    fi
-  done
-fi
-
-if [ -z "$CLAUDE_PATH" ]; then
-  echo -e "${YELLOW}⚠ 未自动找到 Claude CLI${NC}"
-  echo ""
-  echo -e "  如果你已经安装了，请输入 claude 的完整路径"
-  echo -e "  （例如 /usr/local/bin/claude），直接回车跳过："
-  echo -n "  路径: "
-  read -r USER_PATH
-  if [ -n "$USER_PATH" ] && [ -f "$USER_PATH" ]; then
-    CLAUDE_PATH="$USER_PATH"
-    export CLAUDE_CLI="$CLAUDE_PATH"
-  else
-    if [ -n "$USER_PATH" ]; then
-      echo -e "  ${RED}路径不存在: $USER_PATH${NC}"
-    fi
-    echo ""
-    echo -e "${RED}✗ 未找到 Claude CLI${NC}"
-    echo ""
-    echo -e "  请先安装 Claude CLI："
-    echo -e "  ${YELLOW}→ npm install -g @anthropic-ai/claude-code${NC}"
-    echo ""
-    echo -e "  安装后请在终端运行一次 ${YELLOW}claude${NC} 完成首次登录"
-    echo -e "  （需要登录你的 Anthropic 账号，否则 AI 功能无法使用）"
-    echo ""
-    FAIL=1
-  fi
-fi
-
-if [ -n "$CLAUDE_PATH" ]; then
-  echo -e "${GREEN}✓${NC} Claude CLI ($CLAUDE_PATH)"
-  # Verify it actually works
-  CC_VER=$("$CLAUDE_PATH" --version 2>/dev/null || echo "")
-  if [ -z "$CC_VER" ]; then
-    echo -e "${YELLOW}  ⚠ Claude CLI 存在但无法执行，可能需要重新安装${NC}"
-    FAIL=1
-  else
-    echo -e "  版本: $CC_VER"
-    # Check if logged in (quick test)
-    echo -n "  验证登录状态..."
-    CC_TEST=$(timeout 15 "$CLAUDE_PATH" --output-format text -p "hi" 2>&1 || echo "CC_AUTH_FAIL")
-    if echo "$CC_TEST" | grep -qi "auth\|login\|sign in\|unauthorized\|CC_AUTH_FAIL\|error" && [ -z "$(echo "$CC_TEST" | grep -vi "error\|auth\|login\|sign")" ]; then
-      echo ""
-      echo -e "${YELLOW}  ⚠ Claude CLI 似乎尚未登录${NC}"
-      echo -e "  请先在终端运行 ${YELLOW}claude${NC} 完成登录（需要 Max 订阅或 API Key）"
-      echo -e "  登录完成后重新运行此脚本"
-      FAIL=1
-    else
-      echo -e " ${GREEN}OK${NC}"
-    fi
-  fi
-fi
-
-# --- Exit if checks failed ---
+# AI assistants are optional and selected in the app's settings.
 if [ $FAIL -ne 0 ]; then
-  echo "────────────────────────────────"
-  echo -e "${YELLOW}提示：本工具的 AI 功能依赖 Claude Code CLI${NC}"
-  echo -e "  需要 Anthropic ${CYAN}Max 订阅${NC} 或 ${CYAN}API Key${NC} 才能使用"
-  echo -e "  详情：${YELLOW}https://docs.anthropic.com/en/docs/claude-code${NC}"
-  echo ""
-  echo -e "${RED}环境检查未通过，请完成上述准备后再重新运行${NC}"
-  echo ""
+  echo -e "${RED}环境检查未通过，请安装 Node.js 后重新运行${NC}"
   exit 1
 fi
+echo -e "${CYAN}AI 助手可在设置中选择 cc / codex / codebuddy，请安装并登录所选 CLI。${NC}"
 
 # --- 3. Check node_modules ---
 if [ ! -d "node_modules" ]; then

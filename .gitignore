@@ -1,5 +1,9 @@
 node_modules/
 data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 .DS_Store
 .server.pid
 .server.log
@@ -8,3 +12,6 @@ dist/
 .idea/
 claude-config.json
 coffee.html
+
+ai-config.json
+ai-config.json.tmp

@@ -1,0 +1,195 @@
+const {app,BrowserWindow}=require('electron');
+const fs=require('fs'),os=require('os'),path=require('path'),net=require('net');
+const {spawn}=require('child_process');const {once}=require('events');
+const defaults=require('../storage/defaults');
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'memo-ui-smoke-'));
+const profile=path.join(root,'profile');fs.mkdirSync(profile);
+app.setPath('userData',profile);app.disableHardwareAcceleration();
+let child,window;
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function until(expression){for(let i=0;i<120;i++){if(await window.webContents.executeJavaScript(expression))return;await delay(50);}throw new Error('UI wait failed: '+expression);}
+async function run(){
+ const data=defaults(),now=new Date().toISOString();
+ data['memos.json'].memos=[{id:'site',content:'想做个人网站，先从首页开始。',tags:['创作'],createdAt:now},{id:'title',content:'今天写了一行标题，终于开始了。',tags:['创作'],createdAt:now},{id:'walk',content:'傍晚去公园散步，留意路边的花。',tags:['日常'],createdAt:now}];
+ const dataDir=path.join(root,'data');fs.mkdirSync(dataDir);
+ for(const [file,value]of Object.entries(data))fs.writeFileSync(path.join(dataDir,file),JSON.stringify(value));
+ const fake=path.join(root,'fake-claude');const quote=value=>"'"+value.replace(/'/g,"'\\''")+"'";
+ fs.writeFileSync(fake,`#!/bin/sh\nexec ${quote(process.execPath)} ${quote(path.join(__dirname,'fake-model-cli.js'))} "$@"\n`,{mode:0o755});
+ const probe=net.createServer();probe.listen(0,'127.0.0.1');await once(probe,'listening');const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
+ const invalidMode=path.join(root,'invalid-mode');
+ child=spawn(process.execPath,[path.join(__dirname,'../server.js')],{env:{...process.env,ELECTRON_RUN_AS_NODE:'1',MEMO_ELECTRON:'1',MEMO_DATA_DIR:dataDir,PORT:String(port),CLAUDE_CLI:fake,CODEX_CLI:fake,CODEBUDDY_CLI:path.join(root,'not-installed'),MEMO_FAKE_CC_INVALID_FILE:invalidMode},stdio:['ignore','pipe','pipe']});
+ let output='';child.stderr.on('data',data=>{output+=data;});
+ await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Startup: '+output)),10000);child.stdout.on('data',data=>{output+=data;if(output.includes('Memo server running')){clearTimeout(timer);resolve();}});child.once('exit',code=>{clearTimeout(timer);reject(new Error('Exited '+code+': '+output));});});
+ window=new BrowserWindow({show:false,width:1280,height:860,webPreferences:{offscreen:true,contextIsolation:true,nodeIntegration:false,sandbox:true}});
+ let blockTaskSnapshot=false;
+ window.webContents.session.webRequest.onBeforeRequest({urls:['https://*/*','http://*/*']},(details,callback)=>callback({cancel:!details.url.startsWith('http://127.0.0.1:') || (blockTaskSnapshot && details.url.endsWith('/api/ai/task'))}));
+ await window.loadURL(`http://127.0.0.1:${port}`);
+ await window.webContents.executeJavaScript(fs.readFileSync(process.env.MEMO_D3_TEST_FILE,'utf8'));
+ await until('typeof memos !== "undefined" && memos.length===3');
+ const out=process.env.MEMO_UI_SCREENSHOT_DIR;
+ if(out)fs.mkdirSync(out,{recursive:true});
+ await until('agentStatusKnown && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`
+   if(taskWaitText({task:'标签整理 1/1',elapsedMs:65000})!=='正在处理：标签整理 1/1 · 已等待1分5秒，请稍等')throw new Error('Task duration not shown');
+ `);
+ await window.webContents.executeJavaScript(`
+   var field=document.getElementById('agentSelect');
+   if([...field.options].map(option=>option.value).join(',')!=='cc,codex,codebuddy')throw new Error('Wrong assistant options');
+   field.value='codex';field.dispatchEvent(new Event('change'));
+ `);
+ await until('settings.agent==="codex" && !document.getElementById("agentSelect").disabled');
+ const loaded=once(window.webContents,'did-finish-load');window.webContents.reload();await loaded;
+ await until('agentStatusKnown && settings.agent==="codex" && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`
+   var label=document.querySelector('label[for="agentSelect"]').getBoundingClientRect();
+   var field=document.getElementById('agentSelect').getBoundingClientRect();
+   if(field.x<label.right || Math.abs((field.y+field.height/2)-(label.y+label.height/2))>4)throw new Error('Assistant label and dropdown are not on one row');
+   document.getElementById('settingsSection').classList.remove('section-collapsed');
+ `);
+ if(out)fs.writeFileSync(path.join(out,'agent-settings.png'),(await window.webContents.capturePage()).toPNG());
+ fs.writeFileSync(invalidMode,'slow');
+ await window.webContents.executeJavaScript(`
+   window.remoteDone=false;
+   void fetch('/api/cc/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'daily-digest'})}).then(()=>{window.remoteDone=true;});
+ `);
+ await until('aiState.busy && document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`
+   var field=document.getElementById('agentSelect');field.value='codebuddy';field.dispatchEvent(new Event('change'));
+   if(field.value!=='codex')throw new Error('Busy selector accepted a change');
+ `);
+ if(out)fs.writeFileSync(path.join(out,'agent-busy.png'),(await window.webContents.capturePage()).toPNG());
+ await until('window.remoteDone && !document.getElementById("agentSelect").disabled');
+ fs.rmSync(invalidMode);
+ fs.writeFileSync(invalidMode,'stream-slow');
+ blockTaskSnapshot=true; // This check must pass through SSE without snapshot polling.
+ await window.webContents.executeJavaScript(`document.getElementById('digestRegenBtn').click()`);
+ await until('!document.querySelector("#digestRegenBtn + [data-ai-task-details]").hidden && document.getElementById("digestRegenBtn").disabled');
+ await window.webContents.executeJavaScript(`document.querySelector('#digestRegenBtn + [data-ai-task-details]').click()`);
+ await until('document.querySelector("#aiTaskOutput pre")?.textContent.length>0 && document.getElementById("aiTaskStatus").dataset.status==="running"');
+ const growth=[await window.webContents.executeJavaScript('document.querySelector("#aiTaskOutput pre").textContent.length')];
+ for(let i=0;i<80 && growth.length<3;i++) {
+   const sample=await window.webContents.executeJavaScript('({chars:document.querySelector("#aiTaskOutput pre")?.textContent.length || 0,running:document.getElementById("aiTaskStatus").dataset.status==="running"})');
+   if(sample.running && sample.chars>growth.at(-1))growth.push(sample.chars);
+   await delay(15);
+ }
+ if(growth.length<3)throw new Error('Expected at least three visible text lengths while generating, without polling: '+JSON.stringify(growth));
+ console.log(JSON.stringify({liveStreamVisibleGrowth:growth,snapshotPollingBlocked:true}));
+ await window.webContents.executeJavaScript(`
+   var partialText=document.getElementById('aiTaskOutput').textContent;
+   document.getElementById('aiTaskClose').click();
+   if(!document.getElementById('agentSelect').disabled)throw new Error('Closing details unlocked the assistant');
+   document.getElementById('aiTaskDetailsBtn').click();
+   if(document.getElementById('aiTaskOutput').textContent!==partialText)throw new Error('Reopening lost partial text');
+   if(document.getElementById('aiTaskOutput').textContent.includes('PRIVATE_THINKING'))throw new Error('Private reasoning leaked');
+ `);
+ if(out)fs.writeFileSync(path.join(out,'task-stream-partial.png'),(await window.webContents.capturePage()).toPNG());
+ await until('document.getElementById("aiTaskStatus").dataset.status==="completed" && !document.getElementById("agentSelect").disabled');
+ blockTaskSnapshot=false;
+ await window.webContents.executeJavaScript(`document.getElementById('aiTaskClose').click()`);
+ fs.writeFileSync(invalidMode,'partial-failure');
+ await window.webContents.executeJavaScript(`document.getElementById('digestRegenBtn').click()`);
+ await until('document.getElementById("digestRegenBtn").disabled');
+ await window.webContents.executeJavaScript(`document.getElementById('aiTaskDetailsBtn').click()`);
+ await until('document.getElementById("aiTaskStatus").dataset.status==="failed" && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`
+   if(!document.getElementById('aiTaskStage').textContent.includes('登录'))throw new Error('Stream failure lacks a friendly message');
+   document.getElementById('aiTaskClose').click();
+ `);
+ fs.rmSync(invalidMode);
+
+ await window.webContents.executeJavaScript(`var field=document.getElementById('agentSelect');field.value='codebuddy';field.dispatchEvent(new Event('change'));`);
+ await until('settings.agent==="codebuddy" && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`(async()=>{
+   if(!await checkCCAvailable())throw new Error('Missing assistant was accepted');
+   const toast=document.getElementById('appToast').textContent;
+   if(!toast.includes('CodeBuddy') || toast.includes('Claude'))throw new Error('Wrong product in missing CLI message');
+   var field=document.getElementById('agentSelect');field.value='cc';field.dispatchEvent(new Event('change'));
+ })()`);
+ await until('settings.agent==="cc" && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(fs.readFileSync(process.env.MEMO_D3_TEST_FILE,'utf8'));
+ await window.webContents.executeJavaScript(`
+   showDigest({date:'2026-04-21 ~ 2026-04-22',summary:'· 2026年4月21日，暂无记录\\n\\n· 2026年4月22日，暂无记录'},true);
+   if(!document.getElementById('digestText').textContent.includes('还没有内容哦～'))throw new Error('Legacy empty digest is not friendly');
+   if(/口径|旧版|本地日期/.test(document.getElementById('digestBanner').textContent))throw new Error('Technical digest message leaked');
+ `);
+ if(out) {
+   await window.webContents.executeJavaScript(`document.getElementById('digestBanner').scrollIntoView({block:'center'});`);
+   await delay(250);
+   const rect=await window.webContents.executeJavaScript(`(()=>{const box=document.getElementById('digestBanner').getBoundingClientRect();return {x:Math.max(0,Math.floor(box.x)),y:Math.max(0,Math.floor(box.y)),width:Math.ceil(box.width),height:Math.ceil(box.height)};})()`);
+   fs.writeFileSync(path.join(out,'empty-digest.png'),(await window.webContents.capturePage(rect)).toPNG());
+ }
+ await window.webContents.executeJavaScript(`
+   showDigest({date:localDateKey(),from:localDateKey(),summary:'新摘要'});
+   if(document.getElementById('digestTitle').textContent.includes('之前'))throw new Error('Current date mislabeled');
+   showDigest({date:localDateKey(),empty:true});
+   if(!document.getElementById('digestText').textContent.includes('昨天和今天还没有记录哦～'))throw new Error('Empty digest is not friendly');
+   const oldMarked=window.marked;
+   try {
+     window.marked={parse:()=>'<h3>发现</h3><p onclick="window.bad=true"><strong>一个想法</strong><a href="javascript:alert(1)">链接</a></p><script>window.bad=true</script>'};
+     const host=document.createElement('div');host.innerHTML=renderMarkdown('test');
+     if(!host.querySelector('h3') || !host.querySelector('strong') || host.querySelector('script,[onclick],a[href]'))throw new Error('Markdown rendering is unsafe or loses formatting');
+   } finally {window.marked=oldMarked;}
+ `);
+ await window.webContents.executeJavaScript(`document.getElementById('searchInput').value='完全没有这句话';document.getElementById('searchInput').dispatchEvent(new Event('input'));`);
+ await until('filteredMemos && filteredMemos.length===0 && document.getElementById("kanbanGrid").textContent.includes("没有找到记录哦～")');
+ await window.webContents.executeJavaScript(`document.getElementById('searchMode').value='fuzzy';document.getElementById('searchInput').value='散步 公园';document.getElementById('searchInput').dispatchEvent(new Event('input'));`);
+ await until('filteredMemos && filteredMemos.length===1 && filteredMemos[0].id==="walk"');
+ await window.webContents.executeJavaScript(`document.getElementById('searchClearBtn').click();document.getElementById('btnTagGraph').click();`);
+ await delay(150);await window.webContents.executeJavaScript(`graphSelectedTags=['空标签'];document.getElementById('graphRegenBtn').click()`);
+ await until('!document.getElementById("graphRegenBtn").disabled && document.getElementById("appToast").textContent.includes("还没有记录哦～")');
+ await window.webContents.executeJavaScript(`if(graphHistory.length)throw new Error('Empty scope saved a graph');graphSelectedTags=[];document.getElementById('graphRegenBtn').click()`);
+ await until('graphHistory.length && graphHistory.at(-1).version===3 && document.querySelectorAll("#graphContainer .graph-node").length===3');
+ await delay(350);
+ await window.webContents.executeJavaScript(`document.querySelector('#graphContainer .graph-node').dispatchEvent(new MouseEvent('click',{bubbles:true}));`);
+ await until('document.querySelectorAll(".ga-source-text").length>=3');
+ await delay(200);
+ if(out){fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'graph-expanded.png'),(await window.webContents.capturePage()).toPNG());}
+ await window.webContents.executeJavaScript(`document.getElementById('graphCollapseAll').click()`);
+ await until('document.querySelectorAll("#graphContainer .graph-node").length===2 && document.getElementById("graphCollapseAll").textContent==="全部展开"');
+ await delay(150);if(out)fs.writeFileSync(path.join(out,'graph-collapsed.png'),(await window.webContents.capturePage()).toPNG());
+ fs.writeFileSync(invalidMode,'empty:graph');
+ await window.webContents.executeJavaScript(`document.getElementById('graphRegenBtn').click()`);
+ await until('!document.getElementById("graphRegenBtn").disabled && document.getElementById("appToast").textContent.includes("这次没整理好哦～")');
+ fs.unlinkSync(invalidMode);
+ await window.webContents.executeJavaScript(`(async()=>{
+   if(graphHistory.length!==1)throw new Error('Failed graph changed history');
+   if(document.getElementById('appToast').textContent.includes('JSON'))throw new Error('Technical error leaked');
+   document.getElementById('graphCollapseAll').click();
+   const updated=await api('/api/memos/site',{method:'PUT',body:JSON.stringify({content:'改过的想法'})});
+   memos[memos.findIndex(memo=>memo.id==='site')]=updated;
+   document.querySelectorAll('#graphContainer .graph-node').forEach(node=>{if(node.__data__.id==='site')node.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
+   if(!document.getElementById('graphSummaryPanel').textContent.includes('改过的想法'))throw new Error('Edited source not shown');
+   await api('/api/memos/walk',{method:'DELETE'});memos=memos.filter(memo=>memo.id!=='walk');
+   document.querySelectorAll('#graphContainer .graph-node').forEach(node=>{if(node.__data__.id==='walk')node.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
+   if(!document.getElementById('graphSummaryPanel').textContent.includes('原来的便签找不到了哦～'))throw new Error('Deleted source not handled');
+   const bubbles=[];const savedBubble=_showCCBubble;
+   try {_showCCBubble=text=>bubbles.push(text);showCCTask('失败检查');hideCCTask('失败检查',false);}finally{_showCCBubble=savedBubble;}
+   if(bubbles.at(-1).includes('完成'))throw new Error('Failed task reported success');
+   if(bubbles.some(text=>/cc/i.test(text)))throw new Error('Assistant subject leaked into task bubble');
+ })()`);
+ await window.webContents.executeJavaScript(`document.getElementById('graphModal').dispatchEvent(new MouseEvent('click',{bubbles:true}));`);
+ await delay(100);await until('document.getElementById("graphModal").classList.contains("hidden")');
+ await window.webContents.executeJavaScript(`(async()=>{
+   await api('/api/habit/pools/default-pool',{method:'PUT',body:JSON.stringify({habits:[]})});
+   habitSelectedPoolId='default-pool';doHabitDraw();
+ })()`);
+ await until('document.getElementById("appToast").textContent.includes("还没有习惯哦～") && !document.getElementById("habitDrawStep1").classList.contains("hidden")');
+ await window.webContents.executeJavaScript(`(async()=>{
+   const field=document.getElementById('storageBackupFile'),file=new File([''],'large.sqlite');
+   Object.defineProperty(file,'size',{value:101*1024*1024});Object.defineProperty(field,'files',{configurable:true,value:[file]});
+   field.dispatchEvent(new Event('change'));
+   if(!document.getElementById('storageMessage').textContent.includes('100 MB'))throw new Error('Oversized backup was not blocked');
+   const originalFetch=window.fetch;
+   try {
+     window.fetch=async()=>({ok:false,status:400,json:async()=>({error:'SQLITE_CORRUPT: database disk image is malformed'})});
+     try {await storageRequest('/api/storage/restore',{method:'POST'});throw new Error('Expected restore failure');}
+     catch(error) {if(/SQLite|CORRUPT|malformed/i.test(error.message) || !error.detail.includes('SQLITE_CORRUPT'))throw new Error('Storage error was not separated from logs');}
+   } finally {window.fetch=originalFetch;}
+ })()`);
+ console.log(JSON.stringify({streamingReply:true,streamReopen:true,streamFailure:true,agentSelection:true,agentReload:true,agentBusyLock:true,agentMissingMessage:true,agentLayout:true,localSearch:true,emptySearch:true,legacyDigestFriendly:true,emptyDigestFriendly:true,markdownSafe:true,expandedNodes:3,collapsedClusters:2,sourcePanel:true,editedSource:true,deletedSource:true,emptyGraphRejected:true,failureBubble:true,emptyPoolRecovery:true,oversizedBackupBlocked:true,friendlyStorageErrors:true,overlayClose:true}));
+}
+app.whenReady().then(run).catch(error=>{console.error(error.stack);process.exitCode=1;}).finally(async()=>{
+ window?.destroy();if(child && child.exitCode===null && child.signalCode===null){child.kill('SIGTERM');await once(child,'close');}
+ try{fs.rmSync(root,{recursive:true,force:true});}catch{}
+ app.exit(process.exitCode || 0);
+});

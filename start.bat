@@ -16,86 +16,30 @@ set FAIL=0
 :: --- 1. Check Node.js ---
 where node >nul 2>&1
 if %ERRORLEVEL% equ 0 (
+    node storage/runtime.js
+    if errorlevel 1 (
+        echo   请升级 Node.js 后重新启动。
+        pause
+        exit /b 1
+    )
     for /f "tokens=*" %%v in ('node -v') do echo   √ Node.js %%v
 ) else (
     echo   ✗ 未找到 Node.js
     echo.
-    echo     请先安装 Node.js [v18+]:
+    echo     请先安装 Node.js [v22.16+]:
     echo     -^> https://nodejs.org
     echo     下载 LTS 版本，安装后重新运行此脚本
     echo.
     set FAIL=1
 )
 
-:: --- 2. Check Claude CLI ---
-set CLAUDE_FOUND=0
-if defined CLAUDE_CLI (
-    if exist "%CLAUDE_CLI%" (
-        set CLAUDE_FOUND=1
-        echo   √ Claude CLI [自定义路径: %CLAUDE_CLI%]
-    )
-)
-if %CLAUDE_FOUND% equ 0 (
-    where claude >nul 2>&1
-    if %ERRORLEVEL% equ 0 (
-        set CLAUDE_FOUND=1
-        echo   √ Claude CLI [PATH]
-    )
-)
-if %CLAUDE_FOUND% equ 0 (
-    if exist "%APPDATA%\claude\claude.exe" (
-        set CLAUDE_FOUND=1
-        echo   √ Claude CLI [%APPDATA%\claude\claude.exe]
-    )
-)
-if %CLAUDE_FOUND% equ 0 (
-    if exist "%LOCALAPPDATA%\Programs\claude\claude.exe" (
-        set CLAUDE_FOUND=1
-        echo   √ Claude CLI [%LOCALAPPDATA%\Programs\claude\claude.exe]
-    )
-)
-if %CLAUDE_FOUND% equ 0 (
-    echo   未自动找到 Claude CLI
-    echo.
-    echo     如果你已经安装了，请输入 claude.exe 的完整路径
-    echo     例如 C:\Users\你的用户名\AppData\Roaming\claude\claude.exe
-    echo     直接回车跳过:
-    set /p USER_PATH="    路径: "
-    if defined USER_PATH (
-        if exist "%USER_PATH%" (
-            set CLAUDE_FOUND=1
-            set CLAUDE_CLI=%USER_PATH%
-            echo   √ Claude CLI [%USER_PATH%]
-        ) else (
-            echo   路径不存在: %USER_PATH%
-        )
-    )
-    if %CLAUDE_FOUND% equ 0 (
-        echo.
-        echo   ✗ 未找到 Claude CLI
-        echo.
-        echo     请先安装 Claude CLI:
-        echo     -^> npm install -g @anthropic-ai/claude-code
-        echo.
-        echo     安装后请在终端运行一次 claude 完成首次登录
-        echo     [需要登录你的 Anthropic 账号，否则 AI 功能无法使用]
-        echo.
-        set FAIL=1
-    )
-)
-
-:: --- Exit if checks failed ---
+:: AI assistants are optional and selected in the app settings.
 if %FAIL% neq 0 (
-    echo   --------------------------------
-    echo   提示：本工具的 AI 功能依赖 Claude Code CLI
-    echo   需要 Anthropic Max 订阅 或 API Key 才能使用
-    echo   详情：https://docs.anthropic.com/en/docs/claude-code
-    echo.
-    echo   环境检查未通过，请完成上述准备后再重新运行
-    echo.
+    echo   请安装 Node.js 后重新运行。
     pause
     exit /b 1
 )
+echo   AI 助手可在设置中选择 cc / codex / codebuddy，请安装并登录所选 CLI。
 
 :: --- 3. Check node_modules ---
 if not exist "node_modules" (

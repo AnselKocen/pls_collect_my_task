@@ -57,17 +57,25 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function requestError(detail,path,status) {
+  console.error('[Request]',{path,status,detail});
+  const error=new Error(window.memoMessages.errorMessage(detail,settings.agent || 'cc'));
+  error.detail=detail;error.status=status;
+  return error;
+}
+
 async function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
-  const res = await fetch(path, { ...opts, headers });
-  if (res.status === 409) {
+  let res;
+  try { res = await fetch(path, { ...opts, headers }); }
+  catch(error) { throw requestError(error.message,path,0); }
+  if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    if (data.busy) showToast(data.error || 'CC正在忙，请稍后再试');
-    const err = new Error(data.error || 'CC busy');
-    err.ccBusy = true;
+    const err=requestError(data.error || 'Request failed',path,res.status);
+    err.ccBusy=Boolean(data.busy);
+    if(err.ccBusy)showToast(err.message);
     throw err;
   }
-  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Request failed'); }
   return res.json();
 }
 
@@ -139,7 +147,7 @@ function _showCCBubble(text, isDone) {
   if (!bubble) return;
   if (isDone) {
     window._ccCtrl.stop();
-    bubble.innerHTML = `<span>${text}</span><button class="cc-task-bubble-close" id="ccBubbleClose">✕</button>`;
+    bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>查看过程</button><button class="cc-task-bubble-close" id="ccBubbleClose">✕</button>`;
     document.getElementById('ccBubbleClose').addEventListener('click', () => {
       bubble.classList.add('hidden');
       cancelAnimationFrame(_ccBubbleRaf);
@@ -148,7 +156,7 @@ function _showCCBubble(text, isDone) {
       _scheduleCCIdle();
     });
   } else {
-    bubble.innerHTML = `<span>${text}</span>`;
+    bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>查看过程</button>`;
   }
   bubble.classList.remove('hidden');
   cancelAnimationFrame(_ccBubbleRaf);
@@ -195,53 +203,104 @@ const _ccTaskSet = new Set();
 function showCCTask(taskName) {
   if (_ccTaskSet.has(taskName)) return;
   _ccTaskSet.add(taskName);
+  renderAgentControl();
   clearTimeout(_ccIdleTimer);
   clearTimeout(_ccIdleHideTimer);
   _ccActiveTasks++;
   if (_ccActiveTasks === 1) window._ccCtrl.stop();
-  _showCCBubble('cc，在努力' + taskName + ' =(¯꒳¯ )=', false);
+  _showCCBubble('正在' + taskName + ' =(¯꒳¯ )=', false);
 }
 
-function hideCCTask(taskName) {
+function hideCCTask(taskName,success=true) {
   if (!_ccTaskSet.has(taskName)) return;
   _ccTaskSet.delete(taskName);
+  renderAgentControl();
+  syncAIStatus().catch(() => {});
   _ccActiveTasks = Math.max(0, _ccActiveTasks - 1);
   if (_ccActiveTasks === 0) {
-    _showCCBubble('cc，完成了' + taskName + '୧(´▽`★)୭!', true);
+    _showCCBubble(success ? '已完成：' + taskName + '୧(´▽`★)୭!' : '这次没整理好哦～请再试一次吧～', true);
   } else {
     const remaining = [..._ccTaskSet][0];
-    if (remaining) _showCCBubble('cc，在努力' + remaining + ' =(¯꒳¯ )=', false);
+    if (remaining) _showCCBubble('正在' + remaining + ' =(¯꒳¯ )=', false);
   }
 }
 
-// Check if CC is available (Electron only); returns true if NOT available
-let _ccAvailable = null; // null = unknown, true/false = checked
-async function checkCCAvailable() {
-  if (!window.electronAPI) return false; // Not in Electron, assume available (web mode)
-  if (_ccAvailable === true) return false; // Already confirmed available
+// Backend state is authoritative, including cron jobs and other open windows.
+let aiState = {agent:'cc',busy:false,maintenance:false,configured:false};
+let agentStatusKnown = false;
+let agentSwitchPending = false;
+let agentStatusSequence = 0;
+function taskWaitText(status) {
+  const seconds = Math.max(0,Math.floor(Number(status.elapsedMs || 0)/1000));
+  const duration = seconds >= 60 ? `${Math.floor(seconds/60)}分${seconds%60}秒` : `${seconds}秒`;
+  return `正在处理：${status.task || 'AI任务'} · 已等待${duration}${seconds >= 30 ? '，请稍等' : ''}`;
+}
+function renderAgentControl() {
+  const field = document.getElementById('agentSelect');
+  if (!field) return;
+  field.value = settings.agent || aiState.agent || 'cc';
+  const working = aiState.busy || _ccTaskSet.size > 0;
+  field.disabled = !agentStatusKnown || agentSwitchPending || working || aiState.maintenance;
+  const hint = !agentStatusKnown ? '正在确认助手状态…'
+    : working ? (aiState.busy ? taskWaitText(aiState)+'；暂时不能切换' : '任务进行中，暂时不能切换')
+    : aiState.maintenance ? '正在恢复数据，请稍等'
+    : !aiState.configured ? '请先安装并登录所选助手，再使用 AI 功能' : '';
+  document.getElementById('agentHint').textContent = hint;
+  field.title = hint;
+}
+async function syncAIStatus() {
+  const sequence = ++agentStatusSequence;
   try {
-    const status = await window.electronAPI.checkCC();
-    if (status.configured) { _ccAvailable = true; return false; }
-    // Not configured — trigger setup dialog
-    const result = await window.electronAPI.setupCC();
-    if (result.configured) { _ccAvailable = true; return false; }
-    // User skipped
-    showToast('AI 功能需要先配置 Claude CLI');
-    return true; // NOT available
-  } catch { return false; }
+    const status = await api('/api/ai/status');
+    if (sequence === agentStatusSequence && !agentSwitchPending) {
+      aiState = status;settings.agent = status.agent;agentStatusKnown = true;renderAgentControl();
+      if (status.busy && _ccTaskSet.size) _showCCBubble(taskWaitText(status),false);
+    }
+    return status;
+  } catch (error) {
+    if (sequence === agentStatusSequence && !agentSwitchPending) { agentStatusKnown=false;renderAgentControl(); }
+    throw error;
+  }
 }
 
-// Check if CC is busy before starting a task; if busy, show toast and return true
+async function checkCCAvailable() {
+  try {
+    const status = await syncAIStatus();
+    if (status.configured) return false;
+    if (status.busy || status.maintenance) { showToast('正在处理上一项任务，请稍等～');return true; }
+    if (window.electronAPI?.setupAgent) {
+      const result = await window.electronAPI.setupAgent(status.agent);
+      await syncAIStatus();
+      if (result.configured) return false;
+    }
+    showToast(window.memoMessages.errorMessage('AGENT_CLI_MISSING:'+status.agent,status.agent));
+  } catch (error) { showToast(window.memoMessages.errorMessage(error.message,settings.agent)); }
+  return true;
+}
+
 async function checkCCBusy() {
   try {
-    const status = await api('/api/cc/status');
-    if (status.busy) {
-      showToast(`CC正在忙「${status.task}」，等它忙完吧～`);
-      return true;
-    }
-    return false;
-  } catch { return false; }
+    const status = await syncAIStatus();
+    if (!status.busy && !status.maintenance) return false;
+    showToast('正在处理上一项任务，请稍等～');
+  } catch (error) { showToast(error.message); }
+  return true;
 }
+
+document.getElementById('agentSelect').addEventListener('change',async event => {
+  const next = event.target.value;
+  if (!agentStatusKnown || aiState.busy || aiState.maintenance || _ccTaskSet.size || agentSwitchPending) { renderAgentControl();return; }
+  agentSwitchPending = true;++agentStatusSequence;renderAgentControl();
+  try {
+    settings = await api('/api/settings',{method:'PUT',body:JSON.stringify({agent:next})});
+    showToast('AI 助手已切换为 '+next+' ✓');
+  } catch (error) { if(!error.ccBusy)showToast(error.message); }
+  finally {
+    agentSwitchPending = false;
+    await syncAIStatus().catch(() => {});
+    renderAgentControl();
+  }
+});
 
 // Compat shims
 function showLoading() {}
@@ -255,6 +314,10 @@ async function init() {
     renderTagSelector();
     renderFilterTags();
     loadSettings();
+    await syncAIStatus().catch(() => {});
+    setInterval(() => syncAIStatus().catch(() => {}),1500);
+    window.addEventListener('focus',() => syncAIStatus().catch(() => {}));
+    document.addEventListener('visibilitychange',() => { if(!document.hidden)syncAIStatus().catch(() => {}); });
     renderKanban();
     loadSuggestions();
     // Poll for cron-generated digest updates every 5 minutes
@@ -436,10 +499,11 @@ function renderFilterTags() {
 
 document.getElementById('clearFilterBtn').addEventListener('click', () => {
   filterAllSelected = true; filterSelectedTags = []; filteredMemos = null;
-  renderFilterTags(); renderKanban();
+  renderFilterTags(); applyFilters();
 });
 
 function applyFilters() {
+  if (document.getElementById('searchInput').value.trim()) { doSearch();return; }
   filteredMemos = filterAllSelected ? null : memos.filter(m => m.tags.some(t => filterSelectedTags.includes(t)));
   renderKanban();
 }
@@ -448,6 +512,11 @@ function applyFilters() {
 function renderKanban() {
   const grid = document.getElementById('kanbanGrid');
   const displayMemos = filteredMemos !== null ? filteredMemos : memos;
+  if(!displayMemos.length) {
+    const hint=document.createElement('p');hint.className='ga-empty-hint';
+    hint.textContent=memos.length ? '这里还没有找到记录哦～换个关键词或标签试试吧～' : '还没有记录哦～随手写下第一句碎碎念吧～';
+    grid.replaceChildren(hint);return;
+  }
 
   // Flat 3-column grid — deduplicate memos (a memo may appear in multiple tag groups)
   const seen = new Set();
@@ -514,14 +583,14 @@ document.getElementById('sendBtn').addEventListener('click', sendMemo);
 async function sendMemo() {
   const input = document.getElementById('memoInput');
   const content = input.value.trim();
-  if (!content) return;
+  if (!content) { showToast('还没写内容哦～随手记下一句再保存吧～');return; }
   try {
     const memo = await api('/api/memos', { method: 'POST', body: JSON.stringify({ content, tags: selectedTags }) });
     memos.unshift(memo);
     memos.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.createdAt) - new Date(a.createdAt));
     input.value = '';
     renderFilterTags(); renderKanban();
-  } catch (err) { console.error(err); }
+  } catch (err) { console.error(err);showToast(err.message); }
 }
 
 // === Tag Manager ===
@@ -597,7 +666,7 @@ function renderTagManagerList() {
       <button class="tag-edit" data-tag="${tag}" title="编辑">✏️</button>
       <button class="tag-delete" data-tag="${tag}" title="删除">✕</button>
     </div>`;
-  }).join('') || '<p style="color:var(--t-text-light);text-align:center;padding:12px">暂无标签</p>';
+  }).join('') || '<p style="color:var(--t-text-light);text-align:center;padding:12px">还没有标签哦～可以先添一个喜欢的名字～</p>';
 
   // Edit button — show inline tape + emoji picker
   container.querySelectorAll('.tag-edit').forEach(btn => {
@@ -677,7 +746,7 @@ function renderTagManagerList() {
             tagTapes[effectiveName] = pendingTape;
             const tagEmojis = settings.tagEmojis || {};
             tagEmojis[effectiveName] = pendingEmoji;
-            settings = await api('/api/settings', { method: 'PUT', body: JSON.stringify({ ...settings, tagTapes, tagEmojis }) });
+            settings = await api('/api/settings', { method: 'PUT', body: JSON.stringify({ tagTapes, tagEmojis }) });
             renderTagManagerList(); renderKanban(); renderFilterTags(); renderTagSelector();
             showModalToast('修改成功！✓');
           } catch(err) { console.error(err); }
@@ -717,7 +786,7 @@ document.getElementById('addNewTagBtn').addEventListener('click', async () => {
     tagTapes[name] = selectedNewTape;
     const tagEmojis = settings.tagEmojis || {};
     tagEmojis[name] = selectedNewEmoji;
-    settings = await api('/api/settings', { method: 'PUT', body: JSON.stringify({ ...settings, tagTapes, tagEmojis }) });
+    settings = await api('/api/settings', { method: 'PUT', body: JSON.stringify({ tagTapes, tagEmojis }) });
     document.getElementById('newTagName').value = '';
     selectedNewEmoji = '🏷️';
     selectedNewTape = 'tape-1';
@@ -757,7 +826,7 @@ async function editMemo(id) {
   editDiv.querySelector('.memo-edit-cancel').addEventListener('click', () => { card.classList.remove('editing'); contentEl.style.display = ''; editDiv.remove(); });
   editDiv.querySelector('.memo-edit-save').addEventListener('click', async () => {
     const newContent = editDiv.querySelector('textarea').value.trim();
-    if (!newContent) return;
+    if (!newContent) { showToast('还没写内容哦～随手记下一句再保存吧～');return; }
     try {
       const updated = await api(`/api/memos/${id}`, { method: 'PUT', body: JSON.stringify({ content: newContent, tags: editTags }) });
       const idx = memos.findIndex(m => m.id === id);
@@ -790,60 +859,53 @@ async function togglePin(id) {
   } catch (err) { console.error(err); }
 }
 
-// === Search ===
+// === Local Search ===
+let searchSequence = 0;
+let searchTimer;
+const updateSearchHint = () => {
+  document.getElementById('searchHint').textContent = document.getElementById('searchMode').value === 'fuzzy'
+    ? '关键词可分开、无序出现，支持忽略标点与空格；不使用 AI 或语义推断。'
+    : '连续文字匹配，忽略大小写与全角差异；查找不使用 AI。';
+};
 document.getElementById('searchInput').addEventListener('input', () => {
   const keyword = document.getElementById('searchInput').value.trim();
-  const clearBtn = document.getElementById('searchClearBtn');
-  if (clearBtn) clearBtn.classList.toggle('hidden', !keyword);
-  if (!keyword) { clearSearch(); return; }
-  doSearch();
+  document.getElementById('searchClearBtn').classList.toggle('hidden',!keyword);
+  clearTimeout(searchTimer);
+  ++searchSequence;
+  if (!keyword) return clearSearch();
+  searchTimer = setTimeout(doSearch,150);
 });
-document.getElementById('searchClearBtn').addEventListener('click', () => {
-  document.getElementById('searchInput').value = '';
-  document.getElementById('searchClearBtn').classList.add('hidden');
-  clearSearch();
-});
+document.getElementById('searchMode').addEventListener('change', () => { updateSearchHint(); doSearch(); });
+document.getElementById('searchInput').addEventListener('keydown', event => { if(event.key === 'Enter') { clearTimeout(searchTimer);doSearch(); } });
+document.getElementById('searchClearBtn').addEventListener('click',clearSearch);
 
 function clearSearch() {
-  filteredMemos = null;
-  filterAllSelected = true;
-  filterSelectedTags = [];
+  ++searchSequence;clearTimeout(searchTimer);
   document.getElementById('searchInput').value = '';
-  document.getElementById('ccSearchInput').value = '';
-  renderFilterTags();
-  renderKanban();
+  document.getElementById('searchClearBtn').classList.add('hidden');
+  document.getElementById('clearSearchBtn').classList.add('hidden');
+  updateSearchHint();applyFilters();
 }
 
 async function doSearch() {
   const keyword = document.getElementById('searchInput').value.trim();
-  if (!keyword) { clearSearch(); return; }
-  const params = new URLSearchParams(); params.set('keyword', keyword);
-  if (filterSelectedTags.length) params.set('tag', filterSelectedTags.join(','));
+  if (!keyword) return clearSearch();
+  const sequence = ++searchSequence;
+  const params = new URLSearchParams({keyword,mode:document.getElementById('searchMode').value});
+  if(filterSelectedTags.length)params.set('tags',JSON.stringify(filterSelectedTags));
   try {
-    filteredMemos = await api(`/api/memos?${params}`);
+    const results = await api(`/api/memos?${params}`);
+    if(sequence !== searchSequence)return;
+    filteredMemos = results;
     document.getElementById('clearSearchBtn').classList.remove('hidden');
     renderKanban();
-  } catch (err) { console.error(err); }
+    document.getElementById('searchHint').textContent = `找到 ${results.length} 条便签 · 本地${document.getElementById('searchMode').value === 'fuzzy' ? '模糊' : '精确'}匹配`;
+  } catch(error) { if(sequence === searchSequence)showToast(error.message); }
 }
 
-document.getElementById('smartSearchBtn').addEventListener('click', async () => {
-  const query = document.getElementById('ccSearchInput').value.trim();
-  if (!query) return;
-  if (await checkCCAvailable()) return;
-  if (await checkCCBusy()) return;
-  const btn = document.getElementById('smartSearchBtn');
-  btn.disabled = true; btn.textContent = '搜索中...';
-  showCCTask('搜索手帐');
-  try {
-    const res = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'search', params: { query } }) });
-    hideCCTask('搜索手帐');
-    btn.disabled = false; btn.textContent = '搜索';
-    filteredMemos = (res.results && res.results.length) ? res.results.map(id => memos.find(m => m.id === id)).filter(Boolean) : [];
-    if (res.keywords && res.keywords.length) document.getElementById('searchInput').value = res.keywords.join(' ');
-    document.getElementById('clearSearchBtn').classList.remove('hidden');
-    renderKanban();
-  } catch (err) { hideCCTask('搜索手帐'); btn.disabled = false; btn.textContent = '搜索'; console.error(err); }
-});
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
 
 // === Daily Digest ===
 document.getElementById('digestToggle').addEventListener('click', () => { document.getElementById('digestBanner').classList.toggle('digest-collapsed'); });
@@ -858,7 +920,7 @@ document.getElementById('digestRegenBtn').addEventListener('click', async () => 
     const res = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'daily-digest' }) });
     hideCCTask('生成今日摘要'); btn.disabled = false; btn.textContent = '重新生成';
     showDigest(res.digest);
-  } catch (err) { hideCCTask('生成今日摘要'); btn.disabled = false; btn.textContent = '重新生成'; console.error(err); }
+  } catch (err) { hideCCTask('生成今日摘要',false); btn.disabled = false; btn.textContent = '重新生成'; console.error(err); if(!err.ccBusy)showToast(err.message); }
 });
 
 function toggleSummary(btn) {
@@ -867,11 +929,12 @@ function toggleSummary(btn) {
   btn.textContent = content.classList.contains('collapsed-content') ? '▸' : '▾';
 }
 
-function showDigest(digest) {
+function showDigest(digest, legacyScope = false) {
   if (!digest) return;
   const banner = document.getElementById('digestBanner');
-  document.getElementById('digestTitle').textContent = `${digest.date || '今日'} 摘要`;
-  const summary = digest.summary || '';
+  document.getElementById('digestTitle').textContent = `${digest.date || '今日'} 摘要${legacyScope ? ' · 之前的摘要' : ''}`;
+  if(legacyScope)console.info('[Digest] Legacy digest has no local date range',{date:digest.date});
+  const summary = window.memoMessages.digestText(digest,{legacy:legacyScope});
   document.getElementById('digestText').innerHTML = escapeHtml(summary).replace(/\n/g, '<br>');
   document.getElementById('digestTasks').innerHTML = '';
   banner.classList.remove('hidden', 'digest-collapsed');
@@ -903,24 +966,24 @@ document.getElementById('tagSuggestGenBtn').addEventListener('click', async () =
     const data = await api('/api/cc/suggestions');
     tagSuggestHistory = data.tagSuggestionHistory || [];
     renderTagSuggestHistory();
-  } catch (err) { hideCCTask('生成标签建议'); btn.disabled = false; btn.textContent = '生成建议'; console.error(err); }
+  } catch (err) { hideCCTask('生成标签建议',false); btn.disabled = false; btn.textContent = '生成建议'; console.error(err); if(!err.ccBusy)showToast(err.message); }
 });
 
 function renderTagSuggestHistory() {
   const container = document.getElementById('tagSuggestHistory');
   if (tagSuggestHistory.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">暂无建议记录</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">还没有整理过标签哦～点一下「生成建议」试试吧～</p>';
     return;
   }
   container.innerHTML = tagSuggestHistory.map((item, idx) => {
     const content = (item.suggestions || []).map(s => {
       if (s.action === 'merge') return `合并建议: ${s.tags.join(' + ')} — ${s.reason}`;
       return `检查: ${s.tag || s.tags?.join(', ')} — ${s.reason}`;
-    }).join('\n') || '无建议';
+    }).join('\n') || (item.coverage?.processedCount===0 ? '这里还没有记录哦～先随手记几句，再来整理标签吧～' : '这次没有需要调整的标签哦～先这样记着就好～');
     return `
       <div class="tag-summary-item">
         <div class="tag-summary-item-header">
-          <span>${formatTime(item.generatedAt)}</span>
+          <span>${formatTime(item.generatedAt)}${item.coverage ? ` · 已分析 ${item.coverage.processedCount} 条` : ''}</span>
           <span class="tag-summary-item-tag" style="background:var(--accent-light);color:var(--accent)">标签建议</span>
           <div class="summary-item-actions">
             <button onclick="toggleSummary(this)">▸</button>
@@ -948,12 +1011,34 @@ document.getElementById('tagSuggestClose').addEventListener('click', () => { doc
 let graphHistory = [];
 let graphIndex = 0;
 let graphSelectedTags = [];
+let graphCollapsed = false;
+let graphEntryId = null;
+let graphSimulation = null;
+let graphResizeObserver = null;
 
 // Markdown helper — uses marked.js if loaded, falls back to escaped text
 function renderMarkdown(text) {
   if (!text) return '';
   if (typeof marked !== 'undefined') {
-    return marked.parse(String(text), { breaks: true, gfm: true });
+    const template=document.createElement('template');
+    template.innerHTML=marked.parse(String(text), { breaks: true, gfm: true });
+    const allowed=new Set(['P','BR','STRONG','EM','DEL','UL','OL','LI','BLOCKQUOTE','H1','H2','H3','H4','H5','H6','PRE','CODE','HR','A','TABLE','THEAD','TBODY','TR','TH','TD']);
+    for(const element of template.content.querySelectorAll('*')) {
+      if(element.namespaceURI!=='http://www.w3.org/1999/xhtml' || !allowed.has(element.tagName)) {
+        if(['SCRIPT','STYLE'].includes(element.tagName))element.remove();
+        else element.replaceWith(document.createTextNode(element.textContent));
+        continue;
+      }
+      const href=element.getAttribute('href');
+      for(const attribute of [...element.attributes])element.removeAttribute(attribute.name);
+      if(element.tagName==='A' && href) {
+        try {
+          const url=new URL(href,location.href);
+          if(['http:','https:','mailto:'].includes(url.protocol))element.setAttribute('href',url.href);
+        } catch {}
+      }
+    }
+    return template.innerHTML;
   }
   return escapeHtml(text).replace(/\n/g, '<br>');
 }
@@ -982,6 +1067,8 @@ document.getElementById('btnTagGraph').addEventListener('click', async () => {
       document.getElementById('graphContainer').innerHTML =
         '<p style="text-align:center;padding:40px;color:var(--t-text-light)">选择标签范围后点击"生成图谱"</p>';
       document.getElementById('graphDate').textContent = '';
+      document.getElementById('graphCollapseAll').disabled=true;
+      document.getElementById('graphCoverage').textContent='';
       document.getElementById('graphNav').style.display = 'none';
       document.getElementById('graphInsights').style.display = 'none';
       document.getElementById('graphSummaryPanel').innerHTML =
@@ -1030,6 +1117,12 @@ function renderGraphTagPicker() {
 function renderCurrentGraph() {
   if (graphHistory.length === 0) return;
   const entry = graphHistory[graphIndex];
+  if(graphEntryId !== entry.id){graphEntryId=entry.id;graphCollapsed=false;}
+  document.getElementById('graphCollapseAll').textContent=graphCollapsed ? '全部展开' : '一键折叠';
+  document.getElementById('graphCollapseAll').disabled=!entry.nodes?.length;
+  document.getElementById('graphCoverage').textContent=entry.coverage
+    ? `已分析 ${entry.coverage.processedCount}/${entry.coverage.matchedCount} 条便签 · ${entry.coverage.batchCount} 批${entry.coverage.from || entry.coverage.to ? ` · ${entry.coverage.from || '不限开始'} 至 ${entry.coverage.to || '不限结束'}` : ''}`
+    : '这是之前留下的图谱哦～点「生成图谱」可以重新整理最近的记录～';
   // Nav
   const nav = document.getElementById('graphNav');
   nav.style.display = graphHistory.length > 0 ? 'flex' : 'none';
@@ -1048,9 +1141,9 @@ function renderCurrentGraph() {
   renderGraph(entry);
   // Insights
   const insightsEl = document.getElementById('graphInsights');
-  if (entry.insights) {
+  if (entry.insights && (!Array.isArray(entry.insights) || entry.insights.length)) {
     insightsEl.style.display = '';
-    document.getElementById('graphInsightsContent').innerHTML = renderMarkdown(entry.insights);
+    document.getElementById('graphInsightsContent').innerHTML = renderMarkdown(Array.isArray(entry.insights) ? entry.insights.join('\n') : entry.insights);
   } else {
     insightsEl.style.display = 'none';
   }
@@ -1060,93 +1153,94 @@ function renderCurrentGraph() {
   document.getElementById('graphDate').textContent = entry.generatedAt ? `生成于 ${dateStr}` : '';
 }
 
-function renderGraphSummaryPanel(entry) {
-  const panel = document.getElementById('graphSummaryPanel');
-  if (!entry || !entry.summaries || entry.summaries.length === 0) {
-    panel.innerHTML = '<p class="ga-empty-hint">暂无标签总结</p>';
-    return;
+function renderGraphSummaryPanel(entry, selected = null) {
+  const panel=document.getElementById('graphSummaryPanel');panel.replaceChildren();
+  const view=window.memoGraphLayout.makeView(entry,graphCollapsed);
+  if(selected) {
+    const card=document.createElement('div');card.className='ga-sum-card';
+    const title=document.createElement('div');title.className='ga-sum-card-header';title.textContent=selected.label;card.append(title);
+    if(!selected.memoIds.length){const note=document.createElement('p');note.className='ga-source-note';note.textContent='这个想法还没有连到原便签哦～可以重新生成图谱试试～';card.append(note);}
+    for(const id of selected.memoIds) {
+      const memo=memos.find(item=>item.id===id);
+      if(!memo){const missing=document.createElement('p');missing.className='ga-source-note';missing.textContent='原来的便签找不到了哦～可能已经被删掉了～';card.append(missing);continue;}
+      const button=document.createElement('button');button.className='ga-source-button';button.textContent=`${formatTime(memo.createdAt)} · 查看原便签`;button.addEventListener('click',()=>showMemoDetail(id));
+      const content=document.createElement('p');content.className='ga-source-text';content.textContent=memo.content;
+      card.append(button,content);
+      if(new Date(memo.updatedAt)>new Date(entry.generatedAt)){const changed=document.createElement('p');changed.className='ga-source-note';changed.textContent='这条便签后来改过哦～这里显示的是最新内容～';card.append(changed);}
+    }
+    panel.append(card);
   }
-  panel.innerHTML = entry.summaries.map(item => {
-    const ci = tagColorIndex(item.tag);
-    return `
-      <div class="ga-sum-card" id="${tagToCardId(item.tag)}">
-        <div class="ga-sum-card-header">
-          <span class="ga-sum-card-tag tag-color-${ci}">${getTagEmoji(item.tag)} ${item.tag}</span>
-        </div>
-        <div class="md-render">${renderMarkdown(item.summary)}</div>
-      </div>`;
-  }).join('');
+  const sections=entry.summaries?.length ? entry.summaries.map(item=>({title:item.tag,summary:item.summary,memoIds:(entry.clusters || []).find(cluster=>cluster.title===item.tag)?.memoIds || []})) : entry.clusters || [];
+  for(const cluster of sections) {
+    const card=document.createElement('div');card.className='ga-sum-card';
+    const button=document.createElement('button');button.className='ga-cluster-button';button.textContent=cluster.title+(cluster.memoIds.length ? ` · ${cluster.memoIds.length} 条` : '');
+    button.addEventListener('click',()=>renderGraphSummaryPanel(entry,{label:cluster.title,memoIds:cluster.memoIds}));
+    const summary=document.createElement('div');summary.className='ga-source-text';summary.innerHTML=renderMarkdown(cluster.summary);
+    card.append(button,summary);panel.append(card);
+  }
+  if(!panel.children.length)panel.textContent='还没有整理出小结哦～可以再试一次～';
 }
 
 function renderGraph(data) {
-  const container = document.getElementById('graphContainer');
-  container.innerHTML = '';
-  if (!data.nodes || data.nodes.length === 0) {
-    container.innerHTML = '<p style="text-align:center;padding:40px;color:var(--t-text-light)">暂无图谱数据</p>';
-    return;
-  }
-  const width = container.clientWidth || 700;
-  const height = container.clientHeight || 460;
-  // Validate edges: filter out edges referencing non-existent node IDs
-  const nodeIds = new Set(data.nodes.map(n => n.id));
-  const edges = (data.edges || []).filter(e => {
-    const src = typeof e.source === 'object' ? e.source?.id : e.source;
-    const tgt = typeof e.target === 'object' ? e.target?.id : e.target;
-    return src && tgt && nodeIds.has(src) && nodeIds.has(tgt);
-  });
+  if(graphSimulation)graphSimulation.stop();
+  if(graphResizeObserver)graphResizeObserver.disconnect();
+  const container=document.getElementById('graphContainer');container.replaceChildren();
+  if(!container.clientWidth || !container.clientHeight)return;
+  if(!data.nodes?.length){container.textContent='还没有图谱哦～选好记录，再点「生成图谱」试试吧～';return;}
+  if(typeof d3==='undefined'){console.error('[Graph] D3 is not loaded');container.textContent='图谱还没准备好哦～检查一下网络，再刷新试试吧～';return;}
+  const view=window.memoGraphLayout.makeView(data,graphCollapsed);
+  const width=container.clientWidth || 700,height=container.clientHeight || 460;
+  const anchors=new Map(view.clusters.map((cluster,index)=>{
+    const angle=2*Math.PI*index/Math.max(1,view.clusters.length)-Math.PI/2;
+    return [cluster.id,{x:width/2+(view.clusters.length===1 ? 0 : width*.27*Math.cos(angle)),y:height/2+(view.clusters.length===1 ? 0 : height*.27*Math.sin(angle))}];
+  }));
+  view.nodes.forEach(node=>{const anchor=anchors.get(node.clusterId) || {x:width/2,y:height/2};node.x=anchor.x+(hash(node.id)%31)-15;node.y=anchor.y+(hash(node.id+'y')%31)-15;});
   try {
-  const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
-  const simulation = d3.forceSimulation(data.nodes)
-    .force('link', d3.forceLink(edges).id(d => d.id).distance(90))
-    .force('charge', d3.forceManyBody().strength(-180))
-    .force('center', d3.forceCenter(width / 2, height / 2));
-  const link = svg.append('g').selectAll('line').data(edges).join('line').attr('class', 'graph-link');
-  const linkLabel = svg.append('g').selectAll('text').data(edges).join('text')
-    .attr('class', 'graph-link-label').text(d => d.relation || '');
-  const node = svg.append('g').selectAll('g').data(data.nodes).join('g')
-    .call(d3.drag()
-      .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on('end',   (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
-    )
-    .style('cursor', 'pointer')
-    .on('click', (event, d) => {
-      const tag = d.tag || d.label;
-      document.querySelectorAll('.ga-sum-card').forEach(c => c.classList.remove('ga-highlighted'));
-      const card = document.getElementById(tagToCardId(tag));
-      if (card) {
-        card.classList.add('ga-highlighted');
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
+    const svg=d3.select(container).append('svg').attr('width',width).attr('height',height).attr('role','img').attr('aria-label',`${view.nodes.length} 个${graphCollapsed ? '主题簇' : '思绪节点'}的思绪网络图`);
+    const scene=svg.append('g');svg.call(d3.zoom().scaleExtent([.35,3]).on('zoom',event=>scene.attr('transform',event.transform)));
+    const themeLine=scene.append('g').selectAll('line').data(view.themeEdges).join('line').attr('class','graph-theme-link');
+    themeLine.append('title').text(edge=>`主题关联：${edge.relation}`);
+    const link=scene.append('g').selectAll('line').data(view.edges).join('line').attr('class','graph-link');
+    link.append('title').text(edge=>`${edge.kind==='theme' ? '主题关联' : '便签关联'}：${edge.relation || ''}`);
+    const linkLabel=scene.append('g').selectAll('text').data(view.edges).join('text').attr('class','graph-link-label').text(edge=>edge.relation || '');
+    const labels=scene.append('g').selectAll('text').data(graphCollapsed ? [] : view.clusters).join('text').attr('class','graph-cluster-label').text(cluster=>cluster.title);
+    graphSimulation=d3.forceSimulation(view.nodes)
+      .force('link',d3.forceLink(view.edges).id(node=>node.id).distance(graphCollapsed ? 130 : 85))
+      .force('charge',d3.forceManyBody().strength(graphCollapsed ? -300 : -110))
+      .force('collision',d3.forceCollide().radius(graphCollapsed ? 42 : 24))
+      .force('x',d3.forceX(node=>(anchors.get(node.clusterId) || {x:width/2}).x).strength(.16))
+      .force('y',d3.forceY(node=>(anchors.get(node.clusterId) || {y:height/2}).y).strength(.16));
+    const selectNode=(event,node)=>{scene.selectAll('.graph-node').classed('selected',item=>item.id===node.id);renderGraphSummaryPanel(data,node);};
+    const node=scene.append('g').selectAll('g').data(view.nodes).join('g').attr('class','graph-node').attr('role','button').attr('tabindex',0).attr('aria-label',item=>`${item.label}，查看来源便签`)
+      .on('click',selectNode).on('keydown',(event,item)=>{if(['Enter',' '].includes(event.key)){event.preventDefault();selectNode(event,item);}})
+      .call(d3.drag().on('start',(event,item)=>{if(!event.active)graphSimulation.alphaTarget(.2).restart();item.fx=item.x;item.fy=item.y;}).on('drag',(event,item)=>{item.fx=event.x;item.fy=event.y;}).on('end',(event,item)=>{if(!event.active)graphSimulation.alphaTarget(0);item.fx=null;item.fy=null;}));
+    const fills=['#d1fae5','#fce7f3','#dbeafe','#fef3c7','#ede9fe','#fef9c3'],strokes=['#065f46','#9d174d','#1e40af','#92400e','#5b21b6','#854d0e'];
+    const color=item=>view.clusters.findIndex(cluster=>cluster.id===item.clusterId)%fills.length;
+    node.append('circle').attr('r',item=>graphCollapsed ? 12+Math.min(12,Math.sqrt(item.nodeCount || 1)*2) : 7).attr('fill',item=>fills[color(item)]).attr('stroke',item=>strokes[color(item)]).attr('stroke-width',2);
+    node.append('title').text(item=>item.label);
+    node.append('text').attr('dx',item=>graphCollapsed ? 28 : 12).attr('dy',4).text(item=>Array.from(item.label).length>14 ? Array.from(item.label).slice(0,14).join('')+'…' : item.label);
+    const centroid=id=>{const members=view.nodes.filter(item=>item.clusterId===id);return members.length ? {x:d3.mean(members,item=>item.x),y:d3.mean(members,item=>item.y)} : anchors.get(id);};
+    graphSimulation.on('tick',()=>{
+      view.nodes.forEach(item=>{item.x=Math.max(25,Math.min(width-25,item.x));item.y=Math.max(25,Math.min(height-25,item.y));});
+      link.attr('x1',edge=>edge.source.x).attr('y1',edge=>edge.source.y).attr('x2',edge=>edge.target.x).attr('y2',edge=>edge.target.y);
+      linkLabel.attr('x',edge=>(edge.source.x+edge.target.x)/2).attr('y',edge=>(edge.source.y+edge.target.y)/2);
+      node.attr('transform',item=>`translate(${item.x},${item.y})`);
+      labels.attr('x',cluster=>centroid(cluster.id).x).attr('y',cluster=>{const members=view.nodes.filter(item=>item.clusterId===cluster.id);return members.length ? Math.max(16,d3.min(members,item=>item.y)-28) : anchors.get(cluster.id).y-28;});
+      themeLine.attr('x1',edge=>centroid(edge.source).x).attr('y1',edge=>centroid(edge.source).y).attr('x2',edge=>centroid(edge.target).x).attr('y2',edge=>centroid(edge.target).y);
     });
-  // Use tag color palette instead of hardcoded colors
-  const tagBgs = ['#d1fae5','#fce7f3','#dbeafe','#fef3c7','#ede9fe','#fef9c3'];
-  const tagColors = ['#065f46','#9d174d','#1e40af','#92400e','#5b21b6','#854d0e'];
-  node.append('circle').attr('r', 8)
-    .attr('fill', d => tagBgs[tagColorIndex(d.tag || '')] || tagBgs[0])
-    .attr('stroke', d => tagColors[tagColorIndex(d.tag || '')] || tagColors[0])
-    .attr('stroke-width', 2);
-  node.append('text').attr('dx', 12).attr('dy', 4).text(d => d.label || '');
-  const pad = 12;
-  simulation.on('tick', () => {
-    // Clamp nodes within SVG bounds
-    data.nodes.forEach(d => {
-      d.x = Math.max(pad, Math.min(width - pad, d.x));
-      d.y = Math.max(pad, Math.min(height - pad, d.y));
-    });
-    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-    linkLabel.attr('x', d => (d.source.x + d.target.x) / 2)
-             .attr('y', d => (d.source.y + d.target.y) / 2);
-    node.attr('transform', d => `translate(${d.x},${d.y})`);
-  });
-  } catch (e) {
-    console.error('Graph render error:', e);
-    container.innerHTML = '<p style="text-align:center;padding:40px;color:var(--t-text-light)">图谱渲染出错，请重新生成</p>';
-  }
+    graphResizeObserver=new ResizeObserver(()=>{if(Math.abs(container.clientWidth-width)>1 || Math.abs(container.clientHeight-height)>1)renderGraph(data);});
+    graphResizeObserver.observe(container);
+  } catch(error){console.error(error);container.textContent='图谱这次没能画出来哦～请刷新后再试一次吧～';}
 }
 
-// Generate graph (single CC call)
+document.getElementById('graphCollapseAll').addEventListener('click',()=>{
+  if(!graphHistory.length)return;
+  graphCollapsed=!graphCollapsed;
+  document.getElementById('graphCollapseAll').textContent=graphCollapsed ? '全部展开' : '一键折叠';
+  renderGraph(graphHistory[graphIndex]);
+});
+
+// Generate graph with full scope coverage and optional batching
 async function generateGraph() {
   if (await checkCCAvailable()) return;
   if (await checkCCBusy()) return;
@@ -1154,20 +1248,24 @@ async function generateGraph() {
   btn.disabled = true; btn.textContent = '生成中...';
   showCCTask('生成关联图谱');
   try {
-    const graphParams = graphSelectedTags.length > 0 ? { tags: graphSelectedTags } : {};
+    const graphParams = {tags:graphSelectedTags};
+    const from=document.getElementById('graphFrom').value,to=document.getElementById('graphTo').value;
+    if(from)graphParams.from=from;
+    if(to)graphParams.to=to;
+    if(from && to && from>to)throw requestError('开始日期不能晚于结束日期','graph date range',400);
     const res = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'graph', params: graphParams }) });
     hideCCTask('生成关联图谱');
     if (res && res.graph) {
       if (!res.graph.nodes || res.graph.nodes.length === 0) {
-        showToast('图谱生成结果为空，请稍后重试');
+        showToast('这次还没整理出图谱哦～请再试一次吧～');
       }
       graphHistory.push(res.graph);
       graphIndex = graphHistory.length - 1;
       renderCurrentGraph();
     }
   } catch (err) {
-    hideCCTask('生成关联图谱');
-    if (!err.ccBusy) showToast('图谱生成失败: ' + (err.message || '未知错误'));
+    hideCCTask('生成关联图谱',false);
+    if (!err.ccBusy) showToast(err.message);
     console.error(err);
   }
   btn.disabled = false; btn.textContent = '生成图谱';
@@ -1190,9 +1288,12 @@ document.getElementById('graphDeleteCurrent').addEventListener('click', () => {
       await api(`/api/cc/graph/${entry.id}`, { method: 'DELETE' });
       graphHistory.splice(graphIndex, 1);
       if (graphHistory.length === 0) {
+        graphSimulation?.stop();graphResizeObserver?.disconnect();
+        document.getElementById('graphCollapseAll').disabled=true;
+        document.getElementById('graphCoverage').textContent='';
         document.getElementById('graphNav').style.display = 'none';
         document.getElementById('graphContainer').innerHTML =
-          '<p style="text-align:center;padding:40px;color:var(--t-text-light)">暂无图谱数据</p>';
+          '<p style="text-align:center;padding:40px;color:var(--t-text-light)">还没有图谱哦～选好记录，再点「生成图谱」试试吧～</p>';
         document.getElementById('graphInsights').style.display = 'none';
         document.getElementById('graphSummaryPanel').innerHTML =
           '<p class="ga-empty-hint">选择标签后点击"生成图谱"开始</p>';
@@ -1206,6 +1307,7 @@ document.getElementById('graphDeleteCurrent').addEventListener('click', () => {
 });
 
 document.getElementById('graphClose').addEventListener('click', () => {
+  graphSimulation?.stop();graphResizeObserver?.disconnect();
   document.getElementById('graphModal').querySelector('.modal-graph-analysis').classList.remove('graph-fullscreen');
   document.getElementById('graphFullscreen').textContent = '⛶';
   document.getElementById('graphModal').classList.add('hidden');
@@ -1278,23 +1380,23 @@ document.getElementById('weeklyGenBtn').addEventListener('click', async () => {
     hideCCTask('生成本周总结'); btn.disabled = false; btn.textContent = '生成本周总结';
     const data = await api('/api/cc/suggestions'); weeklyHistory = data.weeklyDigests || [];
     renderWeeklyHistory();
-  } catch (err) { hideCCTask('生成本周总结'); btn.disabled = false; btn.textContent = '生成本周总结'; console.error(err); }
+  } catch (err) { hideCCTask('生成本周总结',false); btn.disabled = false; btn.textContent = '生成本周总结'; console.error(err); if(!err.ccBusy)showToast(err.message); }
 });
 
 function renderWeeklyHistory() {
   const container = document.getElementById('weeklyHistory');
-  if (weeklyHistory.length === 0) { container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">暂无总结记录</p>'; return; }
+  if (weeklyHistory.length === 0) { container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">还没有本周小结哦～点一下「生成本周总结」试试吧～</p>'; return; }
   container.innerHTML = weeklyHistory.map((item, idx) => `
     <div class="tag-summary-item">
       <div class="tag-summary-item-header">
         <span>${formatTime(item.generatedAt)}</span>
-        <span class="tag-summary-item-tag" style="background:var(--accent-light);color:var(--accent)">${item.tags ? item.tags.join('、') : item.week||'本周'}</span>
+        <span class="tag-summary-item-tag" style="background:var(--accent-light);color:var(--accent)">${escapeHtml((item.from && item.to ? `${item.from} — ${item.to}` : `之前的总结 · ${item.week || '未标日期'}`)+(item.tags?.length ? ` · ${item.tags.join('、')}` : ''))}</span>
         <div class="summary-item-actions">
           <button onclick="toggleSummary(this)">▸</button>
           <button class="delete-btn" onclick="deleteWeeklyDigest(${idx})">✕</button>
         </div>
       </div>
-      <div class="tag-summary-item-content collapsed-content">${escapeHtml(item.summary||'')}</div>
+      <div class="tag-summary-item-content collapsed-content">${escapeHtml(window.memoMessages.digestText(item,{weekly:true}))}</div>
     </div>
   `).join('');
 }
@@ -1499,13 +1601,13 @@ document.getElementById('habitPoolDetailClose').addEventListener('click', () => 
 document.getElementById('habitPoolDetailNameSave').addEventListener('click', async () => {
   if (!habitDetailPoolId) return;
   const newName = document.getElementById('habitPoolDetailNameInput').value.trim();
-  if (!newName) { showToast('名字不能为空'); return; }
+  if (!newName) { showToast('还没给卡池起名字哦～写个名字再保存吧～'); return; }
   try {
     await api(`/api/habit/pools/${habitDetailPoolId}`, { method: 'PUT', body: JSON.stringify({ name: newName }) });
     showToast('已保存');
     document.getElementById('habitPoolDetailTitle').textContent = `📚 ${newName}`;
     loadHabitPools();
-  } catch (err) { console.error(err); showToast('保存失败'); }
+  } catch (err) { console.error(err); showToast(err.message); }
 });
 
 // Upload
@@ -1543,21 +1645,21 @@ async function uploadHabitZip(file) {
     const res = await fetch('/api/habit/pools/generate', { method: 'POST', body: formData });
     const data = await res.json();
 
-    hideCCTask('生成习惯卡池');
+    hideCCTask('生成习惯卡池',res.ok);
     habitGenerating = false;
 
     if (data.busy) {
-      showToast(data.error);
+      console.error('[Habit generation]',data.error);showToast(window.memoMessages.errorMessage(data.error,settings.agent));
     } else if (data.error) {
-      showToast('生成失败: ' + data.error);
+      console.error('[Habit generation]',data.error);showToast(window.memoMessages.errorMessage(data.error,settings.agent));
     } else {
       showToast('🎉 卡池生成成功～');
       loadHabitPools();
     }
   } catch (err) {
-    hideCCTask('生成习惯卡池');
+    hideCCTask('生成习惯卡池',false);
     habitGenerating = false;
-    showToast('上传失败，请重试');
+    showToast('这次没能读到文件哦～请重新上传试试吧～');
     console.error(err);
   }
   progress.classList.add('hidden');
@@ -1575,7 +1677,7 @@ async function deleteHabitPool(id) {
 function renderDrawPoolPicker() {
   const container = document.getElementById('habitDrawPoolPicker');
   if (habitPools.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px">暂无卡池，请先上传书籍</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px">还没有卡池哦～先上传一本书，做一组自己的习惯卡吧～</p>';
     document.getElementById('habitDrawBtn').disabled = true;
     return;
   }
@@ -1605,7 +1707,7 @@ function doHabitDraw() {
       result.classList.remove('hidden');
       loadHabitToday();
     })
-    .catch(err => { console.error(err); showToast('抽取失败'); });
+    .catch(err => { console.error(err); showToast(err.message);document.getElementById('habitDrawStep1').classList.remove('hidden');document.getElementById('habitDrawStep2').classList.add('hidden'); });
 }
 
 document.getElementById('habitDrawBtn').addEventListener('click', () => {
@@ -1734,7 +1836,7 @@ document.getElementById('habitDayDetailClose').addEventListener('click', () => {
 function renderHabitCalendarLog(logs) {
   const container = document.getElementById('habitCalendarLog');
   if (logs.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:16px 0">本月暂无记录</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:16px 0">这个月还没有记录哦～抽一张卡，试试今天的小习惯吧～</p>';
     return;
   }
   container.innerHTML = logs.slice().reverse().map(log => `
@@ -1802,6 +1904,7 @@ function applyTheme(theme) {
 }
 
 function loadSettings() {
+  renderAgentControl();
   const dailyTime = settings.dailyDigestTime || '23:55';
   document.getElementById('dailyTime').value = dailyTime;
   document.getElementById('dailyTimeDisplay').textContent = dailyTime;
@@ -2146,6 +2249,84 @@ document.getElementById('ctResetBtn').addEventListener('click', () => {
 });
 
 // === Scheduled Reminders ===
+let storageWorking = false;
+const storageMessage = message => { document.getElementById('storageMessage').textContent = message; };
+
+async function storageRequest(url, options = {}) {
+  let response;
+  try { response = await fetch(url, { ...options, headers: { 'X-Memo-Storage':'1', ...options.headers } }); }
+  catch(error) { throw requestError(error.message,url,0); }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw requestError(data.error || '数据操作失败',url,response.status);
+  return data;
+}
+
+async function loadStorageStatus() {
+  const data = await storageRequest('/api/storage/status');
+  const count = data.counts;
+  document.getElementById('storageStatus').textContent = `保存在这台电脑上 · ${count.memos} 条便签 · ${count.habit_pools} 个卡池 · ${count.habit_logs} 条打卡`;
+  document.getElementById('storagePath').textContent = `数据位置：${data.path}`;
+  const list = document.getElementById('storageBackupList');
+  list.replaceChildren();
+  for (const backup of data.backups) {
+    const row = document.createElement('div'); row.className = 'storage-backup-row';
+    const info = document.createElement('div'); info.className = 'storage-backup-info';
+    const label = backup.name.startsWith('auto-') ? '自动备份' : backup.name.startsWith('before-restore-') ? '恢复前备份' : '手动备份';
+    const title = document.createElement('div'); title.textContent = `${label} · ${new Date(backup.createdAt).toLocaleString()}`;
+    const size = document.createElement('span'); size.textContent = `${(backup.size / 1024).toFixed(1)} KB`;
+    info.append(title, size);
+    const buttons = document.createElement('div'); buttons.className = 'storage-backup-buttons';
+    const download = document.createElement('a'); download.className = 'btn-small'; download.textContent = '下载'; download.href = `/api/storage/backups/${encodeURIComponent(backup.name)}`; download.download = backup.name;
+    const restore = document.createElement('button'); restore.className = 'btn-small'; restore.textContent = '恢复'; restore.disabled = storageWorking;
+    restore.addEventListener('click', () => confirmStorageRestore({ name:backup.name }));
+    buttons.append(download, restore); row.append(info, buttons); list.append(row);
+  }
+  if (!data.backups.length) list.textContent = '还没有备份哦～点一下「立即备份」，给记录留个副本吧～';
+}
+
+function setStorageWorking(value) {
+  storageWorking = value;
+  document.querySelectorAll('#dataManagementModal button:not(#dataManagementClose)').forEach(button => { button.disabled = value; });
+}
+
+function confirmStorageRestore({ name, file }) {
+  if (storageWorking) return;
+  showConfirm('恢复会替换当前全部数据，包括便签、卡池、打卡和提醒。\n程序会先备份当前数据。恢复成功后将刷新页面，请先保存正在编辑的内容。', async () => {
+    if (storageWorking) return;
+    setStorageWorking(true); storageMessage('正在找回你的记录哦～请稍等一下～');
+    try {
+      let options;
+      if (file) {
+        const body = new FormData(); body.append('backup', file);
+        options = { method:'POST', body };
+      } else options = { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) };
+      await storageRequest('/api/storage/restore', options);
+      storageMessage('恢复成功，正在刷新…'); window.location.reload();
+    } catch (error) { storageMessage(error.message); setStorageWorking(false); }
+  });
+}
+
+document.getElementById('btnDataManagement').addEventListener('click', async () => {
+  document.getElementById('dataManagementModal').classList.remove('hidden');
+  storageMessage('');
+  try { await loadStorageStatus(); } catch (error) { storageMessage(error.message); }
+});
+document.getElementById('dataManagementClose').addEventListener('click', () => { document.getElementById('dataManagementModal').classList.add('hidden'); });
+document.getElementById('storageBackup').addEventListener('click', async () => {
+  if (storageWorking) return;
+  setStorageWorking(true); storageMessage('正在创建备份…');
+  try { await storageRequest('/api/storage/backup', {method:'POST'}); await loadStorageStatus(); storageMessage('备份完成，可以下载保存。'); }
+  catch (error) { storageMessage(error.message); }
+  finally { setStorageWorking(false); }
+});
+document.getElementById('storageUpload').addEventListener('click', () => { document.getElementById('storageBackupFile').click(); });
+document.getElementById('storageBackupFile').addEventListener('change', event => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file) return;
+  if (file.size > 100 * 1024 * 1024) return storageMessage('这份备份有点大哦～请选择 100 MB 以内的文件吧～');
+  confirmStorageRestore({file});
+});
+
 document.getElementById('btnScheduledTasks').addEventListener('click', async () => {
   await renderScheduledList();
   document.getElementById('scheduledModal').classList.remove('hidden');
@@ -2170,7 +2351,7 @@ async function renderScheduledList() {
   const list = document.getElementById('scheduledList');
   const tasks = data.tasks || [];
   if (tasks.length === 0) {
-    list.innerHTML = '<p style="text-align:center;color:var(--t-text-light);font-size:13px;padding:20px 0">还没有定时提醒</p>';
+    list.innerHTML = '<p style="text-align:center;color:var(--t-text-light);font-size:13px;padding:20px 0">还没有提醒哦～选个时间，给未来的自己留句话吧～</p>';
     return;
   }
   tasks.sort((a, b) => a.time.localeCompare(b.time));
@@ -2179,7 +2360,7 @@ async function renderScheduledList() {
     return `
     <div class="scheduled-item">
       <span class="sch-time">${dateLabel} ${t.time}</span>
-      <span class="sch-content">Memo's CC: ${escapeHtml(t.content)}</span>
+      <span class="sch-content">记忆手帐： ${escapeHtml(t.content)}</span>
       <button class="sch-del" data-id="${t.id}" title="删除">&times;</button>
     </div>`;
   }).join('');
@@ -2211,14 +2392,14 @@ async function loadSuggestions() {
   try {
     const data = await api('/api/cc/suggestions');
     if (data.dailyDigest) {
-      const newSummary = data.dailyDigest.summary || '';
+      const newSummary = `${data.dailyDigest.date || ''}|${data.dailyDigest.generatedAt || ''}|${data.dailyDigest.summary || ''}`;
       if (newSummary !== _lastDigestSummary) {
         _lastDigestSummary = newSummary;
-        showDigest(data.dailyDigest);
+        showDigest(data.dailyDigest, !data.dailyDigest.from);
       }
     } else if (_lastDigestSummary === null) {
       _lastDigestSummary = '';
-      showDigest({ date: new Date().toISOString().split('T')[0], summary: '还没有摘要，点击「重新生成」来创建今日摘要吧～', tasks: [] });
+      showDigest({ date: localDateKey(), summary: '还没有摘要，点击「重新生成」来创建今日摘要吧～', tasks: [] });
     }
   } catch {}
 }
