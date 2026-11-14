@@ -16,9 +16,10 @@ function run(prompt) {
     if(setting==='hang'){setInterval(()=>{},1000);return;}
     const error=setting==='partial-failure' ? 'unauthorized: login required' : setting===`fail:${task}` ? 'simulated CLI failure' : null;
     let output=setting===task ? 'not JSON' : setting===`blank:${task}` ? '' : setting===`empty:${task}` ? JSON.stringify(task==='graph' ? {nodes:[],edges:[],summaries:[],insights:''} : {habits:[]}) : JSON.stringify(respond(task,input));
+    if(setting===`duplicate:${task}`)output=JSON.stringify({...respond(task,input),habits:Array(30).fill('重复的小练习')});
     if(error)output='partial content that must not be saved';
     if(appServer || streaming) {
-      const characters=Array.from(output),size=Math.max(1,Math.ceil(characters.length/4));let index=0;
+      const characters=Array.from(output),size=task==='habit-wish-question' ? 8 : Math.max(1,Math.ceil(characters.length/4));let index=0;
       if(streaming)write({type:'stream_event',event:{type:'message_start',message:{id:'answer'}}});
       // A private thinking payload verifies that the UI adapter never forwards it.
       if(appServer)write({method:'item/reasoning/textDelta',params:{threadId:'fake-thread',turnId:'fake-turn',itemId:'private',delta:'PRIVATE_THINKING'}});

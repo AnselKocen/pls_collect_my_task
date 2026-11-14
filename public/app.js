@@ -1529,14 +1529,14 @@ async function loadHabitPools() {
 function renderHabitPools() {
   const container = document.getElementById('habitPoolList');
   if (habitPools.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">还没有卡池，上传一本书开始吧 📖</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">还没有卡池，聊聊你的愿望，或上传一本书开始吧 🌱</p>';
     return;
   }
   container.innerHTML = habitPools.map(pool => `
     <div class="habit-pool-card" data-id="${pool.id}" style="cursor:pointer">
       <div class="habit-pool-info" onclick="showHabitPoolDetail('${pool.id}')">
         <div class="habit-pool-name">${escapeHtml(pool.name)}</div>
-        <div class="habit-pool-count">${pool.habits.length} 条习惯 · ${pool.description || pool.sourceFile || ''}</div>
+        <div class="habit-pool-count">${pool.habits.length} 条习惯 · ${escapeHtml(pool.description || pool.sourceFile || '')}</div>
       </div>
       <button class="habit-pool-delete" onclick="event.stopPropagation();deleteHabitPool('${pool.id}')">🗑</button>
     </div>
@@ -1677,7 +1677,7 @@ async function deleteHabitPool(id) {
 function renderDrawPoolPicker() {
   const container = document.getElementById('habitDrawPoolPicker');
   if (habitPools.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px">还没有卡池哦～先上传一本书，做一组自己的习惯卡吧～</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px">还没有卡池哦～先聊聊愿望或上传一本书，做一组自己的习惯卡吧～</p>';
     document.getElementById('habitDrawBtn').disabled = true;
     return;
   }

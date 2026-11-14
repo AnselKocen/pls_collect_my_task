@@ -14,6 +14,7 @@ const DATA_DIR = process.env.MEMO_DATA_DIR || path.join(__dirname, 'data');
 const { Store } = require('./storage/store');
 const { TaskService } = require('./tasks/service');
 const { LiveTask } = require('./tasks/live');
+const { readWishRequest, wishContext, promptForWish, parseWishResult, questionPreview } = require('./tasks/habit-wish');
 const liveTask = new LiveTask();
 const { errorMessage: friendlyError } = require('./public/messages');
 const { localDate, parseLocalDate } = require('./tasks/dates');
@@ -345,6 +346,65 @@ app.get('/api/habit/pools', (req, res) => {
   res.json(readData('pools'));
 });
 
+// Each request streams one guided turn. Generation IDs make retries safe even if
+// the browser loses its connection after the new pool has already been saved.
+app.post('/api/habit/wish', async (req, res) => {
+  let input;
+  try { input = readWishRequest(req.body); }
+  catch (error) { return res.status(400).json({ error: error.message }); }
+  if (input.stage === 'generate') {
+    const existing = readData('pools').pools.find(pool => pool.sourceType === 'wish' && pool.generationId === input.requestId);
+    if (existing) {
+      if (JSON.stringify(existing.wishContext) !== JSON.stringify(wishContext(input))) return res.status(409).json({ error: '愿望生成编号已使用，请重新开始' });
+      return res.json({ pool: existing });
+    }
+  }
+  let heartbeat;
+  const send = (event, data) => {
+    if (!res.destroyed && !res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+  const taskName = input.stage === 'generate' ? '生成愿望卡池' : input.stage === 'purpose' ? '明确愿望的目的' : '选择习惯的投入方式';
+  try {
+    const result = await withAITask(taskName, async agent => {
+      res.set({ 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
+      req.setTimeout(0);res.flushHeaders();
+      heartbeat = setInterval(() => { if (!res.destroyed) res.write(': heartbeat\n\n'); }, 15000);heartbeat.unref();
+      res.on('close', () => clearInterval(heartbeat));
+      let correction = '';
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const messages = new Map();
+        send('status', { text: attempt ? '正在调整内容，请稍等…' : input.stage === 'generate' ? '正在为你整理30张习惯卡…' : '正在想一个适合你的问题…' });
+        const answer = await invokeAgent(agent, promptForWish(input, correction), {
+          cwd: DATA_DIR, configDir: CONFIG_DIR,
+          onEvent: event => {
+            if (event.type === 'stage') { liveTask.accept(event);return; }
+            if (input.stage === 'generate' || !['delta', 'message'].includes(event.type) || event.phase === 'commentary') return;
+            const text = event.type === 'delta' ? (messages.get(event.messageId) || '') + event.text : event.text;
+            messages.set(event.messageId, text);
+            const preview = questionPreview(text);
+            if (preview) {
+              send('question', { text: preview });
+              liveTask.accept({ type: 'message', messageId: 'wish-question', text: preview, phase: 'answer' });
+            }
+          }
+        });
+        let parsed;
+        try { parsed = parseWishResult(answer, input.stage); }
+        catch (error) { if (attempt) throw error;correction = error.message;continue; }
+        if (input.stage !== 'generate') return { ...parsed, stage: input.stage };
+        const pool = { id: uuidv4(), ...parsed, sourceType: 'wish', sourceFile: '我的愿望', generationId: input.requestId, wishContext: wishContext(input), createdAt: new Date().toISOString() };
+        store.update('pools', data => { data.pools.push(pool); });
+        return { pool };
+      }
+    });
+    send('result', result);
+  } catch (error) {
+    console.error('[Habit wish]', error.message);
+    if (!res.headersSent) return res.status(error.message.startsWith('CC_BUSY:') ? 409 : 500).json({ error: error.message, busy: error.message.startsWith('CC_BUSY:') });
+    send('error', { error: friendlyError(error.message, currentAgent()) });
+  } finally { clearInterval(heartbeat);if (res.headersSent && !res.writableEnded) res.end(); }
+});
+
 app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req, res) => {
   const uploadedFile = req.file;
   if (!uploadedFile) return res.status(400).json({ error: '请上传ZIP文件' });
@@ -395,11 +455,23 @@ app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req,
 
 ${bookContent}
 
-请基于这本书的核心思想，总结出30个通用的、可执行的日常习惯。每个习惯用一句简短的中文描述（不超过15个字）。
-这些习惯应该具有通用性，适合日常养成，涵盖书中提到的各个方面。
-同时为这组习惯想一个5个汉字以内的名字（有意境，与书的主题相关，例如"微习惯养成"、"清晨唤醒术"、"心流工作法"）。
+请基于这本书的核心思想、代表性内容和独特视角，提炼出30条适合日常践行的习惯卡。
+
+要求：
+1. 突出这本书的特色。整组卡片应体现书中特有的主题、方法、关注点和气质，让人感受到这些习惯与这本书的联系。
+2. 习惯可以是具体行动、观察练习、思考方式，也可以是积极的心态提醒。内容应贴近日常生活，容易理解和践行。
+3. 保留书中积极、有益的启发，避免明显消极、有害、恶意操控或贬低自我与他人的引导。同时尊重原书的风格，避免将所有内容都改写成空泛的励志口号。
+4. 覆盖书中不同的重要内容，保持卡片之间的丰富性。忠于原书，合理转化为日常习惯，不凭空编造书中观点。
+5. 按含义去重。同一个行为或提醒的不同说法视为重复，不要为了凑数反复改写或拆分同一个习惯。每张卡应提供有所区别的行动、观察或思考。
+6. 每个习惯用一句简短、自然的中文描述，不超过25个字。
+
+同时为这组习惯想一个5个汉字以内的名字，有意境，能体现这本书的主题与特色。
 再用一句话（不超过20个字）介绍这个卡池是关于什么的。
-返回JSON: {"name": "五字名", "description": "一句话介绍", "habits": ["习惯1", "习惯2", ...]}。只返回JSON，不要其他内容。`;
+
+输出前检查：整组卡片是否充分体现这本书的特色，是否存在含义重复、空泛凑数或明显负面的内容，完成调整后再输出。
+
+返回JSON: {"name": "五字名", "description": "一句话介绍", "habits": ["习惯1", "习惯2", ...]}。
+habits 数组必须包含30条习惯。只返回JSON，不要其他内容。`;
 
     const result = await callAI(prompt, '生成习惯卡池');
     const jsonMatch = result.match(/\{[\s\S]*\}/);

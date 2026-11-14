@@ -1,4 +1,8 @@
 function respond(task, input) {
+  if (task === 'habit-wish-question') return input.stage === 'purpose'
+    ? { question: `关于“${input.wish}”，你最希望它给日常生活带来什么样的变化？`, options: ['享受尝试和探索的过程', '让工作学习更顺利一些', '建立稳定的日常节奏'] }
+    : { question: `为了“${input.purpose}”，你更希望用怎样的时间和方式来践行？`, options: ['利用零碎时间，每次几分钟', '每天留出十分钟，慢慢积累', '愿意投入更多时间，接受一些挑战'] };
+  if (task === 'habit-wish-pool') return { name: '愿望小步走', description: '让愿望一点点融入日常', habits: Array.from({ length: 30 }, (_, i) => '尝试第' + (i + 1) + '个小练习') };
   if(task==='habit-pool')return {name:'日常小事',description:'从书里挑些小习惯',habits:Array.from({length:30},(_,i)=>'试试第'+(i+1)+'个小习惯')};
   if (task === 'graph') {
     const records=[...new Map(input.records.map(record=>[record.id,record])).values()];

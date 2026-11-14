@@ -364,6 +364,35 @@
 
         <!-- Panel: 卡池管理 -->
         <div class="habit-panel" id="habitPanelPools">
+          <button type="button" id="habitWishStart" class="habit-wish-entry">
+            <span class="habit-wish-entry-icon" aria-hidden="true">🌱</span>
+            <span><strong>你最近想做什么？</strong><small>聊聊你的愿望，做一组适合自己的习惯卡</small></span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <section id="habitWishWizard" class="habit-wish-wizard hidden" aria-label="从愿望生成习惯卡池">
+            <div class="habit-wish-heading">
+              <strong>从一个小愿望开始</strong>
+              <button type="button" id="habitWishHide" class="btn-small" aria-label="收起愿望对话">收起</button>
+            </div>
+            <p id="habitWishStep" class="habit-wish-step"></p>
+            <div id="habitWishMessages" class="habit-wish-messages" role="log" aria-label="愿望对话"></div>
+            <p id="habitWishStatus" class="habit-wish-status" role="status"></p>
+            <div id="habitWishOptions" class="habit-wish-options" role="group" aria-label="选择你的回答"></div>
+            <form id="habitWishForm" class="habit-wish-form">
+              <label id="habitWishInputLabel" for="habitWishInput">你的愿望</label>
+              <textarea id="habitWishInput" rows="2" maxlength="500" placeholder="比如学英语、整理房间、开始画画…" required></textarea>
+              <button type="submit" id="habitWishSubmit" class="btn-primary">聊聊这个愿望</button>
+            </form>
+            <div id="habitWishError" class="habit-wish-error hidden">
+              <p id="habitWishErrorText" role="alert"></p>
+              <button type="button" id="habitWishRetry" class="btn-small">再试一次</button>
+            </div>
+            <div id="habitWishSuccess" class="habit-wish-success hidden">
+              <p>✨ 30张习惯卡准备好了，今天就抽一张试试吧。</p>
+              <button type="button" id="habitWishView" class="btn-small">看看我的卡池</button>
+            </div>
+            <div class="habit-wish-footer"><button type="button" id="habitWishRestart" class="btn-small">换个愿望</button></div>
+          </section>
           <div class="habit-upload-area" id="habitUploadArea">
             <p>📁 拖拽or上传「书籍生成的skills.zip」</p>
             <input type="file" id="habitFileInput" accept=".zip" hidden>
@@ -677,6 +706,7 @@
   <script src="graph-layout.js"></script>
   <script src="messages.js"></script>
   <script src="app.js"></script>
+  <script src="habit-wish.js"></script>
   <script src="task-stream.js"></script>
 </body>
 </html>
