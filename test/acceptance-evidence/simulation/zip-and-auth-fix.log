@@ -1,0 +1,30 @@
+▶ empty states, invalid inputs, model failures and local habit dates
+  ✔ empty lists, search, blind box, calendar and pending reminders return empty data (33.847416ms)
+  ✔ an empty graph scope never invokes a model or creates history (10.917167ms)
+  ✔ empty daily and weekly summaries are generated locally (6.939708ms)
+  ✔ empty tag analysis accepts no suggestions and records zero processed notes (1065.437875ms)
+  ✔ blank and non-text note content cannot be stored or replace an existing note (11.429375ms)
+  ✔ pinning, literal wildcard search, fuzzy search and clearing filters preserve records (6.643ms)
+  ✔ tag validation, renaming and multi-tag filtering behave consistently (4.794958ms)
+  ✔ bad graph date ranges are rejected without model calls (2.952875ms)
+  ✔ malformed, blank, empty and failed model outputs keep the last useful graph (1976.612917ms)
+  ✔ an unavailable CLI gives an error and releases the task lock (1.823916ms)
+  ✔ missing pools, empty uploads and books without text give useful errors (7.0435ms)
+  ✔ book generation rejects empty model habits and cleans upload files (580.14425ms)
+  ✔ habit draw, today and calendar use the same local date across a UTC boundary (16.468ms)
+  ✔ invalid reminders are rejected and notifications are consumed once (6.249833ms)
+  ✔ restore validates selection and files, and can restore a genuinely empty library (12.1125ms)
+✔ empty states, invalid inputs, model failures and local habit dates (3894.198875ms)
+✔ technical errors and filesystem details stay out of user-facing messages (1.777209ms)
+✔ assistant errors use the selected product and task messages omit CC subjects (0.823208ms)
+✔ Trae authentication explains enterprise CLI access while missing CLI still explains installation (0.243167ms)
+✔ legacy empty digest in the screenshot gets a useful, friendly message (0.252375ms)
+✔ empty daily and weekly digests differ from real prose that mentions an empty day (0.07275ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3949.463667

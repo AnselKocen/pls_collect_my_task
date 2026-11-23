@@ -3,12 +3,13 @@
   else root.memoMessages=factory();
 })(typeof globalThis!=='undefined' ? globalThis : this,function() {
   function errorMessage(detail,agent = 'cc') {
-    const names = {cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy'};
-    const marked = String(detail || '').match(/AGENT_(?:CLI_MISSING|AUTH):(cc|codex|codebuddy)(?:$|\s)/)?.[1];
+    const names = {cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy',trae:'Trae'};
+    const marked = String(detail || '').match(/AGENT_(?:CLI_MISSING|AUTH):(cc|codex|codebuddy|trae)(?:$|\s)/)?.[1];
     const name = names[marked || agent] || '所选 AI 助手';
     const value=String(detail || '');
     const rules=[
       [/无效的 AI 助手/,'请选择 cc、codex 或 codebuddy 哦～'],
+      [/AGENT_DISABLED:trae/,'Trae 入口暂时关闭哦～请选择 Codex、CodeBuddy 或 Claude Code。'],
       [/AI 助手已切换/,'助手已在另一个窗口切换，请再试一次吧～'],
       [/请在这台电脑上配置 AI/,'请在这台电脑上配置 AI 助手哦～'],
       [/选定范围没有便签/,'这里还没有记录哦～换个标签或日期试试吧～'],
@@ -32,8 +33,9 @@
       [/100 MB/,'这份备份有点大哦～请选择 100 MB 以内的文件吧～'],
       [/备份|SQLite|sqlite|database|数据库完整性/i,'这份备份暂时打不开哦～请换一份记忆手帐的备份文件试试吧～'],
       [/数据管理仅允许|来源标记/,'请在这台电脑上打开记忆手帐，再试一次哦～'],
+      [/AGENT_CLI_VERSION:trae/,'请先将 Trae CLI 升级到 2.0 或更新版本，再试一次哦～'],
       [/AGENT_CLI_MISSING|ENOENT|未安装|not found/i,`还没连上 ${name} 哦～请先确认已安装并登录，再试一次吧～`],
-      [/AGENT_AUTH|登录|authentication|unauthorized|login/i,`请先登录 ${name}，再试一次吧～`],
+      [/AGENT_AUTH|登录|authentication|unauthorized|login/i,(marked || agent)==='trae' ? '国内 Trae CLI 2.0 仅限企业旗舰版哦～请使用已开通 CLI 权限的企业旗舰版账号登录。' : `请先登录 ${name}，再试一次吧～`],
       [/超时|timeout|SIGTERM|code null/i,'这次整理花的时间有点长哦～稍后再试一次吧～'],
       [/未找到|记录不存在/,'这条记录找不到了哦～请刷新后再看看吧～'],
       [/搜索内容不能超过/,'搜索词有点长哦～换几个短一点的关键词试试吧～'],

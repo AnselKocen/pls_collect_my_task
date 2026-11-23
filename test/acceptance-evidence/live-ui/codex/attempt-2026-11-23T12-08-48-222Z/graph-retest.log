@@ -1,0 +1,14 @@
+{"agent":"codex","started":"cli-and-isolation"}
+(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.
+{"agent":"codex","check":"cli-and-isolation","status":"passed","cli":"/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex","records":8}
+{"agent":"codex","started":"graph-ui"}
+Error: Real codex UI wait timed out: document.hasFocus()
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:60570
+AI assistant: codex
+[AI:codex] 生成思绪图谱 completed in 48717ms
+
+    at until (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:47:9)
+    at async run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:189:3)
+{"realCliUiAcceptance":true,"agent":"codex","graphOnly":true,"success":false,"passed":1,"failed":1,"report":"/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-evidence/live-ui/codex/graph-retest.json"}

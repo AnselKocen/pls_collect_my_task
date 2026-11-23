@@ -1,0 +1,27 @@
+✔ literal exact matching and local unordered fuzzy matching handle Chinese, Unicode and wildcards (8.199958ms)
+✔ local days, natural weeks and ISO week-years include exact boundaries (6.745958ms)
+✔ local calendar arithmetic handles daylight saving days (0.870459ms)
+✔ batching includes every character of long notes, preserves emoji and covers all records (1.072375ms)
+✔ graph analyzes more than 100 notes, validates sources, merges clusters and collapses without loss (7.439584ms)
+✔ graph scope combines exact tags and local date range; failed output is never saved (4.651125ms)
+✔ tag organization covers all notes beyond 20 per tag and keeps evidence (6.079584ms)
+✔ daily and weekly summaries use server-owned dates and statistics, skip future notes and share history format (4.199625ms)
+✔ legacy graph layout remains readable and does not claim unknown source IDs (0.11825ms)
+✔ multiple fragments of one long note retain all their theme groups (3.6005ms)
+✔ tag input distinguishes a tag missing from the date range from a globally empty tag (3.225708ms)
+✔ original graph concepts, long discussions and Markdown discoveries survive without node-count rules (3.264583ms)
+✔ original graph and tag output shapes work without newly required evidence fields (4.009166ms)
+✔ long summaries and original task lists are preserved across digest batching (4.188416ms)
+✔ digest retries explain the string task format and never save malformed task objects (4.149584ms)
+✔ empty graph scope makes no model calls and leaves history untouched (2.361667ms)
+✔ empty daily and weekly ranges save deterministic empty results without model calls (4.206ms)
+✔ a model returning an empty graph cannot save over a useful graph (3.517ms)
+✔ empty text, dangling edges and a failed later batch do not save partial results (3.055791ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 129.705625

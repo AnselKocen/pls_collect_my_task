@@ -1,0 +1,33 @@
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:50716
+AI assistant: codex
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[API] settings.json: dailyDigestTime 需要 HH:mm 时间
+[Reminder] Queued 1 notification(s)
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Reminder] Interval checker started
+Memo server running at http://localhost:50716
+AI assistant: codex
+[Task] 选定范围没有便签，请调整标签或日期
+[AI:codex] 今日摘要 completed in 1ms
+[Task] CC_BUSY:图谱分析 1/2
+[AI:codex] 生成思绪图谱 completed in 192152ms
+[AI:codex] 生成思绪图谱 completed in 23973ms
+[AI:codex] 整理标签 completed in 34172ms
+[AI:codex] 今日摘要 completed in 28294ms
+[AI:codex] 本周总结 completed in 47632ms
+[AI:codex] 今日摘要 completed in 25666ms
+[Cron] daily-digest done
+[AI:codex] 本周总结 completed in 51670ms
+[Cron] weekly-digest done
+[AI:codex] 生成习惯卡池 completed in 25062ms
+[AI:codex] 明确愿望的目的 completed in 6712ms
+[AI:codex] 选择习惯的投入方式 completed in 12229ms
+[AI:codex] 生成愿望卡池 completed in 24906ms
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Reminder] Interval checker started
+Memo server running at http://localhost:50716
+AI assistant: codex

@@ -1,0 +1,29 @@
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:49619
+AI assistant: cc
+[AI:cc] 整理标签 completed in 449ms
+[AI:cc] 生成思绪图谱 completed in 291ms
+[AI:cc] 生成思绪图谱 completed in 307ms
+[AI:cc] 今日摘要 completed in 295ms
+[AI:cc] 本周总结 completed in 293ms
+[AI:cc] 今日摘要 completed in 288ms
+[Cron] daily-digest done
+[AI:cc] 本周总结 completed in 296ms
+[Cron] weekly-digest done
+[AI:cc] 生成习惯卡池 completed in 301ms
+[AI:cc] 明确愿望的目的 completed in 404ms
+[AI:cc] 选择习惯的投入方式 completed in 406ms
+[AI:cc] 生成愿望卡池 completed in 316ms
+[Task] CC_BUSY:图谱分析 1/1
+[AI:cc] 生成思绪图谱 completed in 1013ms
+[Task] AI 结果校验失败：没有返回有效 JSON，本次结果未保存
+[AI:cc] 生成思绪图谱 completed in 293ms
+[Task] unauthorized: login required
+[Task] AGENT_CLI_MISSING:cc
+
+--- restart ---
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:49619
+AI assistant: cc

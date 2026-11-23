@@ -22,7 +22,7 @@ let store;
 let storageReady = false;
 let storageMaintenance = false;
 
-const { getAgent, resolveCli, saveCliPath, invokeAgent, stopAgents } = require('./agents');
+const { getAgent, getSelectableAgent, resolveSelectableAgent, resolveCli, saveCliPath, invokeAgent, stopAgents } = require('./agents');
 const CONFIG_DIR = process.env.MEMO_CONFIG_DIR || process.env.MEMO_DATA_DIR || __dirname;
 app.use(express.json());
 // In packaged app, server.js is in app.asar.unpacked/ but public/ is in app.asar
@@ -183,7 +183,7 @@ app.put('/api/tags/:tag', async (req, res) => {
 });
 
 // --- Settings ---
-function currentAgent() { return readData('settings').agent || 'cc'; }
+function currentAgent() { return resolveSelectableAgent(readData('settings').agent || 'cc',{configDir:CONFIG_DIR}); }
 function agentStatus() {
   const agent = currentAgent(), info = getAgent(agent);
   return {agent,name:info.name,configured:Boolean(resolveCli(agent,{configDir:CONFIG_DIR})),busy:ccBusy,task:ccCurrentTask,startedAt:aiStartedAt,elapsedMs:ccBusy ? Math.max(0,Date.now()-aiStartedAt) : 0,maintenance:storageMaintenance};
@@ -194,19 +194,19 @@ app.get('/api/settings', (req, res) => {
 
 app.put('/api/settings', async (req, res) => {
   if (Object.hasOwn(req.body,'agent')) {
-    try { getAgent(req.body.agent); }
+    try { getSelectableAgent(req.body.agent); }
     catch (error) { return res.status(400).json({error:error.message}); }
   }
   try {
     const updated = await transaction(() => {
       const settings = readData('settings');
-      if (Object.hasOwn(req.body,'agent') && req.body.agent !== (settings.agent || 'cc') && ccBusy) {
+      if (Object.hasOwn(req.body,'agent') && req.body.agent !== currentAgent() && ccBusy) {
         const error = new Error('AI_BUSY:任务进行中，暂时不能切换助手');error.busy=true;throw error;
       }
       const allowed = ['agent','dailyDigestTime', 'weeklyDigestDay', 'weeklyDigestTime', 'tagOrder', 'tagTapes', 'tagEmojis', 'theme', 'customColors'];
       for (const key of allowed) if (req.body[key] !== undefined) settings[key] = req.body[key];
       writeData('settings', settings);
-      return {...settings,agent:settings.agent || 'cc'};
+      return {...settings,agent:currentAgent()};
     });
     if (['dailyDigestTime','weeklyDigestDay','weeklyDigestTime'].some(key => Object.hasOwn(req.body,key))) scheduleCronJobs();
     res.json(updated);
@@ -415,6 +415,7 @@ app.post('/api/habit/pools/generate', habitUpload.single('zipFile'), async (req,
   try {
     // Extract ZIP
     const zip = new AdmZip(uploadedFile.path);
+    fs.mkdirSync(extractDir,{recursive:true});
     zip.extractAllTo(extractDir, true);
 
     // Read extracted file contents (text files only, truncate if too long)

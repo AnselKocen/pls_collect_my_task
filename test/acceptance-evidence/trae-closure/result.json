@@ -1,0 +1,117 @@
+{
+  "recordedAt": "2026-11-23T12:23:50.670Z",
+  "mode": "product-entry-closure-verification",
+  "status": "passed",
+  "selectableAgents": [
+    "cc",
+    "codex",
+    "codebuddy"
+  ],
+  "trae": {
+    "selectable": false,
+    "adapterRetained": true,
+    "legacySettingsRetained": true,
+    "fallbackOrder": [
+      "codex",
+      "codebuddy",
+      "cc"
+    ],
+    "backup": "backups/trae-cli-adapter-2026-11-23.zip",
+    "sha256": "35a2e2d9cc008ae6fe14b8667190ac0d8c7211a3fa5ea179414fbb266cf6b271",
+    "backupReadbackVerified": true,
+    "backupEntries": 20
+  },
+  "regression": {
+    "passed": 84,
+    "failed": 0,
+    "evidence": "../simulation/suite-result.json",
+    "log": "full-suite.log",
+    "scope": "Isolated database and simulated CLI regression; all four low-level adapters remain covered, application selection permits only three."
+  },
+  "ui": {
+    "evidence": "ui.json",
+    "scope": "Real Electron UI, HTTP and SQLite with one simulated Codex call; no real model calls after closure.",
+    "checks": [
+      {
+        "id": "TC01",
+        "status": "passed"
+      },
+      {
+        "id": "TC02",
+        "status": "passed"
+      },
+      {
+        "id": "TC03",
+        "status": "passed"
+      },
+      {
+        "id": "TC04",
+        "status": "passed"
+      },
+      {
+        "id": "TC05",
+        "status": "passed"
+      },
+      {
+        "id": "TC06",
+        "status": "passed"
+      },
+      {
+        "id": "TC07",
+        "status": "passed"
+      }
+    ],
+    "summary": {
+      "passed": 7,
+      "failed": 0
+    }
+  },
+  "desktop": {
+    "agent": "codebuddy",
+    "fakeCli": true,
+    "fakeCliTasks": [
+      "daily-digest"
+    ],
+    "selectableAgents": [
+      "cc",
+      "codex",
+      "codebuddy"
+    ],
+    "traeEntryClosed": true,
+    "desktopStartup": true,
+    "selectedAgentSetup": true,
+    "nativePathSelection": true,
+    "noServerRestart": true,
+    "desktopGeneration": true,
+    "log": "desktop-codebuddy.log"
+  },
+  "runnerRejection": {
+    "evidence": "runner-rejection.json",
+    "recordedAt": "2026-11-23T12:22:46.193Z",
+    "mode": "runner-rejection-without-model-calls",
+    "success": true,
+    "checks": [
+      {
+        "script": "test/desktop-agent-smoke.js",
+        "status": "passed",
+        "requestedAgent": "trae",
+        "exitCode": 1,
+        "rejectedBeforeStartup": true,
+        "error": "AGENT_DISABLED:trae",
+        "log": "test/acceptance-evidence/trae-closure/desktop-agent-smoke-trae-rejection.log"
+      },
+      {
+        "script": "test/acceptance-live-ui.js",
+        "status": "passed",
+        "requestedAgent": "trae",
+        "exitCode": 1,
+        "rejectedBeforeStartup": true,
+        "error": "AGENT_DISABLED:trae",
+        "log": "test/acceptance-evidence/trae-closure/acceptance-live-ui-trae-rejection.log"
+      }
+    ],
+    "realUiEvidenceUnchanged": true,
+    "realUiEvidenceFiles": 71
+  },
+  "historicalRealCliEvidence": "Earlier 45-case matrices and real CLI screenshots are preserved as pre-closure evidence; closing Trae did not rerun those real model calls."
+}

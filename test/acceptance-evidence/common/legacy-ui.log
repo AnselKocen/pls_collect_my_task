@@ -1,0 +1,42 @@
+(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.
+[Renderer] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[Renderer] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+{"liveStreamVisibleGrowth":[26,52,78],"snapshotPollingBlocked":true}
+[Renderer] [Request] [object Object]
+[Renderer] Error: 请先登录 Codex，再试一次吧～
+[Renderer] [Request] [object Object]
+[Renderer] Error: 这里还没有记录哦～换个标签或日期试试吧～
+{"graphRelationsRegression":true,"defaultHidden":true,"hoverAdjacentOnly":true,"shortenedTo12CodePoints":true,"fullTitlePreserved":true,"mouseleaveReset":true,"focusAndBlur":true,"keyboardSelectionPersists":true,"fixture":"synthetic long relationships in renderer memory only"}
+[Renderer] [Request] [object Object]
+[Renderer] Error: 这次没整理好哦～请再试一次吧～
+[Renderer] [Request] [object Object]
+[Renderer] Error: 这个卡池里还没有习惯哦～先添几张卡片再来抽吧～
+[Renderer] [Request] [object Object]
+{"acceptanceStage":"graph keyboard and zoom"}
+{"acceptanceStage":"graph drag and fullscreen"}
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+{"graphFullscreenGeometry":true,"width":740,"height":629,"svgWidth":"740","svgHeight":"629","nodes":[{"id":"site","x":364.6238653723308,"y":182.54211273928607,"transform":"translate(364.6238653723308,182.54211273928607)"},{"id":"title","x":364.62539020876056,"y":109.71271496343127,"transform":"translate(364.62539020876056,109.71271496343127)"},{"id":"walk","x":369.2483125322689,"y":495.21448174657235,"transform":"translate(369.2483125322689,495.21448174657235)"}]}
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+{"acceptanceStage":"graph resize and history"}
+[Renderer] ResizeObserver loop completed with undelivered notifications.
+{"acceptanceStage":"wish preset answers and restart"}
+{"streamingReply":true,"streamReopen":true,"streamFailure":true,"agentSelection":true,"agentReload":true,"agentBusyLock":true,"agentMissingMessage":true,"agentLayout":true,"localSearch":true,"emptySearch":true,"legacyDigestFriendly":true,"emptyDigestFriendly":true,"markdownSafe":true,"expandedNodes":3,"collapsedClusters":2,"sourcePanel":true,"editedSource":true,"deletedSource":true,"emptyGraphRejected":true,"failureBubble":true,"emptyPoolRecovery":true,"oversizedBackupBlocked":true,"friendlyStorageErrors":true,"overlayClose":true,"graphKeyboardEnterAndSpace":true,"graphSourceDetail":true,"graphZoom":true,"graphDrag":true,"graphFullscreen":true,"graphResize":true,"graphPreviousAndNext":true,"graphDeleteCancel":true,"graphDeleteLast":true,"wishPresetAnswers":true,"wishRestart":true,"graphRelationDefaultHidden":true,"graphRelationHoverAdjacentOnly":true,"graphRelationShortened":true,"graphRelationFullTitle":true,"graphRelationMouseleaveReset":true,"graphRelationFocusAndBlur":true,"graphRelationKeyboardSelectionPersists":true}

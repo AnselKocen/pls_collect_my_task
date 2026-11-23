@@ -3,9 +3,9 @@ const {LiveTask}=require('../tasks/live');
 const {fixture}=require('./agent-fixture');
 const {invokeAgent}=require('../agents');
 
-test('Codex, CC and CodeBuddy emit reply deltas before finishing and omit private thinking',async t => {
+test('all four assistants emit reply deltas before finishing and omit private thinking',async t => {
   const f=fixture(t);
-  for(const id of ['codex','cc','codebuddy']) {
+  for(const id of ['codex','cc','codebuddy','trae']) {
     const events=[];let finished=false;
     const reply=await invokeAgent(id,'fictional book',{cwd:f.dir,env:f.env,onEvent:event => {
       if(event.type==='delta')assert.equal(finished,false);

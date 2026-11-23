@@ -1,7 +1,7 @@
 (function() {
   const modal=document.getElementById('aiTaskModal'),output=document.getElementById('aiTaskOutput');
   const details=document.getElementById('aiTaskDetailsBtn'),close=document.getElementById('aiTaskClose');
-  const titles={cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy'};
+  const titles={cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy',trae:'Trae'};
   let task=null,connected=false,frame=null,previousFocus=null,syncedAt=0,refreshPending=null;
   let streamId=null,revision=-1,updatesReceived=0;
   const retiredStreams=new Set();

@@ -1,0 +1,8 @@
+{"id":"TC01","name":"旧 Trae 配置启动后仅三个选项，回退 Codex 且非空","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"options":["cc","codex","codebuddy"],"effective":"codex","rawHistory":"trae"},"screenshot":"TC01.png"}
+{"id":"TC02","name":"只改主题仍返回有效助手，保留历史 Trae 配置","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"effective":"codex","rawHistory":"trae","theme":"mint"}}
+{"id":"TC03","name":"API 拒绝重新选择或配置 Trae，GET 保持有效值","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"putStatus":400,"putError":"AGENT_DISABLED:trae","pathStatus":409,"getAgent":"codex"}}
+{"id":"TC04","name":"历史 Trae 的任务使用 Codex；忙碌时同值允许、其他值拒绝","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"sameEffectiveStatus":200,"differentAgentStatus":409,"taskAgent":"codex","traeModelCalls":0}}
+{"id":"TC05","name":"三个有效助手均可通过界面切换并在刷新后保留","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"selected":["cc","codex","codebuddy"],"reloadSelected":"codebuddy"},"screenshot":"TC05.png"}
+{"id":"TC06","name":"前端旧状态含 Trae 时选择器仍有有效值","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"injectedState":"trae","activeAgent":"codebuddy","displayed":"codebuddy","simulation":"renderer stale-state injection only"}}
+{"id":"TC07","name":"Trae 适配器和历史路径保留，可选名单严格为三个助手","method":"actual renderer and real isolated HTTP/SQLite backend","status":"passed","details":{"selectable":["cc","codex","codebuddy"],"adapterRetained":true,"acpRetained":true,"savedTraePathRetained":true,"fallbacks":["codex","codebuddy","cc","cc"]}}
+{"traeClosureUi":true,"passed":7,"failed":0}

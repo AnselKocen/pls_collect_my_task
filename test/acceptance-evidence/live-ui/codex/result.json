@@ -1,0 +1,161 @@
+{
+  "agent": "codex",
+  "mode": "real-cli-ui",
+  "realCli": true,
+  "fakeModel": false,
+  "fictionalRecords": 8,
+  "startedAt": "2026-11-23T11:55:51.543Z",
+  "checks": [
+    {
+      "id": "cli-and-isolation",
+      "label": "真实 CLI、临时数据库及独立桌面会话",
+      "status": "passed",
+      "details": {
+        "cli": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+        "records": 8
+      }
+    },
+    {
+      "id": "tag-stream-ui",
+      "label": "标签整理真实流式、锁、关闭重开、结果校验和历史保存",
+      "status": "passed",
+      "details": {
+        "running": true,
+        "locked": true,
+        "closed": true,
+        "stillLocked": true,
+        "reopened": true,
+        "preserved": true,
+        "visibleGrowthSamples": 17,
+        "firstVisibleMs": 6908,
+        "suggestions": 8,
+        "processedCount": 8,
+        "history": 1
+      }
+    },
+    {
+      "id": "daily-digest-ui",
+      "label": "今日摘要真实点击生成、折叠展开和保存",
+      "status": "passed",
+      "details": {
+        "processedCount": 8,
+        "date": "2026-11-23"
+      }
+    },
+    {
+      "id": "graph-ui",
+      "label": "图谱真实点击生成、图形展示和关闭重开历史",
+      "status": "passed",
+      "details": {
+        "processedCount": 8,
+        "nodes": 16,
+        "historyId": "b08d00eb-aea6-44e1-b454-3ce07477b4e9"
+      }
+    },
+    {
+      "id": "weekly-tag-range-ui",
+      "label": "单标签周总结真实点击生成、展开和历史范围保存",
+      "status": "passed",
+      "details": {
+        "tags": [
+          "reading"
+        ],
+        "processedCount": 1,
+        "week": "2026-W48",
+        "history": 1
+      }
+    }
+  ],
+  "screenshots": [
+    "tag-stream-partial.png",
+    "tag-stream-completed.png",
+    "daily-digest-expanded.png",
+    "graph-generated.png",
+    "graph-history.png",
+    "weekly-tag-selected.png",
+    "weekly-tag-summary.png"
+  ],
+  "snapshotPollingBlocked": true,
+  "cli": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+  "cliVersion": "codex-cli 0.169.0-alpha.11.1",
+  "graphLibrary": {
+    "source": "local real D3 library",
+    "path": "/tmp/memo-acceptance-d3.v7.min.js"
+  },
+  "streamSamples": [
+    {
+      "ms": 6908,
+      "chars": 6
+    },
+    {
+      "ms": 7239,
+      "chars": 65
+    },
+    {
+      "ms": 7467,
+      "chars": 67
+    },
+    {
+      "ms": 7574,
+      "chars": 74
+    },
+    {
+      "ms": 7690,
+      "chars": 86
+    },
+    {
+      "ms": 8007,
+      "chars": 145
+    },
+    {
+      "ms": 8222,
+      "chars": 165
+    },
+    {
+      "ms": 8539,
+      "chars": 191
+    },
+    {
+      "ms": 8872,
+      "chars": 250
+    },
+    {
+      "ms": 9624,
+      "chars": 278
+    },
+    {
+      "ms": 9730,
+      "chars": 323
+    },
+    {
+      "ms": 10063,
+      "chars": 357
+    },
+    {
+      "ms": 10168,
+      "chars": 374
+    },
+    {
+      "ms": 10596,
+      "chars": 424
+    },
+    {
+      "ms": 10915,
+      "chars": 452
+    },
+    {
+      "ms": 11236,
+      "chars": 486
+    },
+    {
+      "ms": 11465,
+      "chars": 540
+    }
+  ],
+  "success": true,
+  "elapsedMs": 86399,
+  "finishedAt": "2026-11-23T11:57:17.946Z",
+  "browserErrors": [
+    "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+  ]
+}

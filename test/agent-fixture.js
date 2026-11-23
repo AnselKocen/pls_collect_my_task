@@ -6,7 +6,7 @@ function fixture(t) {
   const capture = path.join(dir,'calls.jsonl'), mode = path.join(dir,'mode');
   const env = {...process.env,MEMO_CONFIG_DIR:dir,MEMO_FAKE_CC_CAPTURE:capture,MEMO_FAKE_CC_INVALID_FILE:mode};
   const quote = value => "'"+value.replace(/'/g,"'\\''")+"'";
-  for (const [id,key] of Object.entries({cc:'CLAUDE_CLI',codex:'CODEX_CLI',codebuddy:'CODEBUDDY_CLI'})) {
+  for (const [id,key] of Object.entries({cc:'CLAUDE_CLI',codex:'CODEX_CLI',codebuddy:'CODEBUDDY_CLI',trae:'TRAE_CLI'})) {
     const file = path.join(dir,id+(process.platform === 'win32' ? '.cmd' : ''));
     const cli = path.join(__dirname,'fake-model-cli.js');
     fs.writeFileSync(file,process.platform === 'win32'

@@ -1,0 +1,33 @@
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:50707
+AI assistant: cc
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[API] settings.json: dailyDigestTime 需要 HH:mm 时间
+[Reminder] Queued 1 notification(s)
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Reminder] Interval checker started
+Memo server running at http://localhost:50707
+AI assistant: cc
+[Task] 选定范围没有便签，请调整标签或日期
+[AI:cc] 今日摘要 completed in 1ms
+[Task] CC_BUSY:图谱分析 1/2
+[AI:cc] 生成思绪图谱 completed in 894ms
+[AI:cc] 生成思绪图谱 completed in 296ms
+[AI:cc] 整理标签 completed in 873ms
+[AI:cc] 今日摘要 completed in 902ms
+[AI:cc] 本周总结 completed in 859ms
+[AI:cc] 今日摘要 completed in 884ms
+[Cron] daily-digest done
+[AI:cc] 本周总结 completed in 873ms
+[Cron] weekly-digest done
+[AI:cc] 生成习惯卡池 completed in 289ms
+[AI:cc] 明确愿望的目的 completed in 375ms
+[AI:cc] 选择习惯的投入方式 completed in 396ms
+[AI:cc] 生成愿望卡池 completed in 311ms
+[Cron] Local timezone: Asia/Shanghai; daily 18:42, weekly monday 18:43
+[Reminder] Interval checker started
+Memo server running at http://localhost:50707
+AI assistant: cc

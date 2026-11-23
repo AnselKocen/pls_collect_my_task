@@ -1,0 +1,25 @@
+{"agent":"codebuddy","started":"cli-and-isolation"}
+(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.
+{"agent":"codebuddy","check":"cli-and-isolation","status":"passed","cli":"/Users/anselkocen/.local/bin/codebuddy","records":8}
+{"agent":"codebuddy","started":"tag-stream-ui"}
+{"agent":"codebuddy","check":"tag-stream-ui","status":"passed","running":true,"locked":true,"closed":true,"stillLocked":true,"reopened":true,"preserved":true,"visibleGrowthSamples":5,"firstVisibleMs":6186,"suggestions":8,"processedCount":8,"history":1}
+{"agent":"codebuddy","started":"daily-digest-ui"}
+{"agent":"codebuddy","check":"daily-digest-ui","status":"passed","processedCount":8,"date":"2026-11-23"}
+{"agent":"codebuddy","started":"graph-ui"}
+Error: Real codebuddy UI wait timed out: document.hasFocus()
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:60595
+AI assistant: codebuddy
+[AI:codebuddy] 整理标签 completed in 8051ms
+[AI:codebuddy] 今日摘要 completed in 13851ms
+[AI:codebuddy] 生成思绪图谱 completed in 27092ms
+
+    at until (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:47:9)
+    at async run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:189:3)
+{"realCliUiAcceptance":true,"agent":"codebuddy","graphOnly":false,"success":false,"passed":3,"failed":1,"report":"/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-evidence/live-ui/codebuddy/result.json"}
+[32921:1123/200956.420265:ERROR:shared_image_manager.cc(509)] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[32921:1123/200956.420295:ERROR:shared_image_manager.cc(509)] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[32921:1123/200956.420304:ERROR:shared_image_manager.cc(509)] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[32921:1123/200956.420715:ERROR:shared_image_manager.cc(509)] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[32921:1123/200956.420724:ERROR:shared_image_manager.cc(509)] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.

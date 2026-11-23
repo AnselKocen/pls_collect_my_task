@@ -1,0 +1,59 @@
+{
+  "agent": "codex",
+  "mode": "visual-review-of-real-cli-ui-screenshots",
+  "reviewedAt": "2026-11-23T12:13:16.870Z",
+  "observations": [
+    {
+      "id": "daily-digest-visual",
+      "status": "passed",
+      "screenshot": "daily-digest-expanded.png",
+      "finding": "真实生成的中文摘要已替换占位文字，展开内容可读，按钮及助手选择可见。"
+    },
+    {
+      "id": "weekly-tag-scope-visual",
+      "status": "passed",
+      "screenshot": "weekly-tag-summary.png",
+      "finding": "reading标签已选中，历史记录显示reading范围及当前自然周，展开正文可读且仅说明1条记录。"
+    },
+    {
+      "id": "graph-readability",
+      "status": "fixed-and-retested",
+      "screenshot": "graph-retest-graph-generated.png",
+      "finding": "已实际查看修复后的新截图：默认视图隐藏长关系说明，原先大面积关系文字重叠已消除；悬停及选中仅显示相邻的短关系，选中后右侧显示原便签。此项确认修复默认关系文字拥挤，并未声称任意力导向布局均无局部文字接近。",
+      "screenshots": [
+        "graph-retest-graph-generated.png",
+        "graph-retest-graph-relations-hover.png",
+        "graph-retest-graph-relations-selected.png"
+      ],
+      "functionalReport": "graph-retest.json",
+      "retestFinishedAt": "2026-11-23T12:11:58.851Z",
+      "metrics": {
+        "processedCount": 8,
+        "nodes": 17,
+        "historyId": "50149b4e-c413-4b33-a3cf-cb86049b957f",
+        "relationDisplay": {
+          "labels": 16,
+          "defaultVisible": 0,
+          "maxCodepoints": 13,
+          "fullRelationsRetained": true,
+          "connectedNode": true
+        },
+        "hovered": {
+          "count": 2,
+          "onlyAdjacent": true
+        }
+      }
+    }
+  ],
+  "previousReviews": [
+    {
+      "reviewedAt": "2026-11-23T11:58:39.984Z",
+      "observation": {
+        "id": "graph-readability",
+        "status": "issue-observed",
+        "screenshot": "graph-generated.png",
+        "finding": "实际图谱已绘制16个节点、覆盖8条记录且历史可展示；默认展开状态下多条较长关系标签与节点标题明显重叠，图谱可读性不应被视为完全通过。SVG存在和保存属于功能通过，文字布局是独立质量问题。"
+      }
+    }
+  ]
+}

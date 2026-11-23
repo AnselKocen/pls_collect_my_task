@@ -1,0 +1,262 @@
+{
+  "scope": "common UI and HTTP backend; no model calls",
+  "data": "fictional temporary database only",
+  "startedAt": "2026-11-23T11:46:33.855Z",
+  "checks": [
+    {
+      "id": "C01",
+      "name": "无 CLI 仍可启动，空便签提示及四种助手选项",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C01.png"
+    },
+    {
+      "id": "C02",
+      "name": "使用指南打开、关闭",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C03",
+      "name": "拒绝空白便签",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C04",
+      "name": "标签新增、表情及胶带样式",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C04.png"
+    },
+    {
+      "id": "C05",
+      "name": "标签重名提示",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C06",
+      "name": "新增多标签便签",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C06.png"
+    },
+    {
+      "id": "C07",
+      "name": "便签详情与关闭",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C08",
+      "name": "便签编辑取消与空内容阻止",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C09",
+      "name": "便签编辑保存及标签修改",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C10",
+      "name": "置顶、置顶排序、取消置顶",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C11",
+      "name": "精确搜索、模糊搜索、清空及无结果提示",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C12",
+      "name": "标签筛选、多标签筛选及清除",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C13",
+      "name": "标签重命名同步便签、表情和胶带修改",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C14",
+      "name": "任务盲盒按标签范围抽取、再来一次",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C14.png"
+    },
+    {
+      "id": "C15",
+      "name": "主题切换、前后切换箭头",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C15.png"
+    },
+    {
+      "id": "C16",
+      "name": "自定义主题预览、重置、保存",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C16.png"
+    },
+    {
+      "id": "C17",
+      "name": "每日整理时间修改并保存",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C18",
+      "name": "定时提醒表单校验",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C19",
+      "name": "添加单次提醒、每日提醒、列表及删除",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C19.png"
+    },
+    {
+      "id": "C20",
+      "name": "刷新后便签、主题、标签和定时设置保留",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C21",
+      "name": "卡池列表和详情",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C22",
+      "name": "卡池名称修改",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C23",
+      "name": "习惯卡片内容修改",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C24",
+      "name": "抽习惯卡、再抽和返回选池",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C24.png"
+    },
+    {
+      "id": "C25",
+      "name": "今日习惯完成打卡",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C26",
+      "name": "日历月份切换、当日详情和删除记录",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C26.png"
+    },
+    {
+      "id": "C27",
+      "name": "删除卡池确认取消、确认删除并保留历史",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C28",
+      "name": "数据统计与自动备份列表",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C28.png"
+    },
+    {
+      "id": "C29",
+      "name": "手动创建备份和下载链接",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C30",
+      "name": "导出 JSON ZIP 与六类完整数据",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C31",
+      "name": "按备份恢复：确认取消不改数据",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C32",
+      "name": "按备份恢复：替换数据、自动刷新、恢复前备份",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C33",
+      "name": "从 SQLite 文件恢复和损坏文件提示",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C34",
+      "name": "便签删除确认取消及确认删除",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C35",
+      "name": "标签删除取消及关联便签删除",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C35.png"
+    },
+    {
+      "id": "C36",
+      "name": "通用操作不依赖 CLI 且未启动模型任务",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C37",
+      "name": "标签拖拽排序及刷新后保留",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C38",
+      "name": "标签选择器展开与收起",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    },
+    {
+      "id": "C39",
+      "name": "全部24种预设主题逐一切换保存",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed",
+      "screenshot": "C39.png"
+    },
+    {
+      "id": "C40",
+      "name": "设置面板展开收起与指南Esc关闭",
+      "method": "actual renderer controls + isolated HTTP backend",
+      "status": "passed"
+    }
+  ],
+  "finishedAt": "2026-11-23T11:46:42.661Z",
+  "passed": 40,
+  "failed": 0
+}

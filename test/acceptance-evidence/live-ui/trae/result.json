@@ -1,0 +1,46 @@
+{
+  "agent": "trae",
+  "mode": "real-cli-ui-blocked",
+  "status": "blocked",
+  "realCliRequested": true,
+  "realCliInvoked": false,
+  "fakeModel": false,
+  "modelInvocations": 0,
+  "recordedAt": "2026-11-23T12:14:14.651Z",
+  "reason": "账号权限阻塞：root 已确认国内 Trae CLI 2.0 仅企业旗舰版可使用，当前账号不具备 CLI 权限；因此没有发起本轮真实 UI 模型生成，不能记为通过。",
+  "evidenceSource": "Root agent readiness and official access requirement verification",
+  "officialAccessRequirement": "https://docs.trae.cn/cli_about-trae-code-cli-2",
+  "checks": [
+    {
+      "id": "cli-and-isolation",
+      "label": "真实 CLI 与隔离桌面会话",
+      "status": "blocked",
+      "reason": "账号权限阻塞：root 已确认国内 Trae CLI 2.0 仅企业旗舰版可使用，当前账号不具备 CLI 权限；因此没有发起本轮真实 UI 模型生成，不能记为通过。"
+    },
+    {
+      "id": "tag-stream-ui",
+      "label": "标签整理流式、锁定和关闭重开",
+      "status": "blocked",
+      "reason": "账号权限阻塞：root 已确认国内 Trae CLI 2.0 仅企业旗舰版可使用，当前账号不具备 CLI 权限；因此没有发起本轮真实 UI 模型生成，不能记为通过。"
+    },
+    {
+      "id": "daily-digest-ui",
+      "label": "今日摘要生成和展开",
+      "status": "blocked",
+      "reason": "账号权限阻塞：root 已确认国内 Trae CLI 2.0 仅企业旗舰版可使用，当前账号不具备 CLI 权限；因此没有发起本轮真实 UI 模型生成，不能记为通过。"
+    },
+    {
+      "id": "graph-ui",
+      "label": "图谱生成、交互和历史",
+      "status": "blocked",
+      "reason": "账号权限阻塞：root 已确认国内 Trae CLI 2.0 仅企业旗舰版可使用，当前账号不具备 CLI 权限；因此没有发起本轮真实 UI 模型生成，不能记为通过。"
+    },
+    {
+      "id": "weekly-tag-range-ui",
+      "label": "单标签周总结与保存范围",
+      "status": "blocked",
+      "reason": "账号权限阻塞：root 已确认国内 Trae CLI 2.0 仅企业旗舰版可使用，当前账号不具备 CLI 权限；因此没有发起本轮真实 UI 模型生成，不能记为通过。"
+    }
+  ],
+  "screenshots": []
+}

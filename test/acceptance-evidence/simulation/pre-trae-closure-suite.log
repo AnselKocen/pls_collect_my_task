@@ -1,0 +1,84 @@
+PASS test/acp.test.js: ACP keeps public message boundaries and returns the last answer without private or foreign content
+PASS test/acp.test.js: ACP handles missing message IDs but rejects incomplete stop reasons
+PASS test/acp.test.js: ACP rejects unsupported versions and recognizes localized authentication errors
+PASS test/acp.test.js: ACP denies tool permissions and never provides client filesystem or terminal tools
+PASS test/agent-api.test.js: agent selection persists and locks every manual, scheduled and habit task
+PASS test/agents.test.js: all four adapters deliver stdin and only return the final answer
+PASS test/agents.test.js: Codex preserves custom endpoints and managed providers without resubmitting prompts
+PASS test/agents.test.js: invalid agents, missing CLI, partial failure and timeout reject cleanly
+PASS test/agents.test.js: legacy paths and independently saved paths survive config reload
+PASS test/agents.test.js: Trae rejects partial answers on failed, truncated or abruptly closed ACP turns
+PASS test/api-edges.test.js: empty lists, search, blind box, calendar and pending reminders return empty data
+PASS test/api-edges.test.js: an empty graph scope never invokes a model or creates history
+PASS test/api-edges.test.js: empty daily and weekly summaries are generated locally
+PASS test/api-edges.test.js: empty tag analysis accepts no suggestions and records zero processed notes
+PASS test/api-edges.test.js: blank and non-text note content cannot be stored or replace an existing note
+PASS test/api-edges.test.js: pinning, literal wildcard search, fuzzy search and clearing filters preserve records
+PASS test/api-edges.test.js: tag validation, renaming and multi-tag filtering behave consistently
+PASS test/api-edges.test.js: bad graph date ranges are rejected without model calls
+PASS test/api-edges.test.js: malformed, blank, empty and failed model outputs keep the last useful graph
+PASS test/api-edges.test.js: an unavailable CLI gives an error and releases the task lock
+PASS test/api-edges.test.js: missing pools, empty uploads and books without text give useful errors
+PASS test/api-edges.test.js: book generation rejects empty model habits and cleans upload files
+PASS test/api-edges.test.js: habit draw, today and calendar use the same local date across a UTC boundary
+PASS test/api-edges.test.js: invalid reminders are rejected and notifications are consumed once
+PASS test/api-edges.test.js: restore validates selection and files, and can restore a genuinely empty library
+PASS test/api-edges.test.js: empty states, invalid inputs, model failures and local habit dates
+PASS test/api.test.js: API compatibility, AI history races, backup/export/restore and restart
+PASS test/habit-wish.test.js: question previews hide JSON syntax and buffer incomplete escapes
+PASS test/habit-wish.test.js: wish result validation rejects malformed cards and repeated content
+PASS test/habit-wish.test.js: invalid answers never launch a model
+PASS test/habit-wish.test.js: cc streams questions and forwards all answers into generation
+PASS test/habit-wish.test.js: codex streams questions and forwards all answers into generation
+PASS test/habit-wish.test.js: codebuddy streams questions and forwards all answers into generation
+PASS test/habit-wish.test.js: trae streams questions and forwards all answers into generation
+PASS test/habit-wish.test.js: model errors and invalid results leave pools untouched and release the lock
+PASS test/habit-wish.test.js: a disconnected generation can be recovered without creating another pool
+PASS test/habit-wish.test.js: wish flow streams across agents, preserves context and saves only complete unique pools
+PASS test/live-task.test.js: all four assistants emit reply deltas before finishing and omit private thinking
+PASS test/live-task.test.js: live snapshots restore partial output, keep stages and end only after validation
+PASS test/live-task.test.js: the retained task output and message count are bounded
+PASS test/live-task.test.js: stream events and snapshots share a revision that survives task resets
+PASS test/messages.test.js: technical errors and filesystem details stay out of user-facing messages
+PASS test/messages.test.js: assistant errors use the selected product and task messages omit CC subjects
+PASS test/messages.test.js: Trae authentication explains enterprise CLI access while missing CLI still explains installation
+PASS test/messages.test.js: legacy empty digest in the screenshot gets a useful, friendly message
+PASS test/messages.test.js: empty daily and weekly digests differ from real prose that mentions an empty day
+PASS test/scheduling.test.js: scheduled empty daily and weekly summaries do not invoke a model
+PASS test/scheduling.test.js: changing summary times replaces scheduled jobs instead of duplicating them
+PASS test/scheduling.test.js: manual and scheduled nonempty daily summaries use the same task and input records
+PASS test/scheduling.test.js: scheduled generation respects a running AI task and resumes on a later trigger
+PASS test/scheduling.test.js: the reminder callback queues once, using the local date, and notifications are consumed once
+PASS test/scheduling.test.js: scheduled summaries and reminder callbacks use local dates and task locks
+PASS test/storage.test.js: fresh database seeds once and reopening uses SQLite, not stale JSON
+PASS test/storage.test.js: migration round-trips every field, duplicate cards/tags and orphaned history
+PASS test/storage.test.js: broken JSON and duplicate IDs fail without committing partial migration; retry succeeds
+PASS test/storage.test.js: partial legacy installation does not insert welcome notes or default pools
+PASS test/storage.test.js: multi-section transaction rolls back settings and associated memo changes
+PASS test/storage.test.js: per-record writes leave unrelated memo rows untouched
+PASS test/storage.test.js: two connections retain their additions using read-modify-write transactions
+PASS test/storage.test.js: reminder queue, one-time deletion and duplicate suppression are atomic
+PASS test/storage.test.js: backup is a complete SQLite snapshot and restore replaces all application data
+PASS test/storage.test.js: corrupt, foreign, and newer backups leave the live data unchanged
+PASS test/storage.test.js: automatic backups run at most once per local day and retain seven regular copies
+PASS test/storage.test.js: v1 database upgrades its date index and v1 backups remain restorable
+PASS test/tasks.test.js: literal exact matching and local unordered fuzzy matching handle Chinese, Unicode and wildcards
+PASS test/tasks.test.js: local days, natural weeks and ISO week-years include exact boundaries
+PASS test/tasks.test.js: local calendar arithmetic handles daylight saving days
+PASS test/tasks.test.js: batching includes every character of long notes, preserves emoji and covers all records
+PASS test/tasks.test.js: graph analyzes more than 100 notes, validates sources, merges clusters and collapses without loss
+PASS test/tasks.test.js: graph scope combines exact tags and local date range; failed output is never saved
+PASS test/tasks.test.js: tag organization covers all notes beyond 20 per tag and keeps evidence
+PASS test/tasks.test.js: daily and weekly summaries use server-owned dates and statistics, skip future notes and share history format
+PASS test/tasks.test.js: legacy graph layout remains readable and does not claim unknown source IDs
+PASS test/tasks.test.js: multiple fragments of one long note retain all their theme groups
+PASS test/tasks.test.js: tag input distinguishes a tag missing from the date range from a globally empty tag
+PASS test/tasks.test.js: original graph concepts, long discussions and Markdown discoveries survive without node-count rules
+PASS test/tasks.test.js: original graph and tag output shapes work without newly required evidence fields
+PASS test/tasks.test.js: long summaries and original task lists are preserved across digest batching
+PASS test/tasks.test.js: digest retries explain the string task format and never save malformed task objects
+PASS test/tasks.test.js: empty graph scope makes no model calls and leaves history untouched
+PASS test/tasks.test.js: empty daily and weekly ranges save deterministic empty results without model calls
+PASS test/tasks.test.js: a model returning an empty graph cannot save over a useful graph
+PASS test/tasks.test.js: empty text, dangling edges and a failed later batch do not save partial results
+{"simulationAcceptance":true,"passed":83,"failed":0,"summary":{"success":true,"counts":{"tests":83,"failed":0,"passed":83,"cancelled":0,"skipped":0,"todo":0,"topLevel":56,"suites":0},"duration_ms":11456.788542},"report":"/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-evidence/simulation/suite-result.json"}

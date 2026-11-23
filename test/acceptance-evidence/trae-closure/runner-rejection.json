@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-11-23T12:22:46.193Z",
+  "mode": "runner-rejection-without-model-calls",
+  "success": true,
+  "checks": [
+    {
+      "script": "test/desktop-agent-smoke.js",
+      "status": "passed",
+      "requestedAgent": "trae",
+      "exitCode": 1,
+      "rejectedBeforeStartup": true,
+      "error": "AGENT_DISABLED:trae",
+      "log": "test/acceptance-evidence/trae-closure/desktop-agent-smoke-trae-rejection.log"
+    },
+    {
+      "script": "test/acceptance-live-ui.js",
+      "status": "passed",
+      "requestedAgent": "trae",
+      "exitCode": 1,
+      "rejectedBeforeStartup": true,
+      "error": "AGENT_DISABLED:trae",
+      "log": "test/acceptance-evidence/trae-closure/acceptance-live-ui-trae-rejection.log"
+    }
+  ],
+  "realUiEvidenceUnchanged": true,
+  "realUiEvidenceFiles": 71
+}

@@ -6759,7 +6759,12 @@ button[title="编辑"] { transform:scaleX(-1); }
 }
 .graph-link-label {
   font-size:10px; fill: var(--t-text-light);
+  opacity:0; pointer-events:none;
+  stroke:var(--t-card); stroke-width:3px; paint-order:stroke fill; stroke-linejoin:round;
 }
+.graph-link-label.is-visible { opacity:1; }
+.graph-link.is-highlighted { stroke-opacity:1; stroke-width:2; }
+.graph-relation-hint { float:right; margin-left:8px; font-size:10px; font-weight:400; letter-spacing:0; text-transform:none; }
 
 /* Blind box */
 .blindbox-tag-picker { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }

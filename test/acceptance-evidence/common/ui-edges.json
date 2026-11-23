@@ -1,0 +1,251 @@
+{
+  "scope": "actual UI controls and isolated real HTTP/SQLite backend; simulated CLI output only for book generation",
+  "data": "fictional temporary database and synthetic ZIP fixtures only",
+  "startedAt": "2026-11-23T12:06:55.596Z",
+  "checks": [
+    {
+      "id": "E01",
+      "name": "快速搜索：真实旧响应延迟后不覆盖新查询",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "仅延迟旧搜索 fetch 返回时间；请求和响应内容均来自真实本机后端"
+      ],
+      "status": "passed",
+      "details": {
+        "responseOrder": [
+          "new",
+          "old"
+        ],
+        "finalMemoIds": [
+          "new"
+        ],
+        "trace": [
+          {
+            "keyword": "甲",
+            "status": 200,
+            "ids": [
+              "old"
+            ]
+          },
+          {
+            "keyword": "乙计划",
+            "status": 200,
+            "ids": [
+              "new"
+            ]
+          }
+        ]
+      },
+      "screenshot": "E01.png"
+    },
+    {
+      "id": "E02",
+      "name": "清空搜索后延迟旧响应不会重新筛选",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "仅延迟真实本机搜索响应返回时间"
+      ],
+      "status": "passed"
+    },
+    {
+      "id": "E03",
+      "name": "六个自定义颜色 HEX↔RGB 切换及改色同步",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [],
+      "status": "passed",
+      "details": {
+        "colors": [
+          {
+            "id": "ctBg",
+            "hex": "#ABCDEF",
+            "rgb": "171, 205, 239"
+          },
+          {
+            "id": "ctCard",
+            "hex": "#ABCDEF",
+            "rgb": "171, 205, 239"
+          },
+          {
+            "id": "ctAccent",
+            "hex": "#ABCDEF",
+            "rgb": "171, 205, 239"
+          },
+          {
+            "id": "ctText",
+            "hex": "#ABCDEF",
+            "rgb": "171, 205, 239"
+          },
+          {
+            "id": "ctBorder",
+            "hex": "#ABCDEF",
+            "rgb": "171, 205, 239"
+          },
+          {
+            "id": "ctDeco",
+            "hex": "#ABCDEF",
+            "rgb": "171, 205, 239"
+          }
+        ]
+      },
+      "screenshot": "E03.png"
+    },
+    {
+      "id": "E04",
+      "name": "点击上传区选 ZIP → 生成进度 → 30 卡 → 查看",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "合成书籍 ZIP；通过 DataTransfer 填充文件输入并派发真实 change 事件；原生文件选择器被 preventDefault，不打开系统对话框",
+        "使用 fake-model-cli.js 模拟 Claude Code 输出；上传 HTTP、ZIP 解压、SQLite 保存与 30 张卡片详情均为真实应用代码"
+      ],
+      "status": "passed",
+      "details": {
+        "pickerClicked": true,
+        "selectedName": "selected-book.zip",
+        "progressScreenshot": "E04-progress.png",
+        "savedCards": 30,
+        "detailCards": 30,
+        "modelCalls": 1
+      },
+      "screenshot": "E04.png"
+    },
+    {
+      "id": "E05",
+      "name": "拖入 ZIP 高亮及释放 → 30 卡 → 查看",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "合成 ZIP 和 DragEvent/DataTransfer；模拟 CLI 输出；真实上传、解析、保存和详情"
+      ],
+      "status": "passed",
+      "details": {
+        "highlighted": true,
+        "highlightCleared": true,
+        "savedCards": 30,
+        "detailCards": 30
+      },
+      "screenshot": "E05.png"
+    },
+    {
+      "id": "E06",
+      "name": "非 ZIP 文件在上传入口被拒绝",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "合成文件与 change 事件；不调用模型"
+      ],
+      "status": "passed",
+      "details": {
+        "toast": "请上传ZIP文件",
+        "modelCallsAdded": 0
+      }
+    },
+    {
+      "id": "E07",
+      "name": "空 ZIP 失败提示及上传控件恢复",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "真实空 ZIP；DataTransfer 文件选择；未触发模拟模型"
+      ],
+      "status": "passed",
+      "details": {
+        "toast": "文件里没有找到能读的文字哦～换一本带有文字的书试试吧～",
+        "modelCallsAdded": 0
+      },
+      "screenshot": "E07.png"
+    },
+    {
+      "id": "E08",
+      "name": "无文本 ZIP 提示换书且不保存卡池",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "仅含 PNG 的合成 ZIP；真实上传后端；未触发模拟模型"
+      ],
+      "status": "passed",
+      "details": {
+        "toast": "文件里没有找到能读的文字哦～换一本带有文字的书试试吧～",
+        "modelCallsAdded": 0
+      },
+      "screenshot": "E08.png"
+    },
+    {
+      "id": "E09",
+      "name": "书籍模型失败提示、解锁及控件恢复",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "合成 ZIP；模拟 CLI 非零退出；其余上传链路真实"
+      ],
+      "status": "passed",
+      "details": {
+        "toast": "刚才没成功哦～请稍后再试一次吧～",
+        "modelCallsAdded": 1,
+        "partialPoolSaved": false
+      },
+      "screenshot": "E09.png"
+    },
+    {
+      "id": "E10",
+      "name": "失败后重新选有效 ZIP 可生成并查看 30 卡",
+      "method": "actual renderer controls + isolated real HTTP backend",
+      "simulation": [
+        "合成书籍 ZIP；通过 DataTransfer 填充文件输入并派发真实 change 事件；原生文件选择器被 preventDefault，不打开系统对话框",
+        "使用 fake-model-cli.js 模拟 Claude Code 输出；上传 HTTP、ZIP 解压、SQLite 保存与 30 张卡片详情均为真实应用代码"
+      ],
+      "status": "passed",
+      "details": {
+        "savedCards": 30,
+        "detailCards": 30,
+        "modelCallsAdded": 1
+      },
+      "screenshot": "E10.png"
+    }
+  ],
+  "notApplicable": [
+    {
+      "name": "HEX 复制按钮 / Clipboard API",
+      "reason": "当前产品仅提供 HEX↔RGB 显示切换，没有复制按钮或 Clipboard API 调用；不新增功能，不列为未测。"
+    }
+  ],
+  "finishedAt": "2026-11-23T12:07:03.230Z",
+  "passed": 10,
+  "failed": 0,
+  "modelCalls": [
+    {
+      "task": "habit-pool",
+      "argv": [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages"
+      ]
+    },
+    {
+      "task": "habit-pool",
+      "argv": [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages"
+      ]
+    },
+    {
+      "task": "habit-pool",
+      "argv": [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages"
+      ]
+    },
+    {
+      "task": "habit-pool",
+      "argv": [
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--include-partial-messages"
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "name": "memo-app",
   "version": "1.0.0",
-  "description": "Memo Journal — personal journal app with Claude Code, Codex and CodeBuddy CLI integration",
+  "description": "Memo Journal — personal journal app with Claude Code, Codex and CodeBuddy integration",
   "main": "electron-main.js",
   "scripts": {
     "start": "node server.js",

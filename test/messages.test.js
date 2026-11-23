@@ -14,15 +14,41 @@ test('technical errors and filesystem details stay out of user-facing messages',
 });
 
 test('assistant errors use the selected product and task messages omit CC subjects',()=>{
-  for(const [id,name] of Object.entries({cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy'})) {
+  for(const [id,name] of Object.entries({cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy',trae:'Trae'})) {
     assert.ok(errorMessage('AGENT_CLI_MISSING:'+id).includes(name));
     assert.ok(errorMessage('AGENT_AUTH:'+id).includes(name));
     assert.ok(errorMessage('authentication required',id).includes(name));
   }
+  assert.match(errorMessage('AGENT_CLI_VERSION:trae'),/Trae CLI.*2\.0.*更新版本/);
+  assert.match(errorMessage('无效的 AI 助手'),/codebuddy/);
+  assert.doesNotMatch(errorMessage('无效的 AI 助手'),/trae/i);
+  assert.match(errorMessage('AGENT_DISABLED:trae'),/入口暂时关闭.*Codex.*CodeBuddy/);
   for(const detail of ['CC_BUSY:graph','AI_BUSY:切换','正在处理「生成图谱」','AI 或数据管理任务正在进行']) {
     assert.doesNotMatch(errorMessage(detail),/CC|cc|Claude/);
     assert.match(errorMessage(detail),/上一项任务/);
   }
+});
+
+test('Trae authentication explains enterprise CLI access while missing CLI still explains installation',()=>{
+  for(const [detail,selected] of [
+    ['AGENT_AUTH:trae','cc'],
+    ['AGENT_AUTH:trae authentication required','codex'],
+    ['authentication required','trae'],
+    ['unauthorized: login required','trae'],
+    ['登录失败','trae']
+  ]) {
+    const message=errorMessage(detail,selected);
+    assert.match(message,/Trae CLI 2\.0.*仅限企业旗舰版/);
+    assert.match(message,/已开通 CLI 权限.*账号登录/);
+    assert.doesNotMatch(message,/请先登录 Trae，再试一次/);
+  }
+  assert.equal(errorMessage('AGENT_CLI_MISSING:trae','cc'),'还没连上 Trae 哦～请先确认已安装并登录，再试一次吧～');
+  assert.match(errorMessage('spawn /private/example/traecli ENOENT','trae'),/Trae.*已安装并登录/);
+  for(const detail of ['AGENT_CLI_MISSING:trae','AGENT_CLI_VERSION:trae']) {
+    assert.doesNotMatch(errorMessage(detail,'trae'),/企业旗舰版/);
+  }
+  assert.equal(errorMessage('AGENT_AUTH:codex','trae'),'请先登录 Codex，再试一次吧～');
+  assert.equal(errorMessage('authentication required','codebuddy'),'请先登录 CodeBuddy，再试一次吧～');
 });
 
 test('legacy empty digest in the screenshot gets a useful, friendly message',()=>{

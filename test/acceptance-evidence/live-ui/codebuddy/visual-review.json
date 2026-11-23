@@ -1,0 +1,31 @@
+{
+  "agent": "codebuddy",
+  "mode": "visual-review-of-real-cli-ui-screenshots",
+  "reviewedAt": "2026-11-23T12:13:16.871Z",
+  "observations": [
+    {
+      "id": "streaming-visual",
+      "status": "passed",
+      "screenshot": "tag-stream-partial.png",
+      "finding": "任务详情在进行中显示 CodeBuddy 及部分真实 JSON 回答，后台页面被遮罩；16次可见增长另由 MutationObserver 记录。"
+    },
+    {
+      "id": "daily-digest-visual",
+      "status": "passed",
+      "screenshot": "daily-digest-expanded.png",
+      "finding": "真实中文摘要已替换占位文字，8类活动显示在展开区域，重新生成和任务详情按钮可见。"
+    },
+    {
+      "id": "graph-default-readability",
+      "status": "passed",
+      "screenshot": "graph-generated.png",
+      "finding": "实际图谱已绘制17节点；默认关系文字隐藏，节点和右侧主题总结可读。交互与完整关系 title 由 result.json 独立断言。"
+    },
+    {
+      "id": "weekly-tag-scope-visual",
+      "status": "passed",
+      "screenshot": "weekly-tag-summary.png",
+      "finding": "reading单标签选中，历史范围明确显示reading与当前自然周，展开正文说明仅1条便签，与保存的覆盖范围一致。"
+    }
+  ]
+}

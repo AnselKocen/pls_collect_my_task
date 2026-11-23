@@ -1,0 +1,454 @@
+{
+  "agent": "trae",
+  "mode": "real",
+  "phase": "common",
+  "startedAt": "2026-11-23T11:43:40.670Z",
+  "timezone": "Asia/Shanghai",
+  "cases": [
+    {
+      "id": "startup",
+      "name": "启动、助手自动识别与设置读取",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:40.908Z",
+      "evidence": {
+        "configured": true,
+        "selected": "trae",
+        "seedRecords": 103
+      },
+      "elapsedMs": 45,
+      "finishedAt": "2026-11-23T11:43:40.953Z"
+    },
+    {
+      "id": "memo_create",
+      "name": "新增中文、emoji及多标签便签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:40.954Z",
+      "evidence": {},
+      "elapsedMs": 29,
+      "finishedAt": "2026-11-23T11:43:40.983Z"
+    },
+    {
+      "id": "memo_edit",
+      "name": "编辑便签内容与标签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:40.984Z",
+      "evidence": {},
+      "elapsedMs": 12,
+      "finishedAt": "2026-11-23T11:43:40.996Z"
+    },
+    {
+      "id": "memo_pin",
+      "name": "置顶及取消置顶",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:40.997Z",
+      "evidence": {},
+      "elapsedMs": 21,
+      "finishedAt": "2026-11-23T11:43:41.023Z"
+    },
+    {
+      "id": "memo_validation",
+      "name": "空白及非文本便签拒绝且不覆盖原文",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.024Z",
+      "evidence": {},
+      "elapsedMs": 7,
+      "finishedAt": "2026-11-23T11:43:41.032Z"
+    },
+    {
+      "id": "search_exact",
+      "name": "本地精确搜索、大小写与空结果",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.032Z",
+      "evidence": {},
+      "elapsedMs": 9,
+      "finishedAt": "2026-11-23T11:43:41.041Z"
+    },
+    {
+      "id": "search_fuzzy",
+      "name": "本地模糊搜索、无序关键词及旧搜索接口",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.041Z",
+      "evidence": {},
+      "elapsedMs": 6,
+      "finishedAt": "2026-11-23T11:43:41.047Z"
+    },
+    {
+      "id": "tag_filter",
+      "name": "单标签、多标签及搜索组合筛选",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.047Z",
+      "evidence": {},
+      "elapsedMs": 2,
+      "finishedAt": "2026-11-23T11:43:41.050Z"
+    },
+    {
+      "id": "tag_create_style",
+      "name": "新增标签、emoji与胶带设置",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.050Z",
+      "evidence": {},
+      "elapsedMs": 8,
+      "finishedAt": "2026-11-23T11:43:41.058Z"
+    },
+    {
+      "id": "tag_rename_order",
+      "name": "重命名标签同步便签并保存排序",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.059Z",
+      "evidence": {},
+      "elapsedMs": 21,
+      "finishedAt": "2026-11-23T11:43:41.080Z"
+    },
+    {
+      "id": "tag_delete_notes",
+      "name": "删除标签及其关联测试便签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.081Z",
+      "evidence": {},
+      "elapsedMs": 11,
+      "finishedAt": "2026-11-23T11:43:41.092Z"
+    },
+    {
+      "id": "memo_delete",
+      "name": "独立删除便签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.092Z",
+      "evidence": {},
+      "elapsedMs": 7,
+      "finishedAt": "2026-11-23T11:43:41.099Z"
+    },
+    {
+      "id": "blind_box",
+      "name": "任务盲盒随机选择及标签范围",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.100Z",
+      "evidence": {},
+      "elapsedMs": 4,
+      "finishedAt": "2026-11-23T11:43:41.104Z"
+    },
+    {
+      "id": "theme_custom",
+      "name": "预设主题、自定义配色保存",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.107Z",
+      "evidence": {},
+      "elapsedMs": 17,
+      "finishedAt": "2026-11-23T11:43:41.124Z"
+    },
+    {
+      "id": "schedule_settings",
+      "name": "日周摘要时间设置、非法时间与任务去重",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.124Z",
+      "evidence": {},
+      "elapsedMs": 21,
+      "finishedAt": "2026-11-23T11:43:41.146Z"
+    },
+    {
+      "id": "pool_edit",
+      "name": "卡池列表、改名与编辑习惯",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.151Z",
+      "evidence": {},
+      "elapsedMs": 12,
+      "finishedAt": "2026-11-23T11:43:41.163Z"
+    },
+    {
+      "id": "habit_draw_today",
+      "name": "抽取习惯及今日记录",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.167Z",
+      "evidence": {},
+      "elapsedMs": 7,
+      "finishedAt": "2026-11-23T11:43:41.175Z"
+    },
+    {
+      "id": "habit_complete_calendar",
+      "name": "习惯完成、日月历史与打卡日历",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.175Z",
+      "evidence": {},
+      "elapsedMs": 5,
+      "finishedAt": "2026-11-23T11:43:41.180Z"
+    },
+    {
+      "id": "pool_delete_history",
+      "name": "删除卡池保留原打卡历史、删除记录",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.181Z",
+      "evidence": {},
+      "elapsedMs": 5,
+      "finishedAt": "2026-11-23T11:43:41.186Z"
+    },
+    {
+      "id": "habit_invalid",
+      "name": "缺失卡池、空选择及非法日历输入",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.187Z",
+      "evidence": {},
+      "elapsedMs": 3,
+      "finishedAt": "2026-11-23T11:43:41.190Z"
+    },
+    {
+      "id": "reminder_crud",
+      "name": "创建日期提醒和每日提醒、列表与删除",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.191Z",
+      "evidence": {},
+      "elapsedMs": 24,
+      "finishedAt": "2026-11-23T11:43:41.216Z"
+    },
+    {
+      "id": "reminder_validation",
+      "name": "拒绝非法提醒时间、日期及空内容",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.217Z",
+      "evidence": {},
+      "elapsedMs": 4,
+      "finishedAt": "2026-11-23T11:43:41.221Z"
+    },
+    {
+      "id": "reminder_delivery",
+      "name": "真实提醒回调排队、同分钟去重及单次消费",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.222Z",
+      "evidence": {
+        "queueAndDeduplication": true,
+        "osNotificationBanner": "not covered by API test"
+      },
+      "elapsedMs": 9,
+      "finishedAt": "2026-11-23T11:43:41.231Z"
+    },
+    {
+      "id": "backup_download",
+      "name": "立即备份、状态及 SQLite 下载",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.232Z",
+      "evidence": {},
+      "elapsedMs": 15,
+      "finishedAt": "2026-11-23T11:43:41.247Z"
+    },
+    {
+      "id": "export_json",
+      "name": "导出全部业务 JSON ZIP",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.249Z",
+      "evidence": {},
+      "elapsedMs": 10,
+      "finishedAt": "2026-11-23T11:43:41.259Z"
+    },
+    {
+      "id": "restore_backup",
+      "name": "备份列表恢复、数据替换与助手保留",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.260Z",
+      "evidence": {},
+      "elapsedMs": 22,
+      "finishedAt": "2026-11-23T11:43:41.282Z"
+    },
+    {
+      "id": "restore_upload_invalid",
+      "name": "上传恢复、损坏文件拒绝且数据不变",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.283Z",
+      "evidence": {},
+      "elapsedMs": 20,
+      "finishedAt": "2026-11-23T11:43:41.303Z"
+    },
+    {
+      "id": "local_origin",
+      "name": "配置及备份接口的本机来源约束",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.304Z",
+      "evidence": {},
+      "elapsedMs": 4,
+      "finishedAt": "2026-11-23T11:43:41.308Z"
+    },
+    {
+      "id": "cli_path",
+      "name": "手选 CLI 路径生效且服务无需重启",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.309Z",
+      "evidence": {},
+      "elapsedMs": 95,
+      "finishedAt": "2026-11-23T11:43:41.404Z"
+    },
+    {
+      "id": "restart_persistence",
+      "name": "服务重启后记录、主题、助手及路径保留",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.404Z",
+      "evidence": {},
+      "elapsedMs": 171,
+      "finishedAt": "2026-11-23T11:43:41.576Z"
+    },
+    {
+      "id": "empty_scope",
+      "name": "空范围图谱拒绝、空摘要本地生成",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.576Z",
+      "evidence": {},
+      "elapsedMs": 10,
+      "finishedAt": "2026-11-23T11:43:41.587Z"
+    },
+    {
+      "id": "graph_full",
+      "name": "真实图谱生成、103条分批综合、流式及任务锁",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.587Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "graph_scope",
+      "name": "真实图谱按标签与本地日期筛选、来源引用合法",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.588Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "tag_suggestions",
+      "name": "真实标签整理、分批归并及建议历史保存",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.588Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "daily_digest",
+      "name": "真实今日摘要、昨天今天范围及完整分批",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.588Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "weekly_digest",
+      "name": "真实本周总结、自然周范围及分批统计",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.588Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "daily_scheduled",
+      "name": "真实定时日摘要回调使用当前助手并保存",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.589Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "weekly_scheduled",
+      "name": "真实定时周总结回调使用当前助手并保存",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.590Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "book_pool",
+      "name": "真实 ZIP 书籍提炼30张习惯卡、上传清理",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.590Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "wish_purpose",
+      "name": "真实愿望第一轮提问、三个选项及增量显示",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.591Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "wish_effort",
+      "name": "真实愿望第二轮提问、自定义回答上下文",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.591Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "wish_pool",
+      "name": "真实愿望生成30张唯一短卡并保存上下文",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.592Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "wish_retry_draw",
+      "name": "真实生成结果重试幂等、抽卡及完成",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.593Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "ai_history_delete",
+      "name": "真实图谱、摘要和标签建议历史读取及删除",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.593Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    },
+    {
+      "id": "ai_restart_saved",
+      "name": "真实 AI 结果和卡池重启后可读",
+      "scope": "ai",
+      "status": "blocked",
+      "startedAt": "2026-11-23T11:43:41.593Z",
+      "detail": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。"
+    }
+  ],
+  "syntheticData": true,
+  "cli": "/Users/anselkocen/.local/bin/traecli",
+  "finishedAt": "2026-11-23T11:43:41.594Z",
+  "summary": {
+    "passed": 31,
+    "blocked": 14
+  },
+  "accountRestriction": {
+    "reason": "个人账号无国内 Trae CLI 2.0 企业旗舰版权限，无法完成 CLI 授权；真实 AI 调用未执行。",
+    "verifiedAt": "2026-11-23T12:09:48.226Z",
+    "cliLoginStatus": "Not logged in",
+    "sources": [
+      "https://docs.trae.cn/cli_about-trae-code-cli-2",
+      "https://docs.trae.cn/trae-enterprise_billing-overview-for-trae-enterprise?lang=zh"
+    ]
+  }
+}

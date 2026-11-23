@@ -43,7 +43,7 @@ function validate(section, data) {
     }
   }
   if (section === 'settings') {
-    if (data.agent !== undefined && !['cc','codex','codebuddy'].includes(data.agent)) fail('无效的 AI 助手');
+    if (data.agent !== undefined && !['cc','codex','codebuddy','trae'].includes(data.agent)) fail('无效的 AI 助手');
     array(data.tags, 'tags');
     if (data.tags.some(t => typeof t !== 'string')) fail('tags 含非文字标签');
     for (const key of ['dailyDigestTime', 'weeklyDigestTime']) {

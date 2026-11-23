@@ -1,0 +1,241 @@
+{
+  "agent": "cc",
+  "mode": "simulation",
+  "realCli": false,
+  "realModel": false,
+  "fictionalData": true,
+  "startedAt": "2026-11-23T11:41:15.745Z",
+  "rows": [
+    {
+      "id": "cc-selection",
+      "label": "CC 模拟 CLI 检测及选中状态",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 21,
+      "details": {
+        "configured": true
+      }
+    },
+    {
+      "id": "tag-suggestions",
+      "label": "整理标签、来源校验及历史保存",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 459,
+      "details": {
+        "suggestions": 1,
+        "processedCount": 4,
+        "modelTask": "tag-suggestions"
+      }
+    },
+    {
+      "id": "graph",
+      "label": "全部便签图谱生成及历史保存",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 295,
+      "details": {
+        "nodes": 4,
+        "edges": 1,
+        "processedCount": 4
+      }
+    },
+    {
+      "id": "graph-filter",
+      "label": "图谱标签与日期范围筛选",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 309,
+      "details": {
+        "from": "2026-11-23",
+        "to": "2026-11-23",
+        "processedCount": 2
+      }
+    },
+    {
+      "id": "daily-digest",
+      "label": "今日摘要、服务端日期、标签计数及保存",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 297,
+      "details": {
+        "processedCount": 4,
+        "date": "2026-11-23"
+      }
+    },
+    {
+      "id": "weekly-digest",
+      "label": "本周总结、周边界及历史保存",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 297,
+      "details": {
+        "processedCount": 4,
+        "week": "2026-W48"
+      }
+    },
+    {
+      "id": "scheduled-daily",
+      "label": "定时今日摘要回调调用 CC 并保存",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 290,
+      "details": {
+        "cronIndex": 0,
+        "modelTask": "daily-digest"
+      }
+    },
+    {
+      "id": "scheduled-weekly",
+      "label": "定时本周总结回调调用 CC 并保存",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 297,
+      "details": {
+        "cronIndex": 1,
+        "modelTask": "weekly-digest"
+      }
+    },
+    {
+      "id": "book-habit-pool",
+      "label": "上传书籍 ZIP 生成 30 张习惯卡",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 313,
+      "details": {
+        "cards": 30,
+        "saved": true,
+        "uploadCleaned": true
+      }
+    },
+    {
+      "id": "wish-purpose",
+      "label": "愿望目的提问实时增量及三个选项",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 405,
+      "details": {
+        "options": 3,
+        "questionUpdates": 5
+      }
+    },
+    {
+      "id": "wish-effort",
+      "label": "愿望投入方式提问及前轮回答传递",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 408,
+      "details": {
+        "options": 3,
+        "questionUpdates": 5,
+        "contextPreserved": true
+      }
+    },
+    {
+      "id": "wish-pool",
+      "label": "愿望生成 30 张卡、保存及重复提交幂等",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 323,
+      "details": {
+        "cards": 30,
+        "idempotent": true,
+        "draw": true
+      }
+    },
+    {
+      "id": "stream-reconnect-lock",
+      "label": "回答流、断线重连、任务锁及最终快照",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 1016,
+      "details": {
+        "streamed": true,
+        "reconnected": true,
+        "busySwitchDenied": true,
+        "parallelTaskDenied": true,
+        "completedSnapshot": true
+      }
+    },
+    {
+      "id": "invalid-output-recovery",
+      "label": "无效 JSON 不覆盖历史、释放锁并可重试",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 892,
+      "details": {
+        "historyPreserved": true,
+        "lockReleased": true,
+        "retrySucceeded": true
+      }
+    },
+    {
+      "id": "auth-failure",
+      "label": "模拟登录失败不保存部分结果",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 295,
+      "details": {
+        "errorRecognized": true,
+        "partialResultNotSaved": true
+      }
+    },
+    {
+      "id": "missing-cli",
+      "label": "缺失 CLI 检测、提示及恢复",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 2,
+      "details": {
+        "missingDetected": true,
+        "recovered": true
+      }
+    },
+    {
+      "id": "timeout",
+      "label": "模拟 CLI 超时终止及之后恢复",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 354,
+      "details": {
+        "timeoutRejected": true
+      }
+    },
+    {
+      "id": "history-delete",
+      "label": "AI 图谱和周总结历史删除",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 4,
+      "details": {
+        "graphHistoryDeleted": true,
+        "weeklyHistoryDeleted": true
+      }
+    },
+    {
+      "id": "restart-persistence",
+      "label": "重启后保留助手、摘要、图谱与卡池",
+      "status": "passed",
+      "mode": "simulation",
+      "durationMs": 2577,
+      "details": {
+        "selectedAgent": "cc",
+        "savedPools": 2,
+        "historyPreserved": true
+      }
+    }
+  ],
+  "modelCallCount": 17,
+  "modelTasks": [
+    "tag-suggestions",
+    "graph",
+    "daily-digest",
+    "weekly-digest",
+    "habit-pool",
+    "habit-wish-question",
+    "habit-wish-pool"
+  ],
+  "finishedAt": "2026-11-23T11:41:24.744Z",
+  "passed": 19,
+  "failed": 0
+}

@@ -1,0 +1,588 @@
+{
+  "agent": "codex",
+  "mode": "real",
+  "phase": "all",
+  "startedAt": "2026-11-23T11:43:41.176Z",
+  "timezone": "Asia/Shanghai",
+  "cases": [
+    {
+      "id": "startup",
+      "name": "启动、助手自动识别与设置读取",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.408Z",
+      "evidence": {
+        "configured": true,
+        "selected": "codex",
+        "seedRecords": 103
+      },
+      "elapsedMs": 39,
+      "finishedAt": "2026-11-23T11:43:41.448Z"
+    },
+    {
+      "id": "memo_create",
+      "name": "新增中文、emoji及多标签便签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.449Z",
+      "evidence": {},
+      "elapsedMs": 16,
+      "finishedAt": "2026-11-23T11:43:41.465Z"
+    },
+    {
+      "id": "memo_edit",
+      "name": "编辑便签内容与标签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.466Z",
+      "evidence": {},
+      "elapsedMs": 9,
+      "finishedAt": "2026-11-23T11:43:41.475Z"
+    },
+    {
+      "id": "memo_pin",
+      "name": "置顶及取消置顶",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.475Z",
+      "evidence": {},
+      "elapsedMs": 17,
+      "finishedAt": "2026-11-23T11:43:41.492Z"
+    },
+    {
+      "id": "memo_validation",
+      "name": "空白及非文本便签拒绝且不覆盖原文",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.493Z",
+      "evidence": {},
+      "elapsedMs": 6,
+      "finishedAt": "2026-11-23T11:43:41.499Z"
+    },
+    {
+      "id": "search_exact",
+      "name": "本地精确搜索、大小写与空结果",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.499Z",
+      "evidence": {},
+      "elapsedMs": 4,
+      "finishedAt": "2026-11-23T11:43:41.503Z"
+    },
+    {
+      "id": "search_fuzzy",
+      "name": "本地模糊搜索、无序关键词及旧搜索接口",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.504Z",
+      "evidence": {},
+      "elapsedMs": 5,
+      "finishedAt": "2026-11-23T11:43:41.509Z"
+    },
+    {
+      "id": "tag_filter",
+      "name": "单标签、多标签及搜索组合筛选",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.510Z",
+      "evidence": {},
+      "elapsedMs": 2,
+      "finishedAt": "2026-11-23T11:43:41.512Z"
+    },
+    {
+      "id": "tag_create_style",
+      "name": "新增标签、emoji与胶带设置",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.513Z",
+      "evidence": {},
+      "elapsedMs": 7,
+      "finishedAt": "2026-11-23T11:43:41.520Z"
+    },
+    {
+      "id": "tag_rename_order",
+      "name": "重命名标签同步便签并保存排序",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.520Z",
+      "evidence": {},
+      "elapsedMs": 10,
+      "finishedAt": "2026-11-23T11:43:41.530Z"
+    },
+    {
+      "id": "tag_delete_notes",
+      "name": "删除标签及其关联测试便签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.530Z",
+      "evidence": {},
+      "elapsedMs": 5,
+      "finishedAt": "2026-11-23T11:43:41.536Z"
+    },
+    {
+      "id": "memo_delete",
+      "name": "独立删除便签",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.536Z",
+      "evidence": {},
+      "elapsedMs": 8,
+      "finishedAt": "2026-11-23T11:43:41.544Z"
+    },
+    {
+      "id": "blind_box",
+      "name": "任务盲盒随机选择及标签范围",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.545Z",
+      "evidence": {},
+      "elapsedMs": 1,
+      "finishedAt": "2026-11-23T11:43:41.546Z"
+    },
+    {
+      "id": "theme_custom",
+      "name": "预设主题、自定义配色保存",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.546Z",
+      "evidence": {},
+      "elapsedMs": 5,
+      "finishedAt": "2026-11-23T11:43:41.551Z"
+    },
+    {
+      "id": "schedule_settings",
+      "name": "日周摘要时间设置、非法时间与任务去重",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.552Z",
+      "evidence": {},
+      "elapsedMs": 10,
+      "finishedAt": "2026-11-23T11:43:41.562Z"
+    },
+    {
+      "id": "pool_edit",
+      "name": "卡池列表、改名与编辑习惯",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.562Z",
+      "evidence": {},
+      "elapsedMs": 4,
+      "finishedAt": "2026-11-23T11:43:41.567Z"
+    },
+    {
+      "id": "habit_draw_today",
+      "name": "抽取习惯及今日记录",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.567Z",
+      "evidence": {},
+      "elapsedMs": 2,
+      "finishedAt": "2026-11-23T11:43:41.570Z"
+    },
+    {
+      "id": "habit_complete_calendar",
+      "name": "习惯完成、日月历史与打卡日历",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.571Z",
+      "evidence": {},
+      "elapsedMs": 6,
+      "finishedAt": "2026-11-23T11:43:41.577Z"
+    },
+    {
+      "id": "pool_delete_history",
+      "name": "删除卡池保留原打卡历史、删除记录",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.578Z",
+      "evidence": {},
+      "elapsedMs": 5,
+      "finishedAt": "2026-11-23T11:43:41.583Z"
+    },
+    {
+      "id": "habit_invalid",
+      "name": "缺失卡池、空选择及非法日历输入",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.583Z",
+      "evidence": {},
+      "elapsedMs": 2,
+      "finishedAt": "2026-11-23T11:43:41.586Z"
+    },
+    {
+      "id": "reminder_crud",
+      "name": "创建日期提醒和每日提醒、列表与删除",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.587Z",
+      "evidence": {},
+      "elapsedMs": 11,
+      "finishedAt": "2026-11-23T11:43:41.598Z"
+    },
+    {
+      "id": "reminder_validation",
+      "name": "拒绝非法提醒时间、日期及空内容",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.598Z",
+      "evidence": {},
+      "elapsedMs": 2,
+      "finishedAt": "2026-11-23T11:43:41.600Z"
+    },
+    {
+      "id": "reminder_delivery",
+      "name": "真实提醒回调排队、同分钟去重及单次消费",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.600Z",
+      "evidence": {
+        "queueAndDeduplication": true,
+        "osNotificationBanner": "not covered by API test"
+      },
+      "elapsedMs": 7,
+      "finishedAt": "2026-11-23T11:43:41.608Z"
+    },
+    {
+      "id": "backup_download",
+      "name": "立即备份、状态及 SQLite 下载",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.609Z",
+      "evidence": {},
+      "elapsedMs": 10,
+      "finishedAt": "2026-11-23T11:43:41.619Z"
+    },
+    {
+      "id": "export_json",
+      "name": "导出全部业务 JSON ZIP",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.619Z",
+      "evidence": {},
+      "elapsedMs": 7,
+      "finishedAt": "2026-11-23T11:43:41.626Z"
+    },
+    {
+      "id": "restore_backup",
+      "name": "备份列表恢复、数据替换与助手保留",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.626Z",
+      "evidence": {},
+      "elapsedMs": 14,
+      "finishedAt": "2026-11-23T11:43:41.640Z"
+    },
+    {
+      "id": "restore_upload_invalid",
+      "name": "上传恢复、损坏文件拒绝且数据不变",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.640Z",
+      "evidence": {},
+      "elapsedMs": 16,
+      "finishedAt": "2026-11-23T11:43:41.656Z"
+    },
+    {
+      "id": "local_origin",
+      "name": "配置及备份接口的本机来源约束",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.656Z",
+      "evidence": {},
+      "elapsedMs": 2,
+      "finishedAt": "2026-11-23T11:43:41.659Z"
+    },
+    {
+      "id": "cli_path",
+      "name": "手选 CLI 路径生效且服务无需重启",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.659Z",
+      "evidence": {},
+      "elapsedMs": 15,
+      "finishedAt": "2026-11-23T11:43:41.674Z"
+    },
+    {
+      "id": "restart_persistence",
+      "name": "服务重启后记录、主题、助手及路径保留",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.674Z",
+      "evidence": {},
+      "elapsedMs": 115,
+      "finishedAt": "2026-11-23T11:43:41.789Z"
+    },
+    {
+      "id": "empty_scope",
+      "name": "空范围图谱拒绝、空摘要本地生成",
+      "scope": "common",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.790Z",
+      "evidence": {},
+      "elapsedMs": 6,
+      "finishedAt": "2026-11-23T11:43:41.796Z"
+    },
+    {
+      "id": "graph_full",
+      "name": "真实图谱生成、103条分批综合、流式及任务锁",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:43:41.797Z",
+      "evidence": {
+        "deltaCount": 8051,
+        "firstDeltaMs": 10732,
+        "elapsedMs": 192206,
+        "busyLock": true,
+        "restoreLock": true,
+        "validatedAndSaved": true,
+        "taskSnapshot": true,
+        "records": 103,
+        "batches": 2,
+        "nodes": 6
+      },
+      "elapsedMs": 192212,
+      "finishedAt": "2026-11-23T11:46:54.009Z"
+    },
+    {
+      "id": "graph_scope",
+      "name": "真实图谱按标签与本地日期筛选、来源引用合法",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:46:54.010Z",
+      "evidence": {
+        "records": 24,
+        "nodes": 5
+      },
+      "elapsedMs": 23977,
+      "finishedAt": "2026-11-23T11:47:17.987Z"
+    },
+    {
+      "id": "tag_suggestions",
+      "name": "真实标签整理、分批归并及建议历史保存",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:47:17.989Z",
+      "evidence": {
+        "suggestions": 4,
+        "batches": 2
+      },
+      "elapsedMs": 34177,
+      "finishedAt": "2026-11-23T11:47:52.166Z"
+    },
+    {
+      "id": "daily_digest",
+      "name": "真实今日摘要、昨天今天范围及完整分批",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:47:52.167Z",
+      "evidence": {
+        "summary": "· 2026年11月22日，虚构测试记录围绕三项活动：睡前阅读十分钟并记下一个新想法，散步十五分钟并观察呼吸与路边树木，以及收好桌上三件物品，为明天留出空间。\n· 2026年11月23日，虚构测试记录延续阅读、散步和桌面整理三个主题，强调记录灵感、留意日常观察与整理生活空间；内容多次重复，未明确标注完成状态。",
+        "records": 90,
+        "batches": 2
+      },
+      "elapsedMs": 28298,
+      "finishedAt": "2026-11-23T11:48:20.465Z"
+    },
+    {
+      "id": "weekly_digest",
+      "name": "真实本周总结、自然周范围及分批统计",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:48:20.466Z",
+      "evidence": {
+        "summary": "本周为2026年11月23日至29日，截至上海时间11月23日19:48，仅覆盖周一，应视为周初阶段总结。综合两批共70条手帐，内容均明确标注为虚构测试资料，且集中于同一记录时刻、重复度较高。合并重复内容后，核心事项包括：睡前阅读十分钟并记录想法；散步十五分钟，观察呼吸与树木；收好三件物品，为明天留出空间。三类行动分别对应知识输入、身体觉察和环境维护，共同体现以明确的时间或数量边界降低启动门槛，并将当下行动与反思、次日准备连接起来的设计。当前材料能够反映记录主题与行动设计，但不能证明实际执行次数、习惯持续性或身心改善，也不宜累计阅读与运动时长。后续真实记录可补充阅读产生的具体想法、散步前后的感受及整理带来的实际变化，并积累跨日记录和上周对照，使总结从重复的行动描述深入到效果与经验。",
+        "records": 70,
+        "batches": 2,
+        "week": "2026-W48"
+      },
+      "elapsedMs": 47637,
+      "finishedAt": "2026-11-23T11:49:08.103Z"
+    },
+    {
+      "id": "daily_scheduled",
+      "name": "真实定时日摘要回调使用当前助手并保存",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:49:08.103Z",
+      "evidence": {
+        "generatedAt": "2026-11-23T11:49:08.113Z"
+      },
+      "elapsedMs": 25678,
+      "finishedAt": "2026-11-23T11:49:33.781Z"
+    },
+    {
+      "id": "weekly_scheduled",
+      "name": "真实定时周总结回调使用当前助手并保存",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:49:33.782Z",
+      "evidence": {
+        "historyCount": 2
+      },
+      "elapsedMs": 51677,
+      "finishedAt": "2026-11-23T11:50:25.459Z"
+    },
+    {
+      "id": "book_pool",
+      "name": "真实 ZIP 书籍提炼30张习惯卡、上传清理",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:50:25.460Z",
+      "evidence": {
+        "poolName": "小步拾光",
+        "cards": 30,
+        "habits": [
+          "清晨看看窗边的光落在哪里。",
+          "午后留意同一物件影子的变化。",
+          "天暗时把阅读处的灯调得舒适。",
+          "开工前给桌面留出一块空位。",
+          "用完东西后把它放回原处。",
+          "收桌时擦去一处积灰。",
+          "浇水前先摸摸盆土的干湿。",
+          "照顾绿植时看看叶片有无变化。",
+          "给绿植擦去叶面的浮尘。",
+          "每天留一点时间读完一页书。",
+          "读到有感触的句子就停一停。",
+          "带着一个阅读中的疑问过一天。",
+          "用一个贴切的词记下此刻感受。",
+          "记下一件让心情变化的小事。",
+          "隔几天翻看记录，认识自己的起伏。",
+          "饭后出门走上一小段路。",
+          "散步时找一处平常忽略的细节。",
+          "偶尔换条步行路线，看看熟悉街区。",
+          "久坐后起身做一次轻柔伸展。",
+          "伸展时留意身体舒适的幅度。",
+          "伸展前后感受身体松紧的变化。",
+          "听人说话时先让对方说完。",
+          "安静一分钟，听听周围的声音。",
+          "交谈后想想对方最在意的是什么。",
+          "收到小小的帮助时认真道谢。",
+          "睡前回想一件今天值得感谢的事。",
+          "向身边人说清一件感谢对方的事。",
+          "睡前把明天出门要带的东西放好。",
+          "为明天选定一件能完成的小事。",
+          "看看明天的安排，留一点空闲。"
+        ]
+      },
+      "elapsedMs": 25084,
+      "finishedAt": "2026-11-23T11:50:50.544Z"
+    },
+    {
+      "id": "wish_purpose",
+      "name": "真实愿望第一轮提问、三个选项及增量显示",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:50:50.544Z",
+      "evidence": {
+        "question": "你最希望画画给自己带来什么变化？",
+        "growths": 12,
+        "options": [
+          "让我放松下来，享受一段属于自己的时间",
+          "让我能用画面表达自己的想法和感受",
+          "让我掌握一门技能，画出自己喜欢的作品"
+        ]
+      },
+      "elapsedMs": 6715,
+      "finishedAt": "2026-11-23T11:50:57.259Z"
+    },
+    {
+      "id": "wish_effort",
+      "name": "真实愿望第二轮提问、自定义回答上下文",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:50:57.260Z",
+      "evidence": {
+        "question": "为了和朋友一起享受画画，你更愿意用哪种方式开始？",
+        "growths": 18,
+        "options": [
+          "平时各花十来分钟随手画，再发给彼此看看",
+          "每周约半小时到一小时，一起轻松画点喜欢的东西",
+          "有空时约一次画画聚会或体验课，不急着固定频率"
+        ]
+      },
+      "elapsedMs": 12231,
+      "finishedAt": "2026-11-23T11:51:09.491Z"
+    },
+    {
+      "id": "wish_pool",
+      "name": "真实愿望生成30张唯一短卡并保存上下文",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:51:09.492Z",
+      "evidence": {
+        "poolName": "画着玩",
+        "cards": 30,
+        "habits": [
+          "用手边纸笔画个小人，邀朋友起名字",
+          "和朋友各画一种心情，互相猜一猜",
+          "请朋友随口出题，花三分钟画出来",
+          "和朋友轮流添一笔，画满一小块纸",
+          "画个身边物件，让朋友猜是什么",
+          "和朋友各画同一只杯子，看看哪里不同",
+          "把朋友的一句趣话画成小漫画",
+          "画张迷你邀请函，约朋友一起涂鸦",
+          "和朋友各画一道怪菜，聊聊什么味道",
+          "给朋友画一枚纸上勋章，写个有趣奖名",
+          "画下和朋友想一起去的地方",
+          "把朋友的名字变成一个小图案",
+          "和朋友各画一种天气，拼成奇妙风景",
+          "画一件今天的小趣事，分享给朋友",
+          "为朋友画一张带祝福的小卡片",
+          "闭眼画十秒，再和朋友看看像什么",
+          "用不常写字的手画画，和朋友一起笑",
+          "一笔不停画只小动物，欣赏意外线条",
+          "随手画个乱线团，从里面找出小角色",
+          "把纸上的一个小污点变成图画",
+          "给身边的普通物件添上表情",
+          "用三个简单形状拼出奇怪小生物",
+          "只用点点画一小片风景",
+          "给画歪的地方加一笔，变成新点子",
+          "画出此刻听到的声音，不求像实物",
+          "用纸笔设计一个和朋友打招呼的手势",
+          "画个表情，代替一句发给朋友的话",
+          "看朋友的画，指出一个喜欢的小细节",
+          "画前提醒自己：这五分钟只管好玩",
+          "五分钟到了就收笔，没画完也能分享"
+        ]
+      },
+      "elapsedMs": 24910,
+      "finishedAt": "2026-11-23T11:51:34.402Z"
+    },
+    {
+      "id": "wish_retry_draw",
+      "name": "真实生成结果重试幂等、抽卡及完成",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:51:34.402Z",
+      "evidence": {},
+      "elapsedMs": 10,
+      "finishedAt": "2026-11-23T11:51:34.412Z"
+    },
+    {
+      "id": "ai_history_delete",
+      "name": "真实图谱、摘要和标签建议历史读取及删除",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:51:34.412Z",
+      "evidence": {},
+      "elapsedMs": 8,
+      "finishedAt": "2026-11-23T11:51:34.420Z"
+    },
+    {
+      "id": "ai_restart_saved",
+      "name": "真实 AI 结果和卡池重启后可读",
+      "scope": "ai",
+      "status": "passed",
+      "startedAt": "2026-11-23T11:51:34.420Z",
+      "evidence": {},
+      "elapsedMs": 160,
+      "finishedAt": "2026-11-23T11:51:34.580Z"
+    }
+  ],
+  "syntheticData": true,
+  "cli": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+  "finishedAt": "2026-11-23T11:51:34.580Z",
+  "summary": {
+    "passed": 45
+  }
+}

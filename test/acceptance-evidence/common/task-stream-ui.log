@@ -1,0 +1,14 @@
+{"silentStreamRecovery":true,"completionRecovered":true,"duplicateDeltaIgnored":true,"missingDeltaRecovered":true,"stalePollIgnored":true,"restartRecovered":true,"legacyStreamingAfterPoll":true,"noStreamingFallback":true}
+(node:22515) UnhandledPromiseRejectionWarning: Error: ENOTEMPTY: directory not empty, rmdir '/var/folders/_y/g_s_tx8d2c3b6k5_056sbv5w0000gn/T/memo-stream-recovery-7p1bjZ/profile'
+    at Object.rmdirSync (node:fs:1202:11)
+    at _rmdirSync (node:internal/fs/rimraf:261:21)
+    at rimrafSync (node:internal/fs/rimraf:194:7)
+    at node:internal/fs/rimraf:254:9
+    at Array.forEach (<anonymous>)
+    at _rmdirSync (node:internal/fs/rimraf:251:7)
+    at rimrafSync (node:internal/fs/rimraf:194:7)
+    at Object.rmSync (node:fs:1248:10)
+    at /Users/anselkocen/Desktop/pls_collect_my_task/test/task-stream-ui-smoke.js:116:24
+    at <anonymous>
+(Use `Electron --trace-warnings ...` to show where the warning was created)
+(node:22515) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)

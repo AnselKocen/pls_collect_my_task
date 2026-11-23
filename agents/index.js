@@ -1,18 +1,33 @@
 const fs = require('fs');
 const { randomUUID } = require('crypto');
-const { createCodexSession, createPrintSession, CODEX_HTTP_PROVIDER, CODEX_HTTP_CONFIG } = require('./stream-protocol');
+const { createCodexSession, createPrintSession, createAcpSession, CODEX_HTTP_PROVIDER, CODEX_HTTP_CONFIG } = require('./stream-protocol');
 const path = require('path');
 const { spawn, execFileSync } = require('child_process');
 
 const AGENTS = Object.freeze({
   cc: { name:'Claude Code', command:'claude', env:'CLAUDE_CLI', install:'npm install -g @anthropic-ai/claude-code' },
   codex: { name:'Codex', command:'codex', env:'CODEX_CLI', install:'npm install -g @openai/codex' },
-  codebuddy: { name:'CodeBuddy', command:'codebuddy', env:'CODEBUDDY_CLI', install:'https://www.workbuddy.cn/docs/cli/quickstart' }
+  codebuddy: { name:'CodeBuddy', command:'codebuddy', env:'CODEBUDDY_CLI', install:'https://www.codebuddy.cn/docs/cli/quickstart' },
+  trae: { name:'Trae', command:'traecli', env:'TRAE_CLI', install:'https://docs.trae.cn/cli_get-started-with-trae-cli-2' }
 });
+// Keep the Trae adapter for later restoration; its product entry is closed.
+const SELECTABLE_AGENTS = Object.freeze(['cc','codex','codebuddy']);
 
 function getAgent(id) {
   if (typeof id !== 'string' || !Object.hasOwn(AGENTS,id)) throw new Error('无效的 AI 助手');
   return AGENTS[id];
+}
+
+function getSelectableAgent(id) {
+  const agent=getAgent(id);
+  if(!SELECTABLE_AGENTS.includes(id))throw new Error('AGENT_DISABLED:'+id);
+  return agent;
+}
+
+function resolveSelectableAgent(id = 'cc',options) {
+  getAgent(id);
+  if(SELECTABLE_AGENTS.includes(id))return id;
+  return ['codex','codebuddy','cc'].find(candidate=>resolveCli(candidate,options)) || 'cc';
 }
 
 function configDirectory(env = process.env) {
@@ -143,6 +158,7 @@ function canUseCodexHTTP(command,{cwd,env,timeoutMs}) {
 }
 
 async function invokeAgent(id,prompt,{cwd,env = process.env,configDir = configDirectory(env),timeoutMs = 300000,onEvent = () => {}} = {}) {
+  cwd=path.resolve(cwd || process.cwd());
   const started=Date.now();
   const command=resolveCli(id,{env,configDir});
   if(!command)throw new Error(`AGENT_CLI_MISSING:${id}`);
@@ -150,24 +166,28 @@ async function invokeAgent(id,prompt,{cwd,env = process.env,configDir = configDi
   const emit=event => onEvent({...event,...(event.messageId ? {messageId:callId+':'+event.messageId} : {})});
   emit({type:'stage',label:`正在连接 ${getAgent(id).name}`});
   const useHTTP=id==='codex' && await canUseCodexHTTP(command,{cwd,env,timeoutMs});
+  const rpc=id==='codex' || id==='trae';
   const overrides=['model_reasoning_effort="medium"',...(useHTTP ? [`model_provider="${CODEX_HTTP_PROVIDER}"`,...CODEX_HTTP_CONFIG] : [])];
   const args=id==='codex'
     ? ['app-server','--listen','stdio://',...overrides.flatMap(value=>['--config',value])]
+    : id==='trae'
+    ? ['-c','default_permissions=":read-only"','-c','approval_policy="never"','acp','serve']
     : ['-p','--output-format','stream-json','--verbose','--include-partial-messages'];
   return new Promise((resolve,reject) => {
     const child=launch(command,args,{cwd,env:{...env,CODEBUDDY_CODE_DISABLE_BACKGROUND_TASKS:'1'},stdio:['pipe','pipe','pipe'],detached:process.platform!=='win32'});
     children.add(child);
     let buffer='',stderr='',failure=null,result=null,hardKill,graceTimer,received=false,outputSize=0;
     const stop=() => {
-      if(id==='codex')child.stdin.end();
+      if(rpc)child.stdin.end();
       graceTimer=setTimeout(() => {
         killTree(child);
         hardKill=setTimeout(() => killTree(child,'SIGKILL'),1000);hardKill.unref();
-      },id==='codex' ? 500 : 1000);graceTimer.unref();
+      },rpc ? 500 : 1000);graceTimer.unref();
     };
     const fail=error => {
       if(failure)return;
       failure=error instanceof Error ? error : new Error(String(error));
+      if(id==='trae' && /authentication|unauthorized|not logged|sign.?in|log.?in|登录/i.test(failure.message)) failure=new Error('AGENT_AUTH:trae');
       killTree(child);hardKill=setTimeout(() => killTree(child,'SIGKILL'),1000);hardKill.unref();
     };
     const finish=text => {
@@ -175,7 +195,7 @@ async function invokeAgent(id,prompt,{cwd,env = process.env,configDir = configDi
       if(typeof text!=='string' || !text.trim())return fail(new Error('AI 没有返回有效内容'));
       if(text.length>4*1024*1024)return fail(new Error('AI 返回内容过长'));
       result=text.trim();
-      if(id==='codex')stop(); // Print-mode CLIs exit themselves after their result event.
+      if(rpc)stop(); // Print-mode CLIs exit themselves after their result event.
     };
     const forward=event => {
       if(failure || result!==null)return;
@@ -187,7 +207,7 @@ async function invokeAgent(id,prompt,{cwd,env = process.env,configDir = configDi
       emit(event);
     };
     const send=row => {if(!child.stdin.destroyed)child.stdin.write(JSON.stringify(row)+'\n');};
-    const session=(id==='codex' ? createCodexSession : createPrintSession)({send,emit:forward,finish,fail,prompt,cwd,env});
+    const session=(id==='codex' ? createCodexSession : id==='trae' ? createAcpSession : createPrintSession)({send,emit:forward,finish,fail,prompt,cwd,env});
     const timer=setTimeout(() => fail(new Error('AI 调用超时')),Math.max(1,timeoutMs-(Date.now()-started)));
     function line(text) {
       if(!text.trim() || failure || result!==null)return;
@@ -208,14 +228,15 @@ async function invokeAgent(id,prompt,{cwd,env = process.env,configDir = configDi
       if(buffer.trim())line(buffer);
       clearTimeout(timer);clearTimeout(hardKill);clearTimeout(graceTimer);children.delete(child);
       if(failure)return reject(failure);
-      if(result!==null && (id==='codex' || code===0))return resolve(result);
+      if(result!==null && (rpc || code===0))return resolve(result);
       const auth=/authentication|unauthorized|not logged|sign.?in|log.?in|登录/i.test(stderr);
       if(code!==0)console.error(`[AI:${id}] exit=${code} signal=${signal}`);
-      reject(new Error(auth ? `AGENT_AUTH:${id}` : code!==0 ? `AI 调用失败 (${id}, ${code}): ${stderr}` : 'AI 流式任务没有完整结束，本次结果未保存'));
+      const unsupported=id==='trae' && /unexpected argument|unrecognized (?:subcommand|option)|unknown (?:command|option)|invalid (?:subcommand|option)/i.test(stderr);
+      reject(new Error(auth ? `AGENT_AUTH:${id}` : unsupported ? 'AGENT_CLI_VERSION:trae' : code!==0 ? `AI 调用失败 (${id}, ${code}): ${stderr}` : 'AI 流式任务没有完整结束，本次结果未保存'));
     });
     session.start();
-    if(id!=='codex')child.stdin.end(prompt);
+    if(!rpc)child.stdin.end(prompt);
   });
 }
 
-module.exports = {AGENTS,getAgent,configDirectory,resolveCli,saveCliPath,invokeAgent,stopAgents};
+module.exports = {AGENTS,SELECTABLE_AGENTS,getAgent,getSelectableAgent,resolveSelectableAgent,configDirectory,resolveCli,saveCliPath,invokeAgent,stopAgents};

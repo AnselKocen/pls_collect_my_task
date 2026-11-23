@@ -1,6 +1,6 @@
 const { parseLocalDate } = require('./dates');
 
-const VERSION = '3';
+const VERSION = '4';
 
 // Preserve the original analysis tasks; metadata only explains the data source.
 function graphTask(tags) {
@@ -28,7 +28,8 @@ function dateLabel(value) {
 
 function digestTask(action, input) {
   if (action === 'daily-digest') {
-    return `你是一个手帐助手。请根据以下两天的手帐内容生成摘要。返回JSON对象，包含date、summary、tasks(数组)字段。
+    return `你是一个手帐助手。请根据以下两天的手帐内容生成摘要。返回JSON对象，包含date、summary、tasks字段。
+tasks 必须是非空字符串组成的数组，例如 ["整理桌面", "阅读一页"]；不要使用对象、null 或空字符串。没有待办时返回 []。
 summary的格式要求：
 · ${dateLabel(input.period.from)}，概述当天的主要内容
 · ${dateLabel(input.period.date)}，概述当天的主要内容

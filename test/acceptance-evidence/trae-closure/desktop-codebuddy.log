@@ -1,0 +1,7 @@
+[Data] Directory: /var/folders/_y/g_s_tx8d2c3b6k5_056sbv5w0000gn/T/memo-desktop-agent-ywdKZr/data
+[Server] [Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Server] [Reminder] Interval checker started
+Memo server running at http://localhost:63445
+AI assistant: codebuddy
+[Server] [AI:codebuddy] 今日摘要 completed in 287ms
+{"agent":"codebuddy","fakeCli":true,"fakeCliTasks":["daily-digest"],"selectableAgents":["cc","codex","codebuddy"],"traeEntryClosed":true,"desktopStartup":true,"selectedAgentSetup":true,"nativePathSelection":true,"noServerRestart":true,"desktopGeneration":true}

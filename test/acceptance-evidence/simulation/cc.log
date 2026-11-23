@@ -1,0 +1,20 @@
+PASS cc-selection CC 模拟 CLI 检测及选中状态
+PASS tag-suggestions 整理标签、来源校验及历史保存
+PASS graph 全部便签图谱生成及历史保存
+PASS graph-filter 图谱标签与日期范围筛选
+PASS daily-digest 今日摘要、服务端日期、标签计数及保存
+PASS weekly-digest 本周总结、周边界及历史保存
+PASS scheduled-daily 定时今日摘要回调调用 CC 并保存
+PASS scheduled-weekly 定时本周总结回调调用 CC 并保存
+PASS book-habit-pool 上传书籍 ZIP 生成 30 张习惯卡
+PASS wish-purpose 愿望目的提问实时增量及三个选项
+PASS wish-effort 愿望投入方式提问及前轮回答传递
+PASS wish-pool 愿望生成 30 张卡、保存及重复提交幂等
+PASS stream-reconnect-lock 回答流、断线重连、任务锁及最终快照
+PASS invalid-output-recovery 无效 JSON 不覆盖历史、释放锁并可重试
+PASS auth-failure 模拟登录失败不保存部分结果
+PASS missing-cli 缺失 CLI 检测、提示及恢复
+PASS timeout 模拟 CLI 超时终止及之后恢复
+PASS history-delete AI 图谱和周总结历史删除
+PASS restart-persistence 重启后保留助手、摘要、图谱与卡池
+{"ccSimulation":true,"passed":19,"failed":0,"report":"/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-evidence/simulation/cc-result.json"}

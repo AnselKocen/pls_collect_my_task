@@ -1,0 +1,6 @@
+{
+  "category": "test-harness-native-focus",
+  "reason": "showInactive preserves inactive document state. A second independent no-model probe confirms showInactive -> BrowserWindow.focus -> webContents.focus -> SVG.focus delivers DOM focus.",
+  "productFailure": false,
+  "archivedAt": "2026-11-23T12:10:59.099Z"
+}

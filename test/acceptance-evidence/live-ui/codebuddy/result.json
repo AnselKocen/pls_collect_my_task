@@ -1,0 +1,170 @@
+{
+  "agent": "codebuddy",
+  "mode": "real-cli-ui",
+  "realCli": true,
+  "fakeModel": false,
+  "fictionalRecords": 8,
+  "startedAt": "2026-11-23T12:11:04.437Z",
+  "checks": [
+    {
+      "id": "cli-and-isolation",
+      "label": "真实 CLI、临时数据库及独立桌面会话",
+      "status": "passed",
+      "details": {
+        "cli": "/Users/anselkocen/.local/bin/codebuddy",
+        "records": 8
+      }
+    },
+    {
+      "id": "tag-stream-ui",
+      "label": "标签整理真实流式、锁、关闭重开、结果校验和历史保存",
+      "status": "passed",
+      "details": {
+        "running": true,
+        "locked": true,
+        "closed": true,
+        "stillLocked": true,
+        "reopened": true,
+        "preserved": true,
+        "visibleGrowthSamples": 16,
+        "firstVisibleMs": 4476,
+        "suggestions": 8,
+        "processedCount": 8,
+        "history": 1
+      }
+    },
+    {
+      "id": "daily-digest-ui",
+      "label": "今日摘要真实点击生成、折叠展开和保存",
+      "status": "passed",
+      "details": {
+        "processedCount": 8,
+        "date": "2026-11-23"
+      }
+    },
+    {
+      "id": "graph-ui",
+      "label": "图谱真实点击生成、图形展示、关系悬停/焦点/选中和关闭重开历史",
+      "status": "passed",
+      "details": {
+        "processedCount": 8,
+        "nodes": 17,
+        "historyId": "39b7032e-1827-43e9-b126-49fadc7370db",
+        "relationDisplay": {
+          "labels": 20,
+          "defaultVisible": 0,
+          "maxCodepoints": 13,
+          "fullRelationsRetained": true,
+          "connectedNode": true
+        },
+        "hovered": {
+          "count": 3,
+          "onlyAdjacent": true
+        }
+      }
+    },
+    {
+      "id": "weekly-tag-range-ui",
+      "label": "单标签周总结真实点击生成、展开和历史范围保存",
+      "status": "passed",
+      "details": {
+        "tags": [
+          "reading"
+        ],
+        "processedCount": 1,
+        "week": "2026-W48",
+        "history": 1
+      }
+    }
+  ],
+  "screenshots": [
+    "tag-stream-partial.png",
+    "tag-stream-completed.png",
+    "daily-digest-expanded.png",
+    "graph-generated.png",
+    "graph-relations-hover.png",
+    "graph-relations-selected.png",
+    "graph-history.png",
+    "weekly-tag-selected.png",
+    "weekly-tag-summary.png"
+  ],
+  "snapshotPollingBlocked": true,
+  "cli": "/Users/anselkocen/.local/bin/codebuddy",
+  "cliVersion": "2.185.0",
+  "graphLibrary": {
+    "source": "local real D3 library",
+    "path": "/tmp/memo-acceptance-d3.v7.min.js"
+  },
+  "streamSamples": [
+    {
+      "ms": 4476,
+      "chars": 79
+    },
+    {
+      "ms": 4508,
+      "chars": 88
+    },
+    {
+      "ms": 4577,
+      "chars": 117
+    },
+    {
+      "ms": 4677,
+      "chars": 126
+    },
+    {
+      "ms": 4783,
+      "chars": 218
+    },
+    {
+      "ms": 4898,
+      "chars": 262
+    },
+    {
+      "ms": 5027,
+      "chars": 359
+    },
+    {
+      "ms": 5143,
+      "chars": 422
+    },
+    {
+      "ms": 5253,
+      "chars": 471
+    },
+    {
+      "ms": 5362,
+      "chars": 564
+    },
+    {
+      "ms": 5471,
+      "chars": 641
+    },
+    {
+      "ms": 5585,
+      "chars": 731
+    },
+    {
+      "ms": 5700,
+      "chars": 780
+    },
+    {
+      "ms": 5839,
+      "chars": 813
+    },
+    {
+      "ms": 5968,
+      "chars": 992
+    },
+    {
+      "ms": 6079,
+      "chars": 996
+    }
+  ],
+  "success": true,
+  "elapsedMs": 71154,
+  "finishedAt": "2026-11-23T12:12:15.595Z",
+  "browserErrors": [
+    "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+  ]
+}

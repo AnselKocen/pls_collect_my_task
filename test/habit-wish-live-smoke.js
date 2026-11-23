@@ -4,7 +4,7 @@ const fs = require('node:fs'), os = require('node:os'), path = require('node:pat
 const net = require('node:net'), assert = require('node:assert/strict');
 const { spawn } = require('node:child_process'), { once } = require('node:events');
 const { randomUUID } = require('node:crypto');
-const { resolveCli } = require('../agents');
+const { resolveCli, getSelectableAgent } = require('../agents');
 const project = path.resolve(__dirname, '..');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'memo-wish-real-'));
 const agent = process.env.MEMO_TEST_AGENT || 'codex';
@@ -12,6 +12,7 @@ const report = { agent, fictionalWish: '我想开始画画', turns: [] };
 let child;
 
 async function main() {
+  getSelectableAgent(agent);
   const configDir = process.env.MEMO_CONFIG_DIR || project;
   const cli = resolveCli(agent, { configDir });assert.ok(cli, 'No real CLI is available for ' + agent);
   report.cli = cli;

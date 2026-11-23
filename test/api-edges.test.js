@@ -122,7 +122,9 @@ test('empty states, invalid inputs, model failures and local habit dates', {time
     await request('/api/habit/draw',{method:'POST',body:{poolId:'missing'},status:404});
     await request('/api/habit/pools/generate',{method:'POST',status:400});
     await upload(Buffer.from('not a ZIP'),500);
-    const before=calls().length;await upload(new AdmZip().toBuffer(),500);
+    const before=calls().length,empty=await upload(new AdmZip().toBuffer(),500);
+    assert.match(empty.error,/ZIP中没有找到可读的文本文件/);
+    assert.doesNotMatch(empty.error,/ENOENT|CLI|登录/);
     assert.equal(calls().length,before);assert.deepEqual((await request('/api/habit/pools')).pools,[]);
   });
   await t.test('book generation rejects empty model habits and cleans upload files',async()=>{

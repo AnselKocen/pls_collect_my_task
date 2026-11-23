@@ -1,0 +1,702 @@
+{
+  "mode": "simulation",
+  "actualClaudeCode": false,
+  "actualModelCalls": false,
+  "scope": "All existing *.test.js suites; isolated temporary databases and fake CLI processes",
+  "startedAt": "2026-11-23T12:13:01.780Z",
+  "finishedAt": "2026-11-23T12:13:13.240Z",
+  "node": "v24.22.1",
+  "testFiles": [
+    "test/acp.test.js",
+    "test/agent-api.test.js",
+    "test/agents.test.js",
+    "test/api-edges.test.js",
+    "test/api.test.js",
+    "test/habit-wish.test.js",
+    "test/live-task.test.js",
+    "test/messages.test.js",
+    "test/scheduling.test.js",
+    "test/storage.test.js",
+    "test/tasks.test.js"
+  ],
+  "summary": {
+    "success": true,
+    "counts": {
+      "tests": 83,
+      "failed": 0,
+      "passed": 83,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "topLevel": 56,
+      "suites": 0
+    },
+    "duration_ms": 11456.788542
+  },
+  "cases": [
+    {
+      "status": "passed",
+      "name": "ACP keeps public message boundaries and returns the last answer without private or foreign content",
+      "file": "test/acp.test.js",
+      "line": 29,
+      "nesting": 0,
+      "durationMs": 2.793917
+    },
+    {
+      "status": "passed",
+      "name": "ACP handles missing message IDs but rejects incomplete stop reasons",
+      "file": "test/acp.test.js",
+      "line": 48,
+      "nesting": 0,
+      "durationMs": 0.792917
+    },
+    {
+      "status": "passed",
+      "name": "ACP rejects unsupported versions and recognizes localized authentication errors",
+      "file": "test/acp.test.js",
+      "line": 56,
+      "nesting": 0,
+      "durationMs": 0.110292
+    },
+    {
+      "status": "passed",
+      "name": "ACP denies tool permissions and never provides client filesystem or terminal tools",
+      "file": "test/acp.test.js",
+      "line": 65,
+      "nesting": 0,
+      "durationMs": 0.191917
+    },
+    {
+      "status": "passed",
+      "name": "agent selection persists and locks every manual, scheduled and habit task",
+      "file": "test/agent-api.test.js",
+      "line": 7,
+      "nesting": 0,
+      "durationMs": 9652.838125
+    },
+    {
+      "status": "passed",
+      "name": "all four adapters deliver stdin and only return the final answer",
+      "file": "test/agents.test.js",
+      "line": 9,
+      "nesting": 0,
+      "durationMs": 4845.978833
+    },
+    {
+      "status": "passed",
+      "name": "Codex preserves custom endpoints and managed providers without resubmitting prompts",
+      "file": "test/agents.test.js",
+      "line": 28,
+      "nesting": 0,
+      "durationMs": 2098.941875
+    },
+    {
+      "status": "passed",
+      "name": "invalid agents, missing CLI, partial failure and timeout reject cleanly",
+      "file": "test/agents.test.js",
+      "line": 46,
+      "nesting": 0,
+      "durationMs": 1090.867042
+    },
+    {
+      "status": "passed",
+      "name": "legacy paths and independently saved paths survive config reload",
+      "file": "test/agents.test.js",
+      "line": 58,
+      "nesting": 0,
+      "durationMs": 815.999167
+    },
+    {
+      "status": "passed",
+      "name": "Trae rejects partial answers on failed, truncated or abruptly closed ACP turns",
+      "file": "test/agents.test.js",
+      "line": 73,
+      "nesting": 0,
+      "durationMs": 2546.430208
+    },
+    {
+      "status": "passed",
+      "name": "empty lists, search, blind box, calendar and pending reminders return empty data",
+      "file": "test/api-edges.test.js",
+      "line": 49,
+      "nesting": 1,
+      "durationMs": 49.961625
+    },
+    {
+      "status": "passed",
+      "name": "an empty graph scope never invokes a model or creates history",
+      "file": "test/api-edges.test.js",
+      "line": 60,
+      "nesting": 1,
+      "durationMs": 9.558709
+    },
+    {
+      "status": "passed",
+      "name": "empty daily and weekly summaries are generated locally",
+      "file": "test/api-edges.test.js",
+      "line": 64,
+      "nesting": 1,
+      "durationMs": 7.191167
+    },
+    {
+      "status": "passed",
+      "name": "empty tag analysis accepts no suggestions and records zero processed notes",
+      "file": "test/api-edges.test.js",
+      "line": 70,
+      "nesting": 1,
+      "durationMs": 2180.878083
+    },
+    {
+      "status": "passed",
+      "name": "blank and non-text note content cannot be stored or replace an existing note",
+      "file": "test/api-edges.test.js",
+      "line": 77,
+      "nesting": 1,
+      "durationMs": 5.026958
+    },
+    {
+      "status": "passed",
+      "name": "pinning, literal wildcard search, fuzzy search and clearing filters preserve records",
+      "file": "test/api-edges.test.js",
+      "line": 84,
+      "nesting": 1,
+      "durationMs": 4.234
+    },
+    {
+      "status": "passed",
+      "name": "tag validation, renaming and multi-tag filtering behave consistently",
+      "file": "test/api-edges.test.js",
+      "line": 92,
+      "nesting": 1,
+      "durationMs": 2.472042
+    },
+    {
+      "status": "passed",
+      "name": "bad graph date ranges are rejected without model calls",
+      "file": "test/api-edges.test.js",
+      "line": 99,
+      "nesting": 1,
+      "durationMs": 1.389416
+    },
+    {
+      "status": "passed",
+      "name": "malformed, blank, empty and failed model outputs keep the last useful graph",
+      "file": "test/api-edges.test.js",
+      "line": 105,
+      "nesting": 1,
+      "durationMs": 1981.045291
+    },
+    {
+      "status": "passed",
+      "name": "an unavailable CLI gives an error and releases the task lock",
+      "file": "test/api-edges.test.js",
+      "line": 114,
+      "nesting": 1,
+      "durationMs": 3.836208
+    },
+    {
+      "status": "passed",
+      "name": "missing pools, empty uploads and books without text give useful errors",
+      "file": "test/api-edges.test.js",
+      "line": 120,
+      "nesting": 1,
+      "durationMs": 12.152875
+    },
+    {
+      "status": "passed",
+      "name": "book generation rejects empty model habits and cleans upload files",
+      "file": "test/api-edges.test.js",
+      "line": 130,
+      "nesting": 1,
+      "durationMs": 587.311542
+    },
+    {
+      "status": "passed",
+      "name": "habit draw, today and calendar use the same local date across a UTC boundary",
+      "file": "test/api-edges.test.js",
+      "line": 137,
+      "nesting": 1,
+      "durationMs": 14.910916
+    },
+    {
+      "status": "passed",
+      "name": "invalid reminders are rejected and notifications are consumed once",
+      "file": "test/api-edges.test.js",
+      "line": 150,
+      "nesting": 1,
+      "durationMs": 6.169709
+    },
+    {
+      "status": "passed",
+      "name": "restore validates selection and files, and can restore a genuinely empty library",
+      "file": "test/api-edges.test.js",
+      "line": 159,
+      "nesting": 1,
+      "durationMs": 11.200125
+    },
+    {
+      "status": "passed",
+      "name": "empty states, invalid inputs, model failures and local habit dates",
+      "file": "test/api-edges.test.js",
+      "line": 9,
+      "nesting": 0,
+      "durationMs": 5018.002917
+    },
+    {
+      "status": "passed",
+      "name": "API compatibility, AI history races, backup/export/restore and restart",
+      "file": "test/api.test.js",
+      "line": 27,
+      "nesting": 0,
+      "durationMs": 4171.416583
+    },
+    {
+      "status": "passed",
+      "name": "question previews hide JSON syntax and buffer incomplete escapes",
+      "file": "test/habit-wish.test.js",
+      "line": 8,
+      "nesting": 0,
+      "durationMs": 0.835458
+    },
+    {
+      "status": "passed",
+      "name": "wish result validation rejects malformed cards and repeated content",
+      "file": "test/habit-wish.test.js",
+      "line": 20,
+      "nesting": 0,
+      "durationMs": 0.663959
+    },
+    {
+      "status": "passed",
+      "name": "invalid answers never launch a model",
+      "file": "test/habit-wish.test.js",
+      "line": 67,
+      "nesting": 1,
+      "durationMs": 49.869292
+    },
+    {
+      "status": "passed",
+      "name": "cc streams questions and forwards all answers into generation",
+      "file": "test/habit-wish.test.js",
+      "line": 74,
+      "nesting": 1,
+      "durationMs": 2416.230458
+    },
+    {
+      "status": "passed",
+      "name": "codex streams questions and forwards all answers into generation",
+      "file": "test/habit-wish.test.js",
+      "line": 74,
+      "nesting": 1,
+      "durationMs": 1833.040375
+    },
+    {
+      "status": "passed",
+      "name": "codebuddy streams questions and forwards all answers into generation",
+      "file": "test/habit-wish.test.js",
+      "line": 74,
+      "nesting": 1,
+      "durationMs": 1596.210833
+    },
+    {
+      "status": "passed",
+      "name": "trae streams questions and forwards all answers into generation",
+      "file": "test/habit-wish.test.js",
+      "line": 74,
+      "nesting": 1,
+      "durationMs": 1297.03375
+    },
+    {
+      "status": "passed",
+      "name": "model errors and invalid results leave pools untouched and release the lock",
+      "file": "test/habit-wish.test.js",
+      "line": 98,
+      "nesting": 1,
+      "durationMs": 1796.136084
+    },
+    {
+      "status": "passed",
+      "name": "a disconnected generation can be recovered without creating another pool",
+      "file": "test/habit-wish.test.js",
+      "line": 109,
+      "nesting": 1,
+      "durationMs": 318.87975
+    },
+    {
+      "status": "passed",
+      "name": "wish flow streams across agents, preserves context and saves only complete unique pools",
+      "file": "test/habit-wish.test.js",
+      "line": 28,
+      "nesting": 0,
+      "durationMs": 9459.274
+    },
+    {
+      "status": "passed",
+      "name": "all four assistants emit reply deltas before finishing and omit private thinking",
+      "file": "test/live-task.test.js",
+      "line": 6,
+      "nesting": 0,
+      "durationMs": 5153.791625
+    },
+    {
+      "status": "passed",
+      "name": "live snapshots restore partial output, keep stages and end only after validation",
+      "file": "test/live-task.test.js",
+      "line": 22,
+      "nesting": 0,
+      "durationMs": 0.631042
+    },
+    {
+      "status": "passed",
+      "name": "the retained task output and message count are bounded",
+      "file": "test/live-task.test.js",
+      "line": 38,
+      "nesting": 0,
+      "durationMs": 0.163958
+    },
+    {
+      "status": "passed",
+      "name": "stream events and snapshots share a revision that survives task resets",
+      "file": "test/live-task.test.js",
+      "line": 44,
+      "nesting": 0,
+      "durationMs": 0.559917
+    },
+    {
+      "status": "passed",
+      "name": "technical errors and filesystem details stay out of user-facing messages",
+      "file": "test/messages.test.js",
+      "line": 5,
+      "nesting": 0,
+      "durationMs": 1.552083
+    },
+    {
+      "status": "passed",
+      "name": "assistant errors use the selected product and task messages omit CC subjects",
+      "file": "test/messages.test.js",
+      "line": 16,
+      "nesting": 0,
+      "durationMs": 1.941542
+    },
+    {
+      "status": "passed",
+      "name": "Trae authentication explains enterprise CLI access while missing CLI still explains installation",
+      "file": "test/messages.test.js",
+      "line": 30,
+      "nesting": 0,
+      "durationMs": 1.254083
+    },
+    {
+      "status": "passed",
+      "name": "legacy empty digest in the screenshot gets a useful, friendly message",
+      "file": "test/messages.test.js",
+      "line": 52,
+      "nesting": 0,
+      "durationMs": 0.706459
+    },
+    {
+      "status": "passed",
+      "name": "empty daily and weekly digests differ from real prose that mentions an empty day",
+      "file": "test/messages.test.js",
+      "line": 60,
+      "nesting": 0,
+      "durationMs": 0.168458
+    },
+    {
+      "status": "passed",
+      "name": "scheduled empty daily and weekly summaries do not invoke a model",
+      "file": "test/scheduling.test.js",
+      "line": 38,
+      "nesting": 1,
+      "durationMs": 39.43525
+    },
+    {
+      "status": "passed",
+      "name": "changing summary times replaces scheduled jobs instead of duplicating them",
+      "file": "test/scheduling.test.js",
+      "line": 47,
+      "nesting": 1,
+      "durationMs": 11.19675
+    },
+    {
+      "status": "passed",
+      "name": "manual and scheduled nonempty daily summaries use the same task and input records",
+      "file": "test/scheduling.test.js",
+      "line": 51,
+      "nesting": 1,
+      "durationMs": 2105.585666
+    },
+    {
+      "status": "passed",
+      "name": "scheduled generation respects a running AI task and resumes on a later trigger",
+      "file": "test/scheduling.test.js",
+      "line": 60,
+      "nesting": 1,
+      "durationMs": 577.418833
+    },
+    {
+      "status": "passed",
+      "name": "the reminder callback queues once, using the local date, and notifications are consumed once",
+      "file": "test/scheduling.test.js",
+      "line": 69,
+      "nesting": 1,
+      "durationMs": 5.773083
+    },
+    {
+      "status": "passed",
+      "name": "scheduled summaries and reminder callbacks use local dates and task locks",
+      "file": "test/scheduling.test.js",
+      "line": 6,
+      "nesting": 0,
+      "durationMs": 2886.246375
+    },
+    {
+      "status": "passed",
+      "name": "fresh database seeds once and reopening uses SQLite, not stale JSON",
+      "file": "test/storage.test.js",
+      "line": 34,
+      "nesting": 0,
+      "durationMs": 8.958834
+    },
+    {
+      "status": "passed",
+      "name": "migration round-trips every field, duplicate cards/tags and orphaned history",
+      "file": "test/storage.test.js",
+      "line": 42,
+      "nesting": 0,
+      "durationMs": 9.031167
+    },
+    {
+      "status": "passed",
+      "name": "broken JSON and duplicate IDs fail without committing partial migration; retry succeeds",
+      "file": "test/storage.test.js",
+      "line": 54,
+      "nesting": 0,
+      "durationMs": 12.446
+    },
+    {
+      "status": "passed",
+      "name": "partial legacy installation does not insert welcome notes or default pools",
+      "file": "test/storage.test.js",
+      "line": 66,
+      "nesting": 0,
+      "durationMs": 3.601125
+    },
+    {
+      "status": "passed",
+      "name": "multi-section transaction rolls back settings and associated memo changes",
+      "file": "test/storage.test.js",
+      "line": 71,
+      "nesting": 0,
+      "durationMs": 3.184125
+    },
+    {
+      "status": "passed",
+      "name": "per-record writes leave unrelated memo rows untouched",
+      "file": "test/storage.test.js",
+      "line": 82,
+      "nesting": 0,
+      "durationMs": 2.649166
+    },
+    {
+      "status": "passed",
+      "name": "two connections retain their additions using read-modify-write transactions",
+      "file": "test/storage.test.js",
+      "line": 89,
+      "nesting": 0,
+      "durationMs": 3.398375
+    },
+    {
+      "status": "passed",
+      "name": "reminder queue, one-time deletion and duplicate suppression are atomic",
+      "file": "test/storage.test.js",
+      "line": 96,
+      "nesting": 0,
+      "durationMs": 6.010291
+    },
+    {
+      "status": "passed",
+      "name": "backup is a complete SQLite snapshot and restore replaces all application data",
+      "file": "test/storage.test.js",
+      "line": 107,
+      "nesting": 0,
+      "durationMs": 16.074666
+    },
+    {
+      "status": "passed",
+      "name": "corrupt, foreign, and newer backups leave the live data unchanged",
+      "file": "test/storage.test.js",
+      "line": 118,
+      "nesting": 0,
+      "durationMs": 5.872625
+    },
+    {
+      "status": "passed",
+      "name": "automatic backups run at most once per local day and retain seven regular copies",
+      "file": "test/storage.test.js",
+      "line": 129,
+      "nesting": 0,
+      "durationMs": 12.181125
+    },
+    {
+      "status": "passed",
+      "name": "v1 database upgrades its date index and v1 backups remain restorable",
+      "file": "test/storage.test.js",
+      "line": 142,
+      "nesting": 0,
+      "durationMs": 16.29425
+    },
+    {
+      "status": "passed",
+      "name": "literal exact matching and local unordered fuzzy matching handle Chinese, Unicode and wildcards",
+      "file": "test/tasks.test.js",
+      "line": 29,
+      "nesting": 0,
+      "durationMs": 11.493458
+    },
+    {
+      "status": "passed",
+      "name": "local days, natural weeks and ISO week-years include exact boundaries",
+      "file": "test/tasks.test.js",
+      "line": 41,
+      "nesting": 0,
+      "durationMs": 8.847875
+    },
+    {
+      "status": "passed",
+      "name": "local calendar arithmetic handles daylight saving days",
+      "file": "test/tasks.test.js",
+      "line": 59,
+      "nesting": 0,
+      "durationMs": 0.868125
+    },
+    {
+      "status": "passed",
+      "name": "batching includes every character of long notes, preserves emoji and covers all records",
+      "file": "test/tasks.test.js",
+      "line": 68,
+      "nesting": 0,
+      "durationMs": 1.991541
+    },
+    {
+      "status": "passed",
+      "name": "graph analyzes more than 100 notes, validates sources, merges clusters and collapses without loss",
+      "file": "test/tasks.test.js",
+      "line": 77,
+      "nesting": 0,
+      "durationMs": 8.835416
+    },
+    {
+      "status": "passed",
+      "name": "graph scope combines exact tags and local date range; failed output is never saved",
+      "file": "test/tasks.test.js",
+      "line": 92,
+      "nesting": 0,
+      "durationMs": 5.086167
+    },
+    {
+      "status": "passed",
+      "name": "tag organization covers all notes beyond 20 per tag and keeps evidence",
+      "file": "test/tasks.test.js",
+      "line": 104,
+      "nesting": 0,
+      "durationMs": 7.458083
+    },
+    {
+      "status": "passed",
+      "name": "daily and weekly summaries use server-owned dates and statistics, skip future notes and share history format",
+      "file": "test/tasks.test.js",
+      "line": 115,
+      "nesting": 0,
+      "durationMs": 6.078167
+    },
+    {
+      "status": "passed",
+      "name": "legacy graph layout remains readable and does not claim unknown source IDs",
+      "file": "test/tasks.test.js",
+      "line": 130,
+      "nesting": 0,
+      "durationMs": 0.085
+    },
+    {
+      "status": "passed",
+      "name": "multiple fragments of one long note retain all their theme groups",
+      "file": "test/tasks.test.js",
+      "line": 136,
+      "nesting": 0,
+      "durationMs": 3.956041
+    },
+    {
+      "status": "passed",
+      "name": "tag input distinguishes a tag missing from the date range from a globally empty tag",
+      "file": "test/tasks.test.js",
+      "line": 156,
+      "nesting": 0,
+      "durationMs": 5.133125
+    },
+    {
+      "status": "passed",
+      "name": "original graph concepts, long discussions and Markdown discoveries survive without node-count rules",
+      "file": "test/tasks.test.js",
+      "line": 165,
+      "nesting": 0,
+      "durationMs": 3.987
+    },
+    {
+      "status": "passed",
+      "name": "original graph and tag output shapes work without newly required evidence fields",
+      "file": "test/tasks.test.js",
+      "line": 178,
+      "nesting": 0,
+      "durationMs": 6.314166
+    },
+    {
+      "status": "passed",
+      "name": "long summaries and original task lists are preserved across digest batching",
+      "file": "test/tasks.test.js",
+      "line": 190,
+      "nesting": 0,
+      "durationMs": 6.974167
+    },
+    {
+      "status": "passed",
+      "name": "digest retries explain the string task format and never save malformed task objects",
+      "file": "test/tasks.test.js",
+      "line": 204,
+      "nesting": 0,
+      "durationMs": 5.482583
+    },
+    {
+      "status": "passed",
+      "name": "empty graph scope makes no model calls and leaves history untouched",
+      "file": "test/tasks.test.js",
+      "line": 223,
+      "nesting": 0,
+      "durationMs": 3.108417
+    },
+    {
+      "status": "passed",
+      "name": "empty daily and weekly ranges save deterministic empty results without model calls",
+      "file": "test/tasks.test.js",
+      "line": 229,
+      "nesting": 0,
+      "durationMs": 3.962
+    },
+    {
+      "status": "passed",
+      "name": "a model returning an empty graph cannot save over a useful graph",
+      "file": "test/tasks.test.js",
+      "line": 239,
+      "nesting": 0,
+      "durationMs": 3.021084
+    },
+    {
+      "status": "passed",
+      "name": "empty text, dangling edges and a failed later batch do not save partial results",
+      "file": "test/tasks.test.js",
+      "line": 247,
+      "nesting": 0,
+      "durationMs": 3.050167
+    }
+  ]
+}

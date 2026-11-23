@@ -1,0 +1,10 @@
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:60187
+AI assistant: cc
+[AI:cc] 生成习惯卡池 completed in 2874ms
+[AI:cc] 生成习惯卡池 completed in 284ms
+[Habit] Generate error: ZIP中没有找到可读的文本文件
+[Habit] Generate error: ZIP中没有找到可读的文本文件
+[Habit] Generate error: simulated CLI failure
+[AI:cc] 生成习惯卡池 completed in 288ms

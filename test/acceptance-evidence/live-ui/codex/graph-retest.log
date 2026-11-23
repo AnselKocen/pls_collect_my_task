@@ -1,0 +1,6 @@
+{"agent":"codex","started":"cli-and-isolation"}
+(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.
+{"agent":"codex","check":"cli-and-isolation","status":"passed","cli":"/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex","records":8}
+{"agent":"codex","started":"graph-ui"}
+{"agent":"codex","check":"graph-ui","status":"passed","processedCount":8,"nodes":17,"historyId":"50149b4e-c413-4b33-a3cf-cb86049b957f","relationDisplay":{"labels":16,"defaultVisible":0,"maxCodepoints":13,"fullRelationsRetained":true,"connectedNode":true},"hovered":{"count":2,"onlyAdjacent":true}}
+{"realCliUiAcceptance":true,"agent":"codex","graphOnly":true,"success":true,"passed":2,"failed":0,"report":"/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-evidence/live-ui/codex/graph-retest.json"}

@@ -14,13 +14,15 @@ async function run(){
  const dataDir=path.join(root,'data');fs.mkdirSync(dataDir);
  for(const [file,value]of Object.entries(data))fs.writeFileSync(path.join(dataDir,file),JSON.stringify(value));
  const fake=path.join(root,'fake-claude');const quote=value=>"'"+value.replace(/'/g,"'\\''")+"'";
- fs.writeFileSync(fake,`#!/bin/sh\nexec ${quote(process.execPath)} ${quote(path.join(__dirname,'fake-model-cli.js'))} "$@"\n`,{mode:0o755});
+ const node=process.env.MEMO_TEST_NODE || process.execPath;
+ fs.writeFileSync(fake,`#!/bin/sh\nexec ${quote(node)} ${quote(path.join(__dirname,'fake-model-cli.js'))} "$@"\n`,{mode:0o755});
  const probe=net.createServer();probe.listen(0,'127.0.0.1');await once(probe,'listening');const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
  const invalidMode=path.join(root,'invalid-mode');
- child=spawn(process.execPath,[path.join(__dirname,'../server.js')],{env:{...process.env,ELECTRON_RUN_AS_NODE:'1',MEMO_ELECTRON:'1',MEMO_DATA_DIR:dataDir,PORT:String(port),CLAUDE_CLI:fake,CODEX_CLI:fake,CODEBUDDY_CLI:path.join(root,'not-installed'),MEMO_FAKE_CC_INVALID_FILE:invalidMode},stdio:['ignore','pipe','pipe']});
+ child=spawn(node,[path.join(__dirname,'../server.js')],{env:{...process.env,ELECTRON_RUN_AS_NODE:'1',MEMO_ELECTRON:'1',MEMO_DATA_DIR:dataDir,MEMO_CONFIG_DIR:root,PORT:String(port),CLAUDE_CLI:fake,CODEX_CLI:fake,CODEBUDDY_CLI:path.join(root,'not-installed'),MEMO_FAKE_CC_INVALID_FILE:invalidMode},stdio:['ignore','pipe','pipe']});
  let output='';child.stderr.on('data',data=>{output+=data;});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Startup: '+output)),10000);child.stdout.on('data',data=>{output+=data;if(output.includes('Memo server running')){clearTimeout(timer);resolve();}});child.once('exit',code=>{clearTimeout(timer);reject(new Error('Exited '+code+': '+output));});});
  window=new BrowserWindow({show:false,width:1280,height:860,webPreferences:{offscreen:true,contextIsolation:true,nodeIntegration:false,sandbox:true}});
+ window.webContents.on('console-message',(_event,level,message)=>{if(level>=2)console.error('[Renderer]',message);});
  let blockTaskSnapshot=false;
  window.webContents.session.webRequest.onBeforeRequest({urls:['https://*/*','http://*/*']},(details,callback)=>callback({cancel:!details.url.startsWith('http://127.0.0.1:') || (blockTaskSnapshot && details.url.endsWith('/api/ai/task'))}));
  await window.loadURL(`http://127.0.0.1:${port}`);
@@ -34,7 +36,7 @@ async function run(){
  `);
  await window.webContents.executeJavaScript(`
    var field=document.getElementById('agentSelect');
-   if([...field.options].map(option=>option.value).join(',')!=='cc,codex,codebuddy')throw new Error('Wrong assistant options');
+   if([...field.options].map(option=>option.value).join(',')!=='cc,codex,codebuddy,trae')throw new Error('Wrong assistant options');
    field.value='codex';field.dispatchEvent(new Event('change'));
  `);
  await until('settings.agent==="codex" && !document.getElementById("agentSelect").disabled');
@@ -140,6 +142,36 @@ async function run(){
  await window.webContents.executeJavaScript(`if(graphHistory.length)throw new Error('Empty scope saved a graph');graphSelectedTags=[];document.getElementById('graphRegenBtn').click()`);
  await until('graphHistory.length && graphHistory.at(-1).version===3 && document.querySelectorAll("#graphContainer .graph-node").length===3');
  await delay(350);
+ // Relation-label regression uses deliberately long synthetic relationships in memory only.
+ await window.webContents.executeJavaScript(`
+   window.relationOriginalEdges=graphHistory.at(-1).edges;
+   var ids=graphHistory.at(-1).nodes.map(node=>node.id);
+   window.longRelation='一起围绕每天坚持阅读和创作展开的长关系说明🌿';
+   var fixture={...graphHistory.at(-1),edges:[{source:ids[0],target:ids[1],relation:window.longRelation},{source:ids[1],target:ids[2],relation:'另一段用于检查相邻关系可见性的长说明'}]};
+   renderGraph(fixture);
+   var labels=[...document.querySelectorAll('#graphContainer .graph-link-label')];
+   if(labels.length!==2 || labels.some(label=>getComputedStyle(label).opacity!=='0'))throw new Error('Default graph relation labels were visible');
+   if(labels[0].textContent!==Array.from(window.longRelation).slice(0,12).join('')+'…')throw new Error('Long relation was not shortened to 12 code points');
+   if(![...document.querySelectorAll('#graphContainer .graph-link title')].some(title=>title.textContent.includes(window.longRelation)))throw new Error('Full relationship was lost from SVG title');
+ `);
+ await delay(200);if(out)fs.writeFileSync(path.join(out,'graph-default.png'),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`
+   var nodes=[...document.querySelectorAll('#graphContainer .graph-node')];
+   var visible=()=>[...document.querySelectorAll('#graphContainer .graph-link-label.is-visible')];
+   nodes[0].dispatchEvent(new MouseEvent('mouseenter'));
+   if(visible().length!==1 || visible()[0].textContent!==Array.from(window.longRelation).slice(0,12).join('')+'…')throw new Error('Hover did not show only adjacent short relationship');
+   nodes[0].dispatchEvent(new MouseEvent('mouseleave'));
+   if(visible().length)throw new Error('Mouseleave did not restore default hidden labels');
+   nodes[2].dispatchEvent(new FocusEvent('focus'));
+   if(visible().length!==1)throw new Error('Focus did not show adjacent relationship');
+   nodes[2].dispatchEvent(new FocusEvent('blur'));
+   if(visible().length)throw new Error('Blur did not restore default labels');
+   nodes[1].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+   nodes[1].dispatchEvent(new MouseEvent('mouseleave'));
+   if(visible().length!==2 || !nodes[1].classList.contains('selected'))throw new Error('Keyboard-selected node did not retain adjacent relationship labels');
+   renderGraph(graphHistory.at(-1));
+ `);
+ console.log(JSON.stringify({graphRelationsRegression:true,defaultHidden:true,hoverAdjacentOnly:true,shortenedTo12CodePoints:true,fullTitlePreserved:true,mouseleaveReset:true,focusAndBlur:true,keyboardSelectionPersists:true,fixture:'synthetic long relationships in renderer memory only'}));
  await window.webContents.executeJavaScript(`document.querySelector('#graphContainer .graph-node').dispatchEvent(new MouseEvent('click',{bubbles:true}));`);
  await until('document.querySelectorAll(".ga-source-text").length>=3');
  await delay(200);
@@ -186,7 +218,89 @@ async function run(){
      catch(error) {if(/SQLite|CORRUPT|malformed/i.test(error.message) || !error.detail.includes('SQLITE_CORRUPT'))throw new Error('Storage error was not separated from logs');}
    } finally {window.fetch=originalFetch;}
  })()`);
- console.log(JSON.stringify({streamingReply:true,streamReopen:true,streamFailure:true,agentSelection:true,agentReload:true,agentBusyLock:true,agentMissingMessage:true,agentLayout:true,localSearch:true,emptySearch:true,legacyDigestFriendly:true,emptyDigestFriendly:true,markdownSafe:true,expandedNodes:3,collapsedClusters:2,sourcePanel:true,editedSource:true,deletedSource:true,emptyGraphRejected:true,failureBubble:true,emptyPoolRecovery:true,oversizedBackupBlocked:true,friendlyStorageErrors:true,overlayClose:true}));
+ await window.webContents.executeJavaScript(`
+   document.getElementById('btnTagGraph').click();
+ `);
+ await until('document.querySelectorAll("#graphContainer .graph-node").length===3');
+ console.log(JSON.stringify({acceptanceStage:'graph keyboard and zoom'}));
+ await window.webContents.executeJavaScript(`
+   var node=document.querySelector('#graphContainer .graph-node');
+   node.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+   if(!node.classList.contains('selected'))throw new Error('Enter did not select graph source');
+   var other=document.querySelectorAll('#graphContainer .graph-node')[1];
+   other.dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}));
+   if(!other.classList.contains('selected'))throw new Error('Space did not select graph source');
+   document.querySelector('#graphSummaryPanel .ga-source-button').click();
+   if(document.getElementById('memoDetailModal').classList.contains('hidden'))throw new Error('Graph source did not open memo detail');
+   document.getElementById('memoDetailClose').click();
+   var svg=document.querySelector('#graphContainer svg'),box=svg.getBoundingClientRect();
+   svg.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,view:window,clientX:box.x+box.width/2,clientY:box.y+box.height/2,deltaY:-100}));
+ `);
+ await until('document.querySelector("#graphContainer svg").__zoom.k>1');
+ await delay(180);
+ console.log(JSON.stringify({acceptanceStage:'graph drag and fullscreen'}));
+ await window.webContents.executeJavaScript(`
+   var node=document.querySelector('#graphContainer .graph-node'),box=node.querySelector('circle').getBoundingClientRect();
+   var x=box.x+box.width/2,y=box.y+box.height/2;
+   node.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true,view:window,clientX:x,clientY:y,button:0,buttons:1}));
+   window.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,cancelable:true,view:window,clientX:x+35,clientY:y+20,buttons:1}));
+   if(node.__data__.fx===null || node.__data__.fx===undefined)throw new Error('Graph drag did not activate');
+   window.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,cancelable:true,view:window,clientX:x+35,clientY:y+20,button:0,buttons:0}));
+   if(node.__data__.fx!==null || node.__data__.fy!==null)throw new Error('Graph drag did not release');
+ `);
+ await delay(50); // d3.drag suppresses the synthetic click immediately after mouseup.
+ await window.webContents.executeJavaScript(`
+   document.getElementById('graphFullscreen').click();
+   if(!document.querySelector('#graphModal .modal-graph-analysis').classList.contains('graph-fullscreen'))throw new Error('Graph fullscreen did not enter');
+ `);
+ await delay(500);
+ console.log(JSON.stringify(await window.webContents.executeJavaScript(`(()=>{
+   const container=document.getElementById('graphContainer'),svg=container.querySelector('svg');
+   const nodes=[...container.querySelectorAll('.graph-node')].map(node=>({id:node.__data__.id,x:node.__data__.x,y:node.__data__.y,fx:node.__data__.fx,fy:node.__data__.fy,transform:node.getAttribute('transform')}));
+   return {graphFullscreenGeometry:true,width:container.clientWidth,height:container.clientHeight,svgWidth:svg.getAttribute('width'),svgHeight:svg.getAttribute('height'),nodes};
+ })()`)));
+ if(out)fs.writeFileSync(path.join(out,'graph-fullscreen.png'),(await window.webContents.capturePage()).toPNG());
+ window.setSize(1024,800);await delay(180);
+ console.log(JSON.stringify({acceptanceStage:'graph resize and history'}));
+ await window.webContents.executeJavaScript(`
+   var container=document.getElementById('graphContainer'),svg=container.querySelector('svg');
+   if(Math.abs(Number(svg.getAttribute('width'))-container.clientWidth)>1)throw new Error('Graph did not follow resize');
+   document.getElementById('graphFullscreen').click();
+   if(document.querySelector('#graphModal .modal-graph-analysis').classList.contains('graph-fullscreen'))throw new Error('Graph fullscreen did not exit');
+   document.getElementById('graphRegenBtn').click();
+ `);
+ await until('graphHistory.length===2 && graphIndex===1 && !document.getElementById("graphRegenBtn").disabled');
+ await window.webContents.executeJavaScript(`
+   document.getElementById('graphPrev').click();if(graphIndex!==0 || !document.getElementById('graphPrev').disabled)throw new Error('Graph previous history failed');
+   document.getElementById('graphNext').click();if(graphIndex!==1 || !document.getElementById('graphNext').disabled)throw new Error('Graph next history failed');
+   document.getElementById('graphDeleteCurrent').click();document.getElementById('confirmCancel').click();
+   if(graphHistory.length!==2)throw new Error('Cancelled graph deletion changed history');
+   document.getElementById('graphDeleteCurrent').click();document.getElementById('confirmOk').click();
+ `);
+ await until('graphHistory.length===1');
+ await window.webContents.executeJavaScript(`document.getElementById('graphDeleteCurrent').click();document.getElementById('confirmOk').click()`);
+ await until('graphHistory.length===0 && document.getElementById("graphCollapseAll").disabled');
+ console.log(JSON.stringify({acceptanceStage:'wish preset answers and restart'}));
+ await window.webContents.executeJavaScript(`
+   if(document.getElementById('graphNav').style.display!=='none' || !document.getElementById('graphContainer').textContent.includes('还没有图谱'))throw new Error('Deleting last graph did not restore empty state');
+   document.getElementById('graphClose').click();document.getElementById('btnHabitTrack').click();document.getElementById('habitWishStart').click();
+   document.getElementById('habitWishInput').value='培养阅读习惯';document.getElementById('habitWishForm').requestSubmit();
+ `);
+ await until('document.querySelectorAll(".habit-wish-option").length===4');
+ await window.webContents.executeJavaScript(`document.querySelector('.habit-wish-option').click()`);
+ await until('document.querySelectorAll(".habit-wish-option").length===4 && document.getElementById("habitWishStep").textContent.startsWith("3 / 3")');
+ await window.webContents.executeJavaScript(`document.querySelector('.habit-wish-option').click()`);
+ await until('!document.getElementById("habitWishSuccess").classList.contains("hidden")');
+ await window.webContents.executeJavaScript(`
+   var pool=habitPools.find(pool=>pool.wishContext?.wish==='培养阅读习惯');
+   if(!pool || pool.habits.length!==30 || !pool.wishContext.purpose || !pool.wishContext.effort)throw new Error('Preset wish answers were not saved');
+ `);
+ if(out)fs.writeFileSync(path.join(out,'wish-preset-success.png'),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`
+   document.getElementById('habitWishRestart').click();
+   if(document.getElementById('habitWishInput').value || document.querySelectorAll('#habitWishMessages .user').length || !document.getElementById('habitWishStep').textContent.startsWith('1 / 3'))throw new Error('Changing wish did not reset the conversation');
+ `);
+ console.log(JSON.stringify({streamingReply:true,streamReopen:true,streamFailure:true,agentSelection:true,agentReload:true,agentBusyLock:true,agentMissingMessage:true,agentLayout:true,localSearch:true,emptySearch:true,legacyDigestFriendly:true,emptyDigestFriendly:true,markdownSafe:true,expandedNodes:3,collapsedClusters:2,sourcePanel:true,editedSource:true,deletedSource:true,emptyGraphRejected:true,failureBubble:true,emptyPoolRecovery:true,oversizedBackupBlocked:true,friendlyStorageErrors:true,overlayClose:true,graphKeyboardEnterAndSpace:true,graphSourceDetail:true,graphZoom:true,graphDrag:true,graphFullscreen:true,graphResize:true,graphPreviousAndNext:true,graphDeleteCancel:true,graphDeleteLast:true,wishPresetAnswers:true,wishRestart:true,graphRelationDefaultHidden:true,graphRelationHoverAdjacentOnly:true,graphRelationShortened:true,graphRelationFullTitle:true,graphRelationMouseleaveReset:true,graphRelationFocusAndBlur:true,graphRelationKeyboardSelectionPersists:true}));
 }
 app.whenReady().then(run).catch(error=>{console.error(error.stack);process.exitCode=1;}).finally(async()=>{
  window?.destroy();if(child && child.exitCode===null && child.signalCode===null){child.kill('SIGTERM');await once(child,'close');}

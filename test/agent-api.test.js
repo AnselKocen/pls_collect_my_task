@@ -80,6 +80,15 @@ test('agent selection persists and locks every manual, scheduled and habit task'
   const scheduled = drive(0);await started();await select('cc',409);await scheduled;
   assert.equal(calls().at(-1).agent,'codebuddy');assert.equal(calls().at(-1).task,'daily-digest');
 
+  const closed=await select('trae',400);assert.match(closed.error,/AGENT_DISABLED:trae/);
+  assert.equal((await request('/api/ai/status')).agent,'codebuddy');
+  await select('cc');
+  assert.equal((await request('/api/ai/status')).name,'Claude Code');
+  assert.ok((await request('/api/cc/ask',{method:'POST',body:{action:'graph'}})).graph.nodes.length);
+  assert.equal(calls().at(-1).agent,'cc');
+  await drive(0);
+  assert.equal(calls().at(-1).agent,'cc');assert.equal(calls().at(-1).task,'daily-digest');
+
   fs.writeFileSync(f.mode,'partial-failure');
   await request('/api/cc/ask',{method:'POST',body:{action:'graph'},status:400});
   assert.equal((await request('/api/ai/status')).busy,false);
@@ -125,4 +134,48 @@ test('agent selection persists and locks every manual, scheduled and habit task'
   assert.equal(savedTask.status,'completed');assert.ok(savedTask.messages[0].text.length>0);assert.doesNotMatch(JSON.stringify(savedTask),/PRIVATE_THINKING/);
   fs.rmSync(f.mode);
   const foreign=await fetch(base+'/api/ai/events',{headers:{Origin:'https://untrusted.example'}});assert.equal(foreign.status,403);
+});
+
+test('historical Trae settings and backups fall back without exposing or invoking Trae',{timeout:30000},async t=>{
+  const f=fixture(t),dataDir=path.join(f.dir,'legacy-data');fs.mkdirSync(dataDir);
+  const defaults=require('../storage/defaults')();defaults['settings.json'].agent='trae';
+  for(const [file,value]of Object.entries(defaults))fs.writeFileSync(path.join(dataDir,file),JSON.stringify(value));
+  const probe=net.createServer();probe.listen(0,'127.0.0.1');await once(probe,'listening');
+  const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
+  const base=`http://127.0.0.1:${port}`;let child,output='';
+  async function stop(){if(child && child.exitCode===null && child.signalCode===null){child.kill('SIGTERM');await once(child,'close');}}
+  t.after(stop);
+  async function start(){
+    output='';child=spawn(process.execPath,[path.join(__dirname,'../server.js')],{env:{...f.env,MEMO_DATA_DIR:dataDir,MEMO_ELECTRON:'1',PORT:String(port)},stdio:['ignore','pipe','pipe']});
+    await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error(output)),10000);
+      child.stderr.on('data',value=>{output+=value;});
+      child.stdout.on('data',value=>{output+=value;if(output.includes('Memo server running')){clearTimeout(timer);resolve();}});
+      child.once('exit',code=>{clearTimeout(timer);reject(new Error('Server exited '+code+': '+output));});
+    });
+  }
+  async function request(route,{method='GET',body,status=200,headers={}}={}){
+    const response=await fetch(base+route,{method,headers:{'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
+    const value=await response.json();assert.equal(response.status,status,JSON.stringify(value));return value;
+  }
+  await start();
+  assert.equal((await request('/api/settings')).agent,'codex');
+  assert.equal((await request('/api/ai/status')).agent,'codex');
+  assert.equal((await request('/api/settings',{method:'PUT',body:{theme:'mint'}})).agent,'codex');
+  const closed=await request('/api/settings',{method:'PUT',body:{agent:'trae'},status:400});assert.match(closed.error,/AGENT_DISABLED:trae/);
+  const html=await (await fetch(base+'/')).text();assert.doesNotMatch(html,/<option[^>]*value=["']trae["']/);
+  const backup=await request('/api/storage/backup',{method:'POST',headers:{'X-Memo-Storage':'1'}});
+  await request('/api/settings',{method:'PUT',body:{agent:'codebuddy'}});
+  await request('/api/storage/restore',{method:'POST',body:{name:backup.name},headers:{'X-Memo-Storage':'1'}});
+  assert.equal((await request('/api/ai/status')).agent,'codex');
+  await stop();await start();assert.equal((await request('/api/settings')).agent,'codex');
+  fs.writeFileSync(f.mode,'stream-slow');
+  const generating=request('/api/cc/ask',{method:'POST',body:{action:'graph'}});
+  for(let i=0;i<200 && !(await request('/api/ai/status')).busy;i++)await new Promise(resolve=>setTimeout(resolve,10));
+  assert.equal((await request('/api/ai/status')).busy,true);
+  await request('/api/settings',{method:'PUT',body:{agent:'codex'}});
+  await request('/api/settings',{method:'PUT',body:{agent:'codebuddy'},status:409});
+  assert.ok((await generating).graph.nodes.length);
+  const calls=fs.readFileSync(f.capture,'utf8').trim().split('\n').map(JSON.parse);
+  assert.ok(calls.length);assert.ok(calls.every(call=>call.agent==='codex'));
 });

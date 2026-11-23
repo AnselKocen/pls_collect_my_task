@@ -1,0 +1,6 @@
+{
+  "category": "test-harness-focus",
+  "reason": "Hidden macOS Electron window updates SVG activeElement but does not deliver DOM focus events; independent no-model probe passed after showInactive.",
+  "productFailure": false,
+  "archivedAt": "2026-11-23T12:08:29.476Z"
+}

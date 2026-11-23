@@ -1,0 +1,11 @@
+{"agent":"codebuddy","started":"cli-and-isolation"}
+(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.
+{"agent":"codebuddy","check":"cli-and-isolation","status":"passed","cli":"/Users/anselkocen/.local/bin/codebuddy","records":8}
+{"agent":"codebuddy","started":"tag-stream-ui"}
+{"agent":"codebuddy","check":"tag-stream-ui","status":"passed","running":true,"locked":true,"closed":true,"stillLocked":true,"reopened":true,"preserved":true,"visibleGrowthSamples":8,"firstVisibleMs":7066,"suggestions":8,"processedCount":8,"history":1}
+{"agent":"codebuddy","started":"daily-digest-ui"}
+{"agent":"codebuddy","check":"daily-digest-ui","status":"passed","processedCount":8,"date":"2026-11-23"}
+{"agent":"codebuddy","started":"graph-ui"}
+AssertionError [ERR_ASSERTION]: false == true
+    at run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:186:59)
+{"realCliUiAcceptance":true,"agent":"codebuddy","graphOnly":false,"success":false,"passed":3,"failed":1,"report":"/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-evidence/live-ui/codebuddy/result.json"}

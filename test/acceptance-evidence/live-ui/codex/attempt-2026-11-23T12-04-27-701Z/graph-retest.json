@@ -1,0 +1,53 @@
+{
+  "agent": "codex",
+  "mode": "real-cli-ui-graph-retest",
+  "realCli": true,
+  "fakeModel": false,
+  "fictionalRecords": 8,
+  "startedAt": "2026-11-23T12:04:27.701Z",
+  "checks": [
+    {
+      "id": "cli-and-isolation",
+      "label": "真实 CLI、临时数据库及独立桌面会话",
+      "status": "passed",
+      "details": {
+        "cli": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+        "records": 8
+      }
+    },
+    {
+      "id": "graph-ui",
+      "label": "点击生成图谱及查看已保存历史",
+      "startedAt": "2026-11-23T12:04:28.095Z",
+      "status": "failed",
+      "error": {
+        "message": "false == true",
+        "stack": "AssertionError [ERR_ASSERTION]: false == true\n    at run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:186:59)"
+      }
+    }
+  ],
+  "screenshots": [
+    "graph-retest-graph-generated.png",
+    "graph-retest-graph-relations-hover.png",
+    "graph-retest-failed.png"
+  ],
+  "snapshotPollingBlocked": true,
+  "cli": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+  "cliVersion": "codex-cli 0.169.0-alpha.11.1",
+  "graphLibrary": {
+    "source": "local real D3 library",
+    "path": "/tmp/memo-acceptance-d3.v7.min.js"
+  },
+  "success": false,
+  "error": {
+    "message": "false == true",
+    "stack": "AssertionError [ERR_ASSERTION]: false == true\n    at run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:186:59)"
+  },
+  "failureUi": {
+    "taskStage": ""
+  },
+  "finishedAt": "2026-11-23T12:05:27.602Z",
+  "browserErrors": [
+    "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+  ]
+}

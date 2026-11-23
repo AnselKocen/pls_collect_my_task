@@ -201,6 +201,25 @@ test('long summaries and original task lists are preserved across digest batchin
   assert.equal(calls.at(-1).input.summaries.length,2);
 });
 
+test('digest retries explain the string task format and never save malformed task objects',async t=>{
+  const store=setup(t,[memo('a','读一页书')]),now=new Date('2026-11-13T12:00:00Z');
+  const prompts=[];
+  const ask=async prompt=>{
+    prompts.push(prompt);
+    return JSON.stringify({summary:'这两天都留出一点时间阅读。',tasks:prompts.length===1?[{text:'阅读一页'}]:['阅读一页']});
+  };
+  const engine=new TaskService(store,{ask});
+  const {digest}=await engine.digest('daily-digest',{},now);
+  assert.deepEqual(digest.tasks,['阅读一页']);
+  assert.equal(prompts.length,2);
+  assert.match(prompts[0],/tasks 必须是非空字符串组成的数组/);
+  assert.match(prompts[1],/上次结果未通过格式校验.*tasks 必须是非空字符串数组/);
+  const before=store.read('suggestions').dailyDigest;
+  engine.ask=async()=>JSON.stringify({summary:'无效结果',tasks:[{text:'不应保存'}]});
+  await assert.rejects(engine.digest('daily-digest',{},now),/tasks 必须是非空字符串数组/);
+  assert.deepEqual(store.read('suggestions').dailyDigest,before);
+});
+
 test('empty graph scope makes no model calls and leaves history untouched',async t=>{
   const store=setup(t,[]),{engine,calls}=service(store),before=store.read('suggestions');
   await assert.rejects(engine.graph(),/选定范围没有便签/);

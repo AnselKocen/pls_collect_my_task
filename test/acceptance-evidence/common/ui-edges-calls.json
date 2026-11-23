@@ -1,0 +1,42 @@
+[
+  {
+    "task": "habit-pool",
+    "argv": [
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages"
+    ]
+  },
+  {
+    "task": "habit-pool",
+    "argv": [
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages"
+    ]
+  },
+  {
+    "task": "habit-pool",
+    "argv": [
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages"
+    ]
+  },
+  {
+    "task": "habit-pool",
+    "argv": [
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--include-partial-messages"
+    ]
+  }
+]

@@ -1,0 +1,106 @@
+{
+  "agent": "codebuddy",
+  "mode": "real-cli-ui",
+  "realCli": true,
+  "fakeModel": false,
+  "fictionalRecords": 8,
+  "startedAt": "2026-11-23T12:08:48.610Z",
+  "checks": [
+    {
+      "id": "cli-and-isolation",
+      "label": "真实 CLI、临时数据库及独立桌面会话",
+      "status": "passed",
+      "details": {
+        "cli": "/Users/anselkocen/.local/bin/codebuddy",
+        "records": 8
+      }
+    },
+    {
+      "id": "tag-stream-ui",
+      "label": "标签整理真实流式、锁、关闭重开、结果校验和历史保存",
+      "status": "passed",
+      "details": {
+        "running": true,
+        "locked": true,
+        "closed": true,
+        "stillLocked": true,
+        "reopened": true,
+        "preserved": true,
+        "visibleGrowthSamples": 5,
+        "firstVisibleMs": 6186,
+        "suggestions": 8,
+        "processedCount": 8,
+        "history": 1
+      }
+    },
+    {
+      "id": "daily-digest-ui",
+      "label": "今日摘要真实点击生成、折叠展开和保存",
+      "status": "passed",
+      "details": {
+        "processedCount": 8,
+        "date": "2026-11-23"
+      }
+    },
+    {
+      "id": "graph-ui",
+      "label": "点击生成图谱及查看已保存历史",
+      "startedAt": "2026-11-23T12:09:12.742Z",
+      "status": "failed",
+      "error": {
+        "message": "Real codebuddy UI wait timed out: document.hasFocus()\n[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59\n[Reminder] Interval checker started\nMemo server running at http://localhost:60595\nAI assistant: codebuddy\n[AI:codebuddy] 整理标签 completed in 8051ms\n[AI:codebuddy] 今日摘要 completed in 13851ms\n[AI:codebuddy] 生成思绪图谱 completed in 27092ms\n",
+        "stack": "Error: Real codebuddy UI wait timed out: document.hasFocus()\n[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59\n[Reminder] Interval checker started\nMemo server running at http://localhost:60595\nAI assistant: codebuddy\n[AI:codebuddy] 整理标签 completed in 8051ms\n[AI:codebuddy] 今日摘要 completed in 13851ms\n[AI:codebuddy] 生成思绪图谱 completed in 27092ms\n\n    at until (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:47:9)\n    at async run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:189:3)"
+      }
+    }
+  ],
+  "screenshots": [
+    "tag-stream-partial.png",
+    "tag-stream-completed.png",
+    "daily-digest-expanded.png",
+    "graph-generated.png",
+    "graph-relations-hover.png",
+    "failed.png"
+  ],
+  "snapshotPollingBlocked": true,
+  "cli": "/Users/anselkocen/.local/bin/codebuddy",
+  "cliVersion": "2.185.0",
+  "graphLibrary": {
+    "source": "local real D3 library",
+    "path": "/tmp/memo-acceptance-d3.v7.min.js"
+  },
+  "streamSamples": [
+    {
+      "ms": 6186,
+      "chars": 96
+    },
+    {
+      "ms": 6429,
+      "chars": 328
+    },
+    {
+      "ms": 6555,
+      "chars": 408
+    },
+    {
+      "ms": 6908,
+      "chars": 799
+    },
+    {
+      "ms": 7243,
+      "chars": 935
+    }
+  ],
+  "success": false,
+  "error": {
+    "message": "Real codebuddy UI wait timed out: document.hasFocus()\n[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59\n[Reminder] Interval checker started\nMemo server running at http://localhost:60595\nAI assistant: codebuddy\n[AI:codebuddy] 整理标签 completed in 8051ms\n[AI:codebuddy] 今日摘要 completed in 13851ms\n[AI:codebuddy] 生成思绪图谱 completed in 27092ms\n",
+    "stack": "Error: Real codebuddy UI wait timed out: document.hasFocus()\n[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59\n[Reminder] Interval checker started\nMemo server running at http://localhost:60595\nAI assistant: codebuddy\n[AI:codebuddy] 整理标签 completed in 8051ms\n[AI:codebuddy] 今日摘要 completed in 13851ms\n[AI:codebuddy] 生成思绪图谱 completed in 27092ms\n\n    at until (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:47:9)\n    at async run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:189:3)"
+  },
+  "failureUi": {
+    "taskStatus": "completed",
+    "taskStage": "已完成并保存"
+  },
+  "finishedAt": "2026-11-23T12:09:56.407Z",
+  "browserErrors": [
+    "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+  ]
+}

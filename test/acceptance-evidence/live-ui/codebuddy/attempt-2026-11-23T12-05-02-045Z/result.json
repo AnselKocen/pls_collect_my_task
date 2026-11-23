@@ -1,0 +1,118 @@
+{
+  "agent": "codebuddy",
+  "mode": "real-cli-ui",
+  "realCli": true,
+  "fakeModel": false,
+  "fictionalRecords": 8,
+  "startedAt": "2026-11-23T12:05:02.045Z",
+  "checks": [
+    {
+      "id": "cli-and-isolation",
+      "label": "真实 CLI、临时数据库及独立桌面会话",
+      "status": "passed",
+      "details": {
+        "cli": "/Users/anselkocen/.local/bin/codebuddy",
+        "records": 8
+      }
+    },
+    {
+      "id": "tag-stream-ui",
+      "label": "标签整理真实流式、锁、关闭重开、结果校验和历史保存",
+      "status": "passed",
+      "details": {
+        "running": true,
+        "locked": true,
+        "closed": true,
+        "stillLocked": true,
+        "reopened": true,
+        "preserved": true,
+        "visibleGrowthSamples": 8,
+        "firstVisibleMs": 7066,
+        "suggestions": 8,
+        "processedCount": 8,
+        "history": 1
+      }
+    },
+    {
+      "id": "daily-digest-ui",
+      "label": "今日摘要真实点击生成、折叠展开和保存",
+      "status": "passed",
+      "details": {
+        "processedCount": 8,
+        "date": "2026-11-23"
+      }
+    },
+    {
+      "id": "graph-ui",
+      "label": "点击生成图谱及查看已保存历史",
+      "startedAt": "2026-11-23T12:05:33.417Z",
+      "status": "failed",
+      "error": {
+        "message": "false == true",
+        "stack": "AssertionError [ERR_ASSERTION]: false == true\n    at run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:186:59)"
+      }
+    }
+  ],
+  "screenshots": [
+    "tag-stream-partial.png",
+    "tag-stream-completed.png",
+    "daily-digest-expanded.png",
+    "graph-generated.png",
+    "graph-relations-hover.png",
+    "failed.png"
+  ],
+  "snapshotPollingBlocked": true,
+  "cli": "/Users/anselkocen/.local/bin/codebuddy",
+  "cliVersion": "2.185.0",
+  "graphLibrary": {
+    "source": "local real D3 library",
+    "path": "/tmp/memo-acceptance-d3.v7.min.js"
+  },
+  "streamSamples": [
+    {
+      "ms": 7066,
+      "chars": 26
+    },
+    {
+      "ms": 7170,
+      "chars": 95
+    },
+    {
+      "ms": 7271,
+      "chars": 170
+    },
+    {
+      "ms": 7806,
+      "chars": 545
+    },
+    {
+      "ms": 7933,
+      "chars": 667
+    },
+    {
+      "ms": 8059,
+      "chars": 785
+    },
+    {
+      "ms": 8590,
+      "chars": 1114
+    },
+    {
+      "ms": 8692,
+      "chars": 1115
+    }
+  ],
+  "success": false,
+  "error": {
+    "message": "false == true",
+    "stack": "AssertionError [ERR_ASSERTION]: false == true\n    at run (/Users/anselkocen/Desktop/pls_collect_my_task/test/acceptance-live-ui.js:186:59)"
+  },
+  "failureUi": {
+    "taskStatus": "completed",
+    "taskStage": "已完成并保存"
+  },
+  "finishedAt": "2026-11-23T12:06:07.726Z",
+  "browserErrors": [
+    "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+  ]
+}

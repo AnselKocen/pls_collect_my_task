@@ -238,7 +238,8 @@ function taskWaitText(status) {
 function renderAgentControl() {
   const field = document.getElementById('agentSelect');
   if (!field) return;
-  field.value = settings.agent || aiState.agent || 'cc';
+  const available=Array.from(field.options,option=>option.value);
+  field.value = [settings.agent,aiState.agent,'cc'].find(value=>available.includes(value));
   const working = aiState.busy || _ccTaskSet.size > 0;
   field.disabled = !agentStatusKnown || agentSwitchPending || working || aiState.maintenance;
   const hint = !agentStatusKnown ? '正在确认助手状态…'
@@ -1202,7 +1203,10 @@ function renderGraph(data) {
     themeLine.append('title').text(edge=>`主题关联：${edge.relation}`);
     const link=scene.append('g').selectAll('line').data(view.edges).join('line').attr('class','graph-link');
     link.append('title').text(edge=>`${edge.kind==='theme' ? '主题关联' : '便签关联'}：${edge.relation || ''}`);
-    const linkLabel=scene.append('g').selectAll('text').data(view.edges).join('text').attr('class','graph-link-label').text(edge=>edge.relation || '');
+    const linkLabel=scene.append('g').selectAll('text').data(view.edges).join('text').attr('class','graph-link-label').text(edge=>{
+      const characters=Array.from(edge.relation || '');
+      return characters.length>12 ? characters.slice(0,12).join('')+'…' : characters.join('');
+    });
     const labels=scene.append('g').selectAll('text').data(graphCollapsed ? [] : view.clusters).join('text').attr('class','graph-cluster-label').text(cluster=>cluster.title);
     graphSimulation=d3.forceSimulation(view.nodes)
       .force('link',d3.forceLink(view.edges).id(node=>node.id).distance(graphCollapsed ? 130 : 85))
@@ -1210,9 +1214,17 @@ function renderGraph(data) {
       .force('collision',d3.forceCollide().radius(graphCollapsed ? 42 : 24))
       .force('x',d3.forceX(node=>(anchors.get(node.clusterId) || {x:width/2}).x).strength(.16))
       .force('y',d3.forceY(node=>(anchors.get(node.clusterId) || {y:height/2}).y).strength(.16));
-    const selectNode=(event,node)=>{scene.selectAll('.graph-node').classed('selected',item=>item.id===node.id);renderGraphSummaryPanel(data,node);};
+    let selectedNodeId=null;
+    const highlightRelations=id=>{
+      const connected=edge=>id!==null && [edge.source.id,edge.target.id].includes(id);
+      link.classed('is-highlighted',connected);
+      linkLabel.classed('is-visible',connected);
+    };
+    const selectNode=(event,node)=>{selectedNodeId=node.id;highlightRelations(node.id);scene.selectAll('.graph-node').classed('selected',item=>item.id===node.id);renderGraphSummaryPanel(data,node);};
     const node=scene.append('g').selectAll('g').data(view.nodes).join('g').attr('class','graph-node').attr('role','button').attr('tabindex',0).attr('aria-label',item=>`${item.label}，查看来源便签`)
       .on('click',selectNode).on('keydown',(event,item)=>{if(['Enter',' '].includes(event.key)){event.preventDefault();selectNode(event,item);}})
+      .on('mouseenter',(event,item)=>highlightRelations(item.id)).on('mouseleave',()=>highlightRelations(selectedNodeId))
+      .on('focus',(event,item)=>highlightRelations(item.id)).on('blur',()=>highlightRelations(selectedNodeId))
       .call(d3.drag().on('start',(event,item)=>{if(!event.active)graphSimulation.alphaTarget(.2).restart();item.fx=item.x;item.fy=item.y;}).on('drag',(event,item)=>{item.fx=event.x;item.fy=event.y;}).on('end',(event,item)=>{if(!event.active)graphSimulation.alphaTarget(0);item.fx=null;item.fy=null;}));
     const fills=['#d1fae5','#fce7f3','#dbeafe','#fef3c7','#ede9fe','#fef9c3'],strokes=['#065f46','#9d174d','#1e40af','#92400e','#5b21b6','#854d0e'];
     const color=item=>view.clusters.findIndex(cluster=>cluster.id===item.clusterId)%fills.length;

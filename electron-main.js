@@ -26,7 +26,7 @@ function getDataDir() {
   return path.join(__dirname, 'data');
 }
 
-const { getAgent } = require('./agents');
+const { getSelectableAgent } = require('./agents');
 
 // Finder launches apps with a minimal PATH; inherit the user's login-shell PATH once.
 function getFullEnv() {
@@ -146,7 +146,7 @@ function createWindow() {
 
 // Configuration applies to the currently selected assistant without restarting the server.
 ipcMain.handle('ai-setup', async (event,id) => {
-  const agent = getAgent(id);
+  const agent = getSelectableAgent(id);
   const status = await aiRequest('GET','/api/ai/status');
   if (status.agent !== id) throw new Error('AI 助手已切换，请重试');
   if (status.busy || status.maintenance) throw new Error('AI_BUSY:任务进行中，暂时不能配置助手');

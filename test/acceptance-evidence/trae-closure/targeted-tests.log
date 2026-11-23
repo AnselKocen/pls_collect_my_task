@@ -1,0 +1,31 @@
+✔ agent selection persists and locks every manual, scheduled and habit task (8344.14425ms)
+✔ historical Trae settings and backups fall back without exposing or invoking Trae (1361.949166ms)
+✔ Trae entry stays closed while installed assistants and retained adapters keep working (2.347125ms)
+✔ all four adapters deliver stdin and only return the final answer (3269.407041ms)
+✔ Codex preserves custom endpoints and managed providers without resubmitting prompts (1771.449792ms)
+✔ invalid agents, missing CLI, partial failure and timeout reject cleanly (1080.087416ms)
+✔ legacy paths and independently saved paths survive config reload (536.881833ms)
+✔ Trae rejects partial answers on failed, truncated or abruptly closed ACP turns (1606.309166ms)
+✔ question previews hide JSON syntax and buffer incomplete escapes (0.734416ms)
+✔ wish result validation rejects malformed cards and repeated content (0.73825ms)
+▶ wish flow streams across agents, preserves context and saves only complete unique pools
+  ✔ invalid answers never launch a model (23.372542ms)
+  ✔ cc streams questions and forwards all answers into generation (2043.110875ms)
+  ✔ codex streams questions and forwards all answers into generation (1430.472541ms)
+  ✔ codebuddy streams questions and forwards all answers into generation (1196.217625ms)
+  ✔ model errors and invalid results leave pools untouched and release the lock (1734.77025ms)
+  ✔ a disconnected generation can be recovered without creating another pool (290.313958ms)
+✔ wish flow streams across agents, preserves context and saves only complete unique pools (6830.1605ms)
+✔ technical errors and filesystem details stay out of user-facing messages (1.198166ms)
+✔ assistant errors use the selected product and task messages omit CC subjects (0.6185ms)
+✔ Trae authentication explains enterprise CLI access while missing CLI still explains installation (0.203583ms)
+✔ legacy empty digest in the screenshot gets a useful, friendly message (0.221334ms)
+✔ empty daily and weekly digests differ from real prose that mentions an empty day (0.06425ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9748.840709

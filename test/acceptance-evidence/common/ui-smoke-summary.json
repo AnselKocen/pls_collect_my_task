@@ -1,0 +1,142 @@
+{
+  "realModelCalls": false,
+  "data": "fictional temporary profiles/databases only",
+  "completedAt": "2026-11-23T12:05:52.530Z",
+  "runs": [
+    {
+      "name": "common AI UI regressions and graph controls",
+      "method": "simulated CC/Codex CLI with real UI/backend",
+      "status": "passed",
+      "evidence": "legacy-ui.log",
+      "assertions": {
+        "streamingReply": true,
+        "streamReopen": true,
+        "streamFailure": true,
+        "agentSelection": true,
+        "agentReload": true,
+        "agentBusyLock": true,
+        "agentMissingMessage": true,
+        "agentLayout": true,
+        "localSearch": true,
+        "emptySearch": true,
+        "legacyDigestFriendly": true,
+        "emptyDigestFriendly": true,
+        "markdownSafe": true,
+        "expandedNodes": 3,
+        "collapsedClusters": 2,
+        "sourcePanel": true,
+        "editedSource": true,
+        "deletedSource": true,
+        "emptyGraphRejected": true,
+        "failureBubble": true,
+        "emptyPoolRecovery": true,
+        "oversizedBackupBlocked": true,
+        "friendlyStorageErrors": true,
+        "overlayClose": true,
+        "graphKeyboardEnterAndSpace": true,
+        "graphSourceDetail": true,
+        "graphZoom": true,
+        "graphDrag": true,
+        "graphFullscreen": true,
+        "graphResize": true,
+        "graphPreviousAndNext": true,
+        "graphDeleteCancel": true,
+        "graphDeleteLast": true,
+        "wishPresetAnswers": true,
+        "wishRestart": true,
+        "graphRelationDefaultHidden": true,
+        "graphRelationHoverAdjacentOnly": true,
+        "graphRelationShortened": true,
+        "graphRelationFullTitle": true,
+        "graphRelationMouseleaveReset": true,
+        "graphRelationFocusAndBlur": true,
+        "graphRelationKeyboardSelectionPersists": true
+      },
+      "fullscreenGeometry": {
+        "graphFullscreenGeometry": true,
+        "width": 740,
+        "height": 629,
+        "svgWidth": "740",
+        "svgHeight": "629",
+        "nodes": [
+          {
+            "id": "site",
+            "x": 364.6238653723308,
+            "y": 182.54211273928607,
+            "transform": "translate(364.6238653723308,182.54211273928607)"
+          },
+          {
+            "id": "title",
+            "x": 364.62539020876056,
+            "y": 109.71271496343127,
+            "transform": "translate(364.62539020876056,109.71271496343127)"
+          },
+          {
+            "id": "walk",
+            "x": 369.2483125322689,
+            "y": 495.21448174657235,
+            "transform": "translate(369.2483125322689,495.21448174657235)"
+          }
+        ]
+      },
+      "warnings": [
+        "ResizeObserver warned during the 300ms fullscreen transition; settled dimensions and screenshot were verified correct."
+      ],
+      "graphRelations": {
+        "graphRelationsRegression": true,
+        "defaultHidden": true,
+        "hoverAdjacentOnly": true,
+        "shortenedTo12CodePoints": true,
+        "fullTitlePreserved": true,
+        "mouseleaveReset": true,
+        "focusAndBlur": true,
+        "keyboardSelectionPersists": true,
+        "fixture": "synthetic long relationships in renderer memory only"
+      },
+      "defaultGraphScreenshot": "legacy-ui/graph-default.png"
+    },
+    {
+      "name": "wish cards UI",
+      "method": "simulated CC CLI with real UI/backend",
+      "status": "passed",
+      "evidence": "wish-ui.log",
+      "assertions": {
+        "visibleStreamLengths": [
+          3,
+          11,
+          19,
+          27,
+          30
+        ],
+        "twoGuidedQuestions": true,
+        "fourOptions": true,
+        "customAnswers": true,
+        "collapseAndReopen": true,
+        "narrowLayout": true,
+        "invalidResultsRejected": true,
+        "retry": true,
+        "savedCards": 30
+      },
+      "warnings": []
+    },
+    {
+      "name": "stream recovery UI",
+      "method": "synthetic stream events in actual renderer",
+      "status": "passed",
+      "evidence": "task-stream-ui.log",
+      "assertions": {
+        "silentStreamRecovery": true,
+        "completionRecovered": true,
+        "duplicateDeltaIgnored": true,
+        "missingDeltaRecovered": true,
+        "stalePollIgnored": true,
+        "restartRecovered": true,
+        "legacyStreamingAfterPoll": true,
+        "noStreamingFallback": true
+      },
+      "warnings": [
+        "Temporary Electron profile cleanup warned after all feature assertions; process exit was 0."
+      ]
+    }
+  ]
+}

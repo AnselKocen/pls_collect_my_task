@@ -99,6 +99,7 @@ function validateTags(result, counts, allowedRecords) {
 }
 function validateDigest(result) {
   const tasks = list(result.tasks ?? [],'tasks');
+  if(tasks.some(task=>typeof task!=='string' || !task.trim()))throw new Error('tasks 必须是非空字符串数组，例如 ["阅读一页"]；没有待办时返回 []，不要使用对象、null 或空字符串');
   return {summary:text(result.summary,'摘要'),tasks:tasks.map(task => text(task,'待办'))};
 }
 

@@ -1,0 +1,72 @@
+{
+  "testedAt": "2026-11-23T12:09:24.454Z",
+  "mode": "isolated-no-model-electron-probe",
+  "conditions": {
+    "offscreen": true,
+    "show": false
+  },
+  "results": [
+    {
+      "action": "SVG node.focus()",
+      "documentHasFocus": false,
+      "activeElement": "node",
+      "focusEvents": 0
+    },
+    {
+      "action": "webContents.focus()",
+      "documentHasFocus": false,
+      "activeElement": "node",
+      "focusEvents": 0
+    },
+    {
+      "action": "BrowserWindow.focus()",
+      "documentHasFocus": false,
+      "activeElement": "node",
+      "focusEvents": 0
+    },
+    {
+      "action": "BrowserWindow.showInactive()",
+      "documentHasFocus": true,
+      "activeElement": "node",
+      "focusEvents": 1
+    },
+    {
+      "action": "BrowserWindow.show(); BrowserWindow.focus()",
+      "documentHasFocus": true,
+      "activeElement": "node",
+      "focusEvents": 1
+    }
+  ],
+  "diagnosis": "Hidden Electron windows suppress DOM focus events even when SVG activeElement changes. Real focus acceptance must briefly display the isolated test window.",
+  "productFailure": false,
+  "confirmatoryProbe": {
+    "testedAt": "2026-11-23T12:10:59.100Z",
+    "results": [
+      {
+        "action": "initial hidden",
+        "documentHasFocus": false,
+        "activeElement": "",
+        "focusEvents": 0
+      },
+      {
+        "action": "showInactive only",
+        "documentHasFocus": false,
+        "activeElement": "",
+        "focusEvents": 0
+      },
+      {
+        "action": "BrowserWindow.focus(); webContents.focus()",
+        "documentHasFocus": true,
+        "activeElement": "",
+        "focusEvents": 0
+      },
+      {
+        "action": "SVG node.focus()",
+        "documentHasFocus": true,
+        "activeElement": "node",
+        "focusEvents": 1
+      }
+    ],
+    "diagnosis": "Explicit native focus is necessary after showInactive."
+  }
+}

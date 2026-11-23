@@ -1,0 +1,8 @@
+[Cron] Local timezone: Asia/Shanghai; daily 23:55, weekly sunday 23:59
+[Reminder] Interval checker started
+Memo server running at http://localhost:61251
+AI assistant: codebuddy
+[AI:codebuddy] 整理标签 completed in 6749ms
+[AI:codebuddy] 今日摘要 completed in 13427ms
+[AI:codebuddy] 生成思绪图谱 completed in 33906ms
+[AI:codebuddy] 本周总结 completed in 11554ms

@@ -90,4 +90,55 @@ function createPrintSession({emit,finish,fail}) {
   return {start(){},message};
 }
 
-module.exports={createCodexSession,createPrintSession,CODEX_HTTP_PROVIDER,CODEX_HTTP_CONFIG};
+// Trae CLI 2.0 exposes ACP v1 over newline-delimited JSON-RPC on stdio.
+// Memo supplies all task input itself and does not offer filesystem/terminal tools.
+function createAcpSession({send,emit,finish,fail,prompt,cwd}) {
+  let sequence=0,sessionId=null,messageId='reply';
+  const pending=new Map(),answers=new Map();
+  const reply=row => send({jsonrpc:'2.0',...row});
+  function request(method,params) {
+    return new Promise((resolve,reject) => {
+      const id=++sequence;pending.set(id,{resolve,reject});reply({id,method,params});
+    });
+  }
+  async function start() {
+    try {
+      const initialized=await request('initialize',{protocolVersion:1,clientCapabilities:{},clientInfo:{name:'memo_journal',title:'记忆手帐',version:'1.0.0'}});
+      if(initialized?.protocolVersion!==1)throw new Error('Trae ACP 协议版本不兼容，请更新 Trae CLI 2.0 后重试');
+      const session=await request('session/new',{cwd,mcpServers:[]});
+      if(typeof session?.sessionId!=='string' || !session.sessionId)throw new Error('Trae 未能创建会话');
+      sessionId=session.sessionId;
+      emit({type:'stage',label:'正在等待 Trae 回答'});
+      const result=await request('session/prompt',{sessionId,prompt:[{type:'text',text:prompt}]});
+      if(result?.stopReason!=='end_turn')throw new Error('Trae 任务未完整结束，本次结果未保存');
+      const answer=answers.get(messageId) || '';
+      emit({type:'message',messageId,text:answer,phase:'answer'});
+      finish(answer);
+    } catch(error) {fail(error);}
+  }
+  function message(row) {
+    if(row.id!==undefined && !row.method) {
+      const call=pending.get(row.id);if(!call)return;
+      pending.delete(row.id);
+      row.error ? call.reject(new Error(row.error.code===-32000 ? 'AGENT_AUTH:trae' : row.error.message || 'Trae 请求失败')) : call.resolve(row.result);
+      return;
+    }
+    if(row.id!==undefined && row.method) {
+      if(row.method==='session/request_permission') {
+        const option=row.params?.options?.find(option => option.kind==='reject_once');
+        reply({id:row.id,result:{outcome:option ? {outcome:'selected',optionId:option.optionId} : {outcome:'cancelled'}}});
+      } else reply({id:row.id,error:{code:-32601,message:'Memo does not provide interactive tools.'}});
+      fail(new Error('本次整理需要交互式操作，请在助手中完成后重试'));return;
+    }
+    if(row.method!=='session/update' || row.params?.sessionId!==sessionId)return;
+    const update=row.params.update;
+    if(update?.sessionUpdate==='agent_message_chunk' && update.content?.type==='text' && typeof update.content.text==='string') {
+      messageId=typeof update.messageId==='string' && update.messageId ? update.messageId : messageId;
+      answers.set(messageId,(answers.get(messageId) || '')+update.content.text);
+      emit({type:'delta',messageId,text:update.content.text});
+    }
+  }
+  return {start,message};
+}
+
+module.exports={createCodexSession,createPrintSession,createAcpSession,CODEX_HTTP_PROVIDER,CODEX_HTTP_CONFIG};
