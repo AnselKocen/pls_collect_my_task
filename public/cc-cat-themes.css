@@ -1,0 +1,395 @@
+/* Each theme owns a complete cat palette, including its optional markings.
+   Mark, chest and tail-tip pixels can share the fur color for a solid coat.
+   These tokens inherit into both the live CC scene and the preview gallery. */
+:root,
+[data-theme="gold"] {
+  --cat-name: "焦糖橘猫";
+  --cat-fur: #e5ac75;
+  --cat-outline: #594735;
+  --cat-ear: #efbdba;
+  --cat-ear-dark: #cc9392;
+  --cat-eye: #594735;
+  --cat-nose: #bc8187;
+  --cat-blush: #efbd9b;
+  --cat-shade: #ce9564;
+  --cat-mark: #cf8f59;
+  --cat-chest: #fae7c9;
+  --cat-tail-tip: #d18f59;
+}
+
+[data-theme="cozy"] {
+  --cat-name: "晨光奶牛猫";
+  --cat-fur: #f6f2e7;
+  --cat-outline: #4d5144;
+  --cat-ear: #e8c2bf;
+  --cat-ear-dark: #c59c9b;
+  --cat-eye: #70957a;
+  --cat-nose: #be9297;
+  --cat-blush: #ecdad4;
+  --cat-shade: #dce0cf;
+  --cat-mark: #535d4d;
+  --cat-chest: #f6f2e7;
+  --cat-tail-tip: #535d4d;
+}
+
+[data-theme="macaron"] {
+  --cat-name: "蜜桃奶霜猫";
+  --cat-fur: #efc2b7;
+  --cat-outline: #66514e;
+  --cat-ear: #eab0b7;
+  --cat-ear-dark: #cd8f99;
+  --cat-eye: #688e9c;
+  --cat-nose: #bd828c;
+  --cat-blush: #f4d6c9;
+  --cat-shade: #dca99d;
+  --cat-mark: #efc2b7;
+  --cat-chest: #fff0df;
+  --cat-tail-tip: #efc2b7;
+}
+
+[data-theme="berry"] {
+  --cat-name: "玫瑰白猫";
+  --cat-fur: #f6e9e8;
+  --cat-outline: #67515d;
+  --cat-ear: #e6afc1;
+  --cat-ear-dark: #bd829b;
+  --cat-eye: #98657c;
+  --cat-nose: #bb8097;
+  --cat-blush: #efccd6;
+  --cat-shade: #dfcbd3;
+  --cat-mark: #f6e9e8;
+  --cat-chest: #fff6ee;
+  --cat-tail-tip: #e7b6c7;
+}
+
+[data-theme="slate"] {
+  --cat-name: "湖岸蓝灰猫";
+  --cat-fur: #b5c3cf;
+  --cat-outline: #46505d;
+  --cat-ear: #dcbac6;
+  --cat-ear-dark: #b38e9f;
+  --cat-eye: #587e7e;
+  --cat-nose: #a67e93;
+  --cat-blush: #c7c1cd;
+  --cat-shade: #97acbf;
+  --cat-mark: #91a5b8;
+  --cat-chest: #e5ecee;
+  --cat-tail-tip: #8299ae;
+}
+
+[data-theme="summer"] {
+  --cat-name: "浅夏奶油猫";
+  --cat-fur: #f0dfaa;
+  --cat-outline: #615742;
+  --cat-ear: #e8bba9;
+  --cat-ear-dark: #c89489;
+  --cat-eye: #70885f;
+  --cat-nose: #bc8f86;
+  --cat-blush: #f0c9ac;
+  --cat-shade: #dbc78e;
+  --cat-mark: #d5be7e;
+  --cat-chest: #fff3cf;
+  --cat-tail-tip: #d5be7e;
+}
+
+[data-theme="candy"] {
+  --cat-name: "丁香灰猫";
+  --cat-fur: #b9b4d2;
+  --cat-outline: #4f4c65;
+  --cat-ear: #e5b6cd;
+  --cat-ear-dark: #bc8ca9;
+  --cat-eye: #625476;
+  --cat-nose: #b180a1;
+  --cat-blush: #d2bbd4;
+  --cat-shade: #a39bbd;
+  --cat-mark: #a19aba;
+  --cat-chest: #ebe4ee;
+  --cat-tail-tip: #a19aba;
+}
+
+[data-theme="mintchoc"] {
+  --cat-name: "薄荷巧克力猫";
+  --cat-fur: #716056;
+  --cat-outline: #443a34;
+  --cat-ear: #d4a8a3;
+  --cat-ear-dark: #b1807b;
+  --cat-eye: #b9d8bb;
+  --cat-nose: #d8a3a1;
+  --cat-blush: #98756a;
+  --cat-shade: #5e4e45;
+  --cat-mark: #635044;
+  --cat-chest: #e8f0dc;
+  --cat-tail-tip: #54463c;
+}
+
+[data-theme="gelato"] {
+  --cat-name: "冰淇淋白猫";
+  --cat-fur: #f7f8ed;
+  --cat-outline: #537078;
+  --cat-ear: #efc6d0;
+  --cat-ear-dark: #ca9baa;
+  --cat-eye: #659aa9;
+  --cat-nose: #c68f9f;
+  --cat-blush: #f2dce0;
+  --cat-shade: #d8e6e2;
+  --cat-mark: #d5edf0;
+  --cat-chest: #fffbee;
+  --cat-tail-tip: #c5e4e9;
+}
+
+[data-theme="blueberry"] {
+  --cat-name: "蓝莓重点猫";
+  --cat-fur: #d9dff0;
+  --cat-outline: #4e5269;
+  --cat-ear: #e4bdcf;
+  --cat-ear-dark: #ba90aa;
+  --cat-eye: #61779c;
+  --cat-nose: #b28ba5;
+  --cat-blush: #dfcbdc;
+  --cat-shade: #bdc5e1;
+  --cat-mark: #838eb3;
+  --cat-chest: #f1edf3;
+  --cat-tail-tip: #8b95b7;
+}
+
+[data-theme="spring"] {
+  --cat-name: "柠翠三花猫";
+  --cat-fur: #f8f0d6;
+  --cat-outline: #50594b;
+  --cat-ear: #e2b7ad;
+  --cat-ear-dark: #c1928e;
+  --cat-eye: #5b8e88;
+  --cat-nose: #bb8f91;
+  --cat-blush: #edcfc1;
+  --cat-shade: #dbe1be;
+  --cat-mark: #8fbcb2;
+  --cat-chest: #fff8e8;
+  --cat-tail-tip: #dfc65e;
+}
+
+[data-theme="mint"] {
+  --cat-name: "薄荷银白猫";
+  --cat-fur: #dce8df;
+  --cat-outline: #4e6158;
+  --cat-ear: #e6bfc4;
+  --cat-ear-dark: #bd979e;
+  --cat-eye: #608e7a;
+  --cat-nose: #be949c;
+  --cat-blush: #e1d6d0;
+  --cat-shade: #bdd3c7;
+  --cat-mark: #b0cdc1;
+  --cat-chest: #f5f8ee;
+  --cat-tail-tip: #a5c5b8;
+}
+
+[data-theme="pinkcoast"] {
+  --cat-name: "海岸玳瑁猫";
+  --cat-fur: #796978;
+  --cat-outline: #4d424e;
+  --cat-ear: #deb0c0;
+  --cat-ear-dark: #b7839c;
+  --cat-eye: #acd0df;
+  --cat-nose: #dea7b5;
+  --cat-blush: #a77b8f;
+  --cat-shade: #665565;
+  --cat-mark: #d7a2aa;
+  --cat-chest: #f3e1dc;
+  --cat-tail-tip: #e2b2a5;
+}
+
+[data-theme="coconut"] {
+  --cat-name: "椰乳白猫";
+  --cat-fur: #f4f1dc;
+  --cat-outline: #54634d;
+  --cat-ear: #e6c4bd;
+  --cat-ear-dark: #c09f98;
+  --cat-eye: #72936c;
+  --cat-nose: #bc9690;
+  --cat-blush: #ead8c9;
+  --cat-shade: #dce2c4;
+  --cat-mark: #d3e2b8;
+  --cat-chest: #fff9e5;
+  --cat-tail-tip: #c5d8a7;
+}
+
+[data-theme="mintrose"] {
+  --cat-name: "粉藤奶咖猫";
+  --cat-fur: #d4b8aa;
+  --cat-outline: #635146;
+  --cat-ear: #e7bbc1;
+  --cat-ear-dark: #c193a0;
+  --cat-eye: #648f83;
+  --cat-nose: #b88690;
+  --cat-blush: #dfb9ad;
+  --cat-shade: #bc9f91;
+  --cat-mark: #b89687;
+  --cat-chest: #f8e7dd;
+  --cat-tail-tip: #ac8b7d;
+}
+
+[data-theme="milktea"] {
+  --cat-name: "奶茶重点猫";
+  --cat-fur: #e4cfac;
+  --cat-outline: #60503e;
+  --cat-ear: #dcb6ac;
+  --cat-ear-dark: #b68d85;
+  --cat-eye: #608791;
+  --cat-nose: #b18a88;
+  --cat-blush: #e5c0a7;
+  --cat-shade: #ccb18e;
+  --cat-mark: #8a7157;
+  --cat-chest: #f6e8d0;
+  --cat-tail-tip: #8a7157;
+}
+
+[data-theme="greencream"] {
+  --cat-name: "青青燕尾服猫";
+  --cat-fur: #414940;
+  --cat-outline: #272e28;
+  --cat-ear: #d4b5ac;
+  --cat-ear-dark: #ad8c84;
+  --cat-eye: #c1d994;
+  --cat-nose: #d4aaa5;
+  --cat-blush: #74675c;
+  --cat-shade: #353d35;
+  --cat-mark: #e8edd7;
+  --cat-chest: #f3efd8;
+  --cat-tail-tip: #4c5649;
+}
+
+[data-theme="springplaid"] {
+  --cat-name: "春风蜜桃猫";
+  --cat-fur: #e4ad95;
+  --cat-outline: #66534b;
+  --cat-ear: #e8b3b0;
+  --cat-ear-dark: #c48a8c;
+  --cat-eye: #5f8a85;
+  --cat-nose: #ba8283;
+  --cat-blush: #efbeaa;
+  --cat-shade: #cf9880;
+  --cat-mark: #cb8d76;
+  --cat-chest: #fff0dd;
+  --cat-tail-tip: #cb8d76;
+}
+
+[data-theme="traingreen"] {
+  --cat-name: "夏枝狸花猫";
+  --cat-fur: #a79571;
+  --cat-outline: #4c4d3e;
+  --cat-ear: #d8b3a3;
+  --cat-ear-dark: #ad8b7d;
+  --cat-eye: #d2e3a4;
+  --cat-nose: #bf9287;
+  --cat-blush: #bb9a7c;
+  --cat-shade: #8d805f;
+  --cat-mark: #716c50;
+  --cat-chest: #e7dfbd;
+  --cat-tail-tip: #716c50;
+}
+
+[data-theme="pistachio"] {
+  --cat-name: "开心果奶霜猫";
+  --cat-fur: #dce2c4;
+  --cat-outline: #57604b;
+  --cat-ear: #dcc1af;
+  --cat-ear-dark: #b59b8a;
+  --cat-eye: #6b8b68;
+  --cat-nose: #b89687;
+  --cat-blush: #e3ceba;
+  --cat-shade: #c5ceab;
+  --cat-mark: #bac6a0;
+  --cat-chest: #f4efdc;
+  --cat-tail-tip: #b3c299;
+}
+
+[data-theme="icecool"] {
+  --cat-name: "冰川银灰猫";
+  --cat-fur: #c5d8de;
+  --cat-outline: #4e5d6d;
+  --cat-ear: #ddc6d6;
+  --cat-ear-dark: #b69db5;
+  --cat-eye: #5d8aaa;
+  --cat-nose: #af91ad;
+  --cat-blush: #d5d1df;
+  --cat-shade: #adc5d1;
+  --cat-mark: #a6c1d3;
+  --cat-chest: #eef6f7;
+  --cat-tail-tip: #a0bdcf;
+}
+
+[data-theme="orangesoda"] {
+  --cat-name: "橙汽小橘猫";
+  --cat-fur: #f2bd78;
+  --cat-outline: #68503a;
+  --cat-ear: #edb9a7;
+  --cat-ear-dark: #c98f81;
+  --cat-eye: #736446;
+  --cat-nose: #be8d84;
+  --cat-blush: #f3c99d;
+  --cat-shade: #dda55f;
+  --cat-mark: #dd9e53;
+  --cat-chest: #ffedc9;
+  --cat-tail-tip: #d69a57;
+}
+
+[data-theme="appleyogurt"] {
+  --cat-name: "苹果奶白猫";
+  --cat-fur: #f4e6df;
+  --cat-outline: #644b4c;
+  --cat-ear: #e8bdc0;
+  --cat-ear-dark: #bd8d98;
+  --cat-eye: #6c95b1;
+  --cat-nose: #bb838e;
+  --cat-blush: #e8b6b1;
+  --cat-shade: #dfd0cd;
+  --cat-mark: #cddcea;
+  --cat-chest: #fff6e9;
+  --cat-tail-tip: #d2ddea;
+}
+
+[data-theme="mistmacaron"] {
+  --cat-name: "青橙奶酪猫";
+  --cat-fur: #f0d5ab;
+  --cat-outline: #635841;
+  --cat-ear: #e7c0ad;
+  --cat-ear-dark: #c29b8b;
+  --cat-eye: #728e67;
+  --cat-nose: #ba9288;
+  --cat-blush: #ebc9b3;
+  --cat-shade: #dbbe93;
+  --cat-mark: #c2d7ad;
+  --cat-chest: #fff1d4;
+  --cat-tail-tip: #dcb77d;
+}
+
+/* Retain compatibility with saved settings from the former pink theme. */
+[data-theme="pink"] {
+  --cat-name: "草莓粉猫";
+  --cat-fur: #edc1cd;
+  --cat-outline: #684b5b;
+  --cat-ear: #e4a8bf;
+  --cat-ear-dark: #bc7f9d;
+  --cat-eye: #8d5d79;
+  --cat-nose: #b87d99;
+  --cat-blush: #f2d5da;
+  --cat-shade: #d8a5b6;
+  --cat-mark: #edc1cd;
+  --cat-chest: #fff0ee;
+  --cat-tail-tip: #d8a5b6;
+}
+
+/* Mix custom accents into a pale coat so eyes and outlines stay readable. */
+[data-theme="custom"] {
+  --cat-name: "专属配色猫";
+  --cat-fur: color-mix(in srgb, var(--cc-body, #e8a878) 42%, #fff7ec);
+  --cat-outline: #3f3d39;
+  --cat-ear: color-mix(in srgb, var(--cc-body, #e8a878) 22%, #f3c1cc);
+  --cat-ear-dark: color-mix(in srgb, var(--cc-body, #e8a878) 30%, #b98d93);
+  --cat-eye: #3c433f;
+  --cat-nose: #b78b93;
+  --cat-blush: color-mix(in srgb, var(--cc-body, #e8a878) 20%, #f2d3cc);
+  --cat-shade: color-mix(in srgb, var(--cc-body-dark, #d08858) 48%, #e9e0d3);
+  --cat-mark: color-mix(in srgb, var(--cc-body, #e8a878) 62%, #7b756a);
+  --cat-chest: color-mix(in srgb, var(--cc-body-light, #f0b890) 14%, #fffaf1);
+  --cat-tail-tip: color-mix(in srgb, var(--cc-body-dark, #d08858) 62%, #80776a);
+}

@@ -1,0 +1,103 @@
+/* A low kitten loaf, drawn as complete pixel frames on a transparent canvas. */
+/* The resting paws end at y=117 in the old scene's coordinate system.
+   Match the hit area to that baseline so scaling never leaves a gap below. */
+.cc-walk-strip .cc-container {
+  --cat-scene-scale:.5;
+  bottom:-4px; scale:var(--cat-scene-scale);
+  filter:none; transition:none; outline:none;
+}
+.cc-walk-strip .cc-container :is(.cc-inner,.cc-sprite) { height:117px; }
+.cc-walk-strip .cc-container.flip { scale:calc(-1 * var(--cat-scene-scale)) var(--cat-scene-scale); }
+/* The idle scheduler supplies the full eight-second movement, including the
+   exact frozen position when a task takes over. Do not add a CSS easing tail. */
+.cc-walk-strip .cc-container.walking { transition:none; }
+/* Mouse clicks need no rectangular focus box. Keyboard focus follows the art. */
+.cc-walk-strip .cc-container:focus-visible .cc-cat-art {
+  filter:drop-shadow(0 0 6px var(--t-accent, #b39a69)) drop-shadow(0 0 2px var(--t-text, #594735));
+}
+.cc-walk-strip .cc-container.flip .cc-bubble,
+.cc-walk-strip .cc-container.flip .cc-think { transform:scaleX(-1); }
+.cc-walk-strip .cc-container.flip .cc-qmark { transform:none; scale:-1 1; }
+.cc-walk-strip .cc-container.flip .cat-status-note { transform:translateX(-50%) scaleX(-1); }
+
+/* Override the original scene's whole-body bob, shake and squash. */
+.cc-walk-strip .cc-container .cc-sprite.cc-cat-sprite { animation:none; transform:none; z-index:auto; }
+.cc-cat-sprite .cc-cat-art {
+  --cat-pixel:5px;
+  /* One extra column lets the larger cheek look left without being clipped.
+     Offset the canvas equally so the body and every gesture stay in place. */
+  /* Four blank rows above resting poses give walking legs room to stand up.
+     The draw offset keeps every other action in its original screen position. */
+  position:absolute; left:0; top:12px;
+  width:calc(var(--cat-pixel) * 29); height:calc(var(--cat-pixel) * 22);
+  pointer-events:none;
+}
+.cc-cat-art .cat-canvas {
+  display:block; width:100%; height:100%;
+  image-rendering:pixelated;
+}
+.cc-cat-art .cat-palette { display:none; }
+.cc-cat-art .cat-color-f { background:var(--cat-fur, #f5e9d7); }
+.cc-cat-art .cat-color-o { background:var(--cat-outline, #4d443c); }
+.cc-cat-art .cat-color-p { background:var(--cat-ear, #e9bec0); }
+.cc-cat-art .cat-color-d { background:var(--cat-ear-dark, #c8959d); }
+.cc-cat-art .cat-color-e { background:var(--cat-eye, #4d443c); }
+.cc-cat-art .cat-color-n { background:var(--cat-nose, #c8959d); }
+.cc-cat-art .cat-color-b { background:var(--cat-blush, #f0d3cd); }
+.cc-cat-art .cat-color-s { background:var(--cat-shade, #d9ccbb); }
+.cc-cat-art .cat-color-m { background:var(--cat-mark, var(--cat-fur, #f5e9d7)); }
+.cc-cat-art .cat-color-c { background:var(--cat-chest, var(--cat-fur, #f5e9d7)); }
+.cc-cat-art .cat-color-t { background:var(--cat-tail-tip, var(--cat-fur, #f5e9d7)); }
+.cc-cat-art .cat-color-a { background:var(--cc-accent, #b39a69); }
+.cc-cat-art .cat-color-k { background:#81939d; }
+.cc-cat-art .cat-color-l { background:#435560; }
+.cc-cat-art .cat-color-r { background:var(--cc-broom, #aa805a); }
+.cc-cat-art .cat-color-h { background:var(--cc-broom-head, #dcc48c); }
+
+/* Props and touching paws share a frame so their movement stays in sync. */
+.cc-walk-strip .cc-container .cc-laptop,
+.cc-walk-strip .cc-container .cc-broom { display:none; animation:none; }
+.cc-walk-strip .cc-container.st-idle .spk,
+.cc-walk-strip .cc-container.st-happy .spk,
+.cc-walk-strip .cc-container.st-coding .blue-px,
+.cc-walk-strip .cc-container.st-looking .fpx { animation:none; opacity:0; }
+.cc-walk-strip .cc-container.st-happy .spk:first-child { animation:ccCatGladStar 2.8s steps(1,end) infinite; top:24px; right:0; }
+.cc-walk-strip .cc-container.walking :is(.cc-bubble,.cc-think,.cc-qmark,.cat-status-note,.spk) { opacity:0; animation:none; }
+/* The quiet loaf needs no permanent bubble over its ears. */
+.cc-walk-strip .cc-container.st-idle .cc-bubble { opacity:0; }
+.cc-walk-strip .cc-bubble,
+.cc-walk-strip .cc-think { left:26px; top:-5px; z-index:6; }
+.cc-walk-strip .cc-bubble-box {
+  width:38px; height:24px; border-radius:5px; gap:5px;
+  background:var(--t-card, #fff); color:var(--t-text-light, #8a7a68);
+}
+.cc-walk-strip .cat-idle-note { font-size:14px; line-height:1; }
+.cc-walk-strip .cc-think-box { min-width:42px; height:26px; padding:0 9px; border-radius:5px; background:var(--t-card, #fff); }
+.cc-walk-strip .cc-think-txt { font-size:13px; font-weight:400; }
+.cc-walk-strip .cc-bubble .bdot1,
+.cc-walk-strip .cc-think .bdot1 { width:6px; height:5px; bottom:-7px; }
+.cc-walk-strip .cc-bubble .bdot2,
+.cc-walk-strip .cc-think .bdot2 { width:4px; height:4px; bottom:-13px; }
+.cc-walk-strip .cc-container.st-looking .cc-qmark { animation:none; }
+.cc-walk-strip .cc-qmark { left:105px; top:12px; z-index:6; }
+.cc-walk-strip .cc-qmark svg { width:16px; height:22px; }
+.cc-walk-strip .cc-err,
+.cc-walk-strip .cc-container.st-error .cc-err { display:none; animation:none; opacity:0; }
+.cc-walk-strip .cat-status-note {
+  position:absolute; left:60px; top:-5px; z-index:6;
+  padding:4px 7px; border:1px solid var(--t-border-light, #c8b8a0); border-radius:5px;
+  color:var(--t-text-light, #8a7a68); background:var(--t-card, #fff);
+  font-family:inherit; font-size:12px; line-height:1.3; white-space:nowrap;
+  opacity:0; transform:translateX(-50%); pointer-events:none;
+}
+.cc-walk-strip .cc-container.st-error .cat-status-note { opacity:1; }
+.cc-walk-strip .spk svg polygon { fill:var(--cc-sparkle); }
+@keyframes ccCatGladStar { 0%,20%,70%,100%{opacity:0;transform:scale(.8)} 35%,55%{opacity:.65;transform:scale(1)} }
+
+@media(max-width:900px) {
+  .cc-walk-strip .cc-container { --cat-scene-scale:.4; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .cc-walk-strip .cc-container,
+  .cc-walk-strip .cc-container * { animation:none !important; transition:none !important; }
+}

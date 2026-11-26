@@ -4,7 +4,7 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),net=
 const {spawn}=require('node:child_process'),{once}=require('node:events');
 const assert=require('node:assert/strict'),AdmZip=require('adm-zip');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'memo-trae-closure-ui-'));
-const evidence=path.join(__dirname,'acceptance-evidence/trae-closure');fs.mkdirSync(evidence,{recursive:true});
+const evidence=path.resolve(process.env.MEMO_ACCEPTANCE_OUT || path.join(__dirname,'acceptance-evidence/trae-closure'));fs.mkdirSync(evidence,{recursive:true});
 app.setPath('userData',path.join(root,'profile'));app.disableHardwareAcceleration();
 const report={scope:'current product UI: Trae entry closed; adapter and historical data retained',data:'fictional isolated legacy settings.agent=trae and temporary SQLite database only',simulation:['synthetic CLI executables for all four adapters; one simulated Codex task; no real model/account calls','controlled renderer state injection only for stale-option fallback check'],startedAt:new Date().toISOString(),checks:[]};
 let window,child,base,logs='';

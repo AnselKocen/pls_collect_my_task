@@ -2,6 +2,9 @@
   const el = id => document.getElementById(id);
   const wizard = el('habitWishWizard'), entry = el('habitWishStart');
   const input = el('habitWishInput');
+  const parent = el('tagSummaryModal'), parentContent = parent.querySelector('.modal-content');
+  const dialog = wizard.querySelector('[role="dialog"]');
+  let returnFocus = entry;
   let state = fresh();
 
   function fresh() {
@@ -11,6 +14,7 @@
     const element = document.createElement(tag);element.className = className;element.textContent = text;return element;
   }
   function render() {
+    const focusWasInside = dialog.contains(document.activeElement);
     const labels = { wish: '1 / 3 · 一个愿望', purpose: '2 / 3 · 期待的变化', effort: '3 / 3 · 适合你的投入', generate: '正在准备你的卡池', done: '你的愿望，变成了30张小卡片' };
     el('habitWishStep').textContent = labels[state.step];
     const messages = el('habitWishMessages');messages.replaceChildren();
@@ -32,15 +36,46 @@
       });
     }
     el('habitWishForm').classList.toggle('hidden', state.pending || state.error !== '' || !(state.step === 'wish' || state.other));
-    el('habitWishInputLabel').textContent = state.step === 'wish' ? '你的愿望' : '补充你的想法';
+    el('habitWishInputLabel').textContent = state.step === 'wish' ? '你的计划' : '补充你的想法';
     input.placeholder = state.step === 'wish' ? '比如学英语、整理房间、开始画画…' : '写下更符合你的想法…';
-    el('habitWishSubmit').textContent = state.step === 'wish' ? '聊聊这个愿望' : '提交补充';
+    el('habitWishSubmit').textContent = state.step === 'wish' ? '聊聊这个计划' : '提交补充';
     el('habitWishSubmit').disabled = state.pending;
     el('habitWishError').classList.toggle('hidden', !state.error);
     el('habitWishErrorText').textContent = state.error;
     el('habitWishSuccess').classList.toggle('hidden', !state.pool);
     el('habitWishRestart').disabled = state.pending;
-    entry.querySelector('strong').textContent = state.wish ? '继续我的愿望对话' : '你最近想做什么？';
+    const generating = state.pending && state.step === 'generate';
+    const progress = el('habitWishProgress');
+    progress.classList.toggle('hidden', !generating && !state.error && !state.pool);
+    progress.classList.toggle('is-generating', generating);
+    progress.classList.toggle('is-error', Boolean(state.error));
+    progress.classList.toggle('is-complete', Boolean(state.pool));
+    el('habitWishProgressTitle').textContent = generating ? '正在生成习惯卡池' : state.error ? state.step === 'generate' ? '这次生成需要再试一下' : '对话暂时停了一下' : '专属习惯卡池已准备好';
+    el('habitWishProgressText').textContent = generating ? '正在把你的计划整理成30张小卡片，可以先做点别的。' : state.error ? state.error : '30张小习惯，陪你从今天开始。';
+    el('habitWishResume').textContent = state.pool ? '查看卡池' : state.error ? '返回对话重试' : '查看对话';
+    if (focusWasInside && !wizard.classList.contains('hidden') && (!dialog.contains(document.activeElement) || !document.activeElement.getClientRects().length)) {
+      el('habitWishHide').focus();
+    }
+  }
+
+  function open() {
+    if (parent.classList.contains('hidden')) return;
+    returnFocus = document.activeElement instanceof HTMLElement && parent.contains(document.activeElement) ? document.activeElement : entry;
+    wizard.classList.remove('hidden');render();
+    if (state.step === 'wish' && !state.pending) input.focus();
+    else el('habitWishHide').focus();
+    parentContent.inert = true;parentContent.setAttribute('aria-hidden', 'true');
+  }
+  function close(restoreFocus = true) {
+    const wasOpen = !wizard.classList.contains('hidden');
+    wizard.classList.add('hidden');parentContent.inert = false;parentContent.removeAttribute('aria-hidden');
+    if (wasOpen && restoreFocus && !parent.classList.contains('hidden')) {
+      (returnFocus?.isConnected ? returnFocus : entry).focus();
+    }
+  }
+  function viewPool() {
+    if (!state.pool) return;
+    close();showHabitPoolDetail(state.pool.id);
   }
 
   function choose(index) {
@@ -107,6 +142,9 @@
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage, wish: state.wish, purpose: state.purpose, effort: state.effort, requestId: state.requestId })
       });
+      // Receiving the accepted generation response is the point at which the
+      // conversation can shrink back into the parent pool's progress card.
+      if (stage === 'generate' && response.ok) close();
       const result = await readStream(response, (event, data) => {
         if (event === 'question' && state.current) { state.current.text = data.text;state.status = '正在整理回答选项…'; }
         else if (event === 'status') state.status = data.text;
@@ -129,11 +167,28 @@
     }
   }
 
-  entry.addEventListener('click', () => {
-    entry.classList.add('hidden');wizard.classList.remove('hidden');render();
-    if (state.step === 'wish') input.focus();
+  entry.addEventListener('click', open);
+  el('habitWishHide').addEventListener('click', () => close());
+  el('habitWishResume').addEventListener('click', () => state.pool ? viewPool() : open());
+  wizard.addEventListener('click', event => { if (event.target === wizard) close(); });
+  document.addEventListener('keydown', event => {
+    if (wizard.classList.contains('hidden')) return;
+    if (event.key === 'Escape') { event.preventDefault();event.stopPropagation();close();return; }
+    if (event.key !== 'Tab') return;
+    const controls = [...dialog.querySelectorAll('button:not(:disabled), textarea:not(:disabled), [tabindex="0"]')].filter(control => control.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (!first) { event.preventDefault();dialog.focus();return; }
+    if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) { event.preventDefault();last.focus(); }
+    else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) { event.preventDefault();first.focus(); }
   });
-  el('habitWishHide').addEventListener('click', () => { wizard.classList.add('hidden');entry.classList.remove('hidden');entry.focus(); });
+  document.addEventListener('focusin', () => {
+    if (!wizard.classList.contains('hidden') && !dialog.contains(document.activeElement)) el('habitWishHide').focus();
+  });
+  // Backdrop closing is shared by the app's modals. Observe the parent so both
+  // that path and its close button consistently dismiss the second layer.
+  new MutationObserver(() => {
+    if (parent.classList.contains('hidden')) close(false);
+  }).observe(parent, { attributes: true, attributeFilter: ['class'] });
   el('habitWishForm').addEventListener('submit', event => {
     event.preventDefault();if (state.pending || state.error) return;
     const text = input.value.trim();if (!text) { input.focus();return; }answer(text);
@@ -142,6 +197,7 @@
   el('habitWishRestart').addEventListener('click', () => {
     if (state.pending) return;state = fresh();input.value = '';render();input.focus();
   });
-  el('habitWishView').addEventListener('click', () => { if (state.pool) showHabitPoolDetail(state.pool.id); });
+  el('habitWishView').addEventListener('click', viewPool);
+  window.habitWishDialog = { close };
   render();
 })();

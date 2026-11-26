@@ -64,23 +64,55 @@ function requestError(detail,path,status) {
   return error;
 }
 
-async function api(path, opts = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  let res;
-  try { res = await fetch(path, { ...opts, headers }); }
-  catch(error) { throw requestError(error.message,path,0); }
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    const err=requestError(data.error || 'Request failed',path,res.status);
-    err.ccBusy=Boolean(data.busy);
-    if(err.ccBusy)showToast(err.message);
-    throw err;
-  }
-  return res.json();
+let ccOperationSequence = 0;
+function beginCatMutation(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  if (!['POST','PUT','DELETE'].includes(method)) return null;
+  let body = {};
+  try { if (typeof options.body === 'string') body = JSON.parse(options.body); } catch {}
+  if (!body || typeof body !== 'object') body = {};
+  const organizing = /^\/api\/(?:memos|tags|scheduled)(?:\/|$)/.test(path)
+    || /^\/api\/habit\/(?:pools|log|draw)(?:\/|$)/.test(path) && !path.endsWith('/generate')
+    || /^\/api\/cc\/(?:tag-suggestion|graph|weekly-digest)\//.test(path)
+    || path === '/api/settings' && ['tagOrder','tagTapes','tagEmojis'].some(key => key in body)
+    || /^\/api\/storage\/(?:backup|restore)$/.test(path);
+  if (!organizing || !window._ccActivity) return null;
+  const id = 'organize:' + ++ccOperationSequence;
+  return { id, token:window._ccActivity.begin(id,'sweeping',5) };
+}
+function finishCatMutation(activity, success) {
+  if (activity) window._ccActivity.end(activity.id,activity.token,{success});
 }
 
-// === CC control (populated by initCCScene) ===
-window._ccCtrl = { stop: () => {}, resume: () => {}, getPos: () => 600 };
+async function api(path, opts = {}) {
+  const activity = beginCatMutation(path,opts);
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    let res;
+    try { res = await fetch(path, { ...opts, headers }); }
+    catch(error) { throw requestError(error.message,path,0); }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const err=requestError(data.error || 'Request failed',path,res.status);
+      err.ccBusy=Boolean(data.busy);
+      if(err.ccBusy)showToast(err.message);
+      throw err;
+    }
+    const data = await res.json();
+    finishCatMutation(activity,!data?.error);
+    return data;
+  } catch (error) {
+    finishCatMutation(activity,false);
+    throw error;
+  }
+}
+
+// The model is ready before async app boot, so early task events are retained.
+window._ccCtrl = { stop: () => {}, resume: () => {}, getPos: () => 0, setState: () => {} };
+window._ccActivity = window.CCPixelCatController.create({
+  onChange(state) { window._ccCtrl.setState(state); }
+});
+window.addEventListener('cc-task-update',event => receiveCCTask(event.detail.task));
 
 
 let modalToastTimer = null;
@@ -130,6 +162,7 @@ function showConfirm(message, onConfirm) {
 let ccToastTimer = null;
 let _ccActiveTasks = 0;
 let _ccBubbleRaf = null;
+let _ccRemoteTask = null;
 function _updateBubblePos() {
   const bubble = document.getElementById('ccTaskBubble');
   const cc = document.querySelector('.cc-container');
@@ -145,14 +178,12 @@ function _updateBubblePos() {
 function _showCCBubble(text, isDone) {
   const bubble = document.getElementById('ccTaskBubble');
   if (!bubble) return;
+  bubble.title = text;
   if (isDone) {
-    window._ccCtrl.stop();
     bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>查看过程</button><button class="cc-task-bubble-close" id="ccBubbleClose">✕</button>`;
     document.getElementById('ccBubbleClose').addEventListener('click', () => {
       bubble.classList.add('hidden');
       cancelAnimationFrame(_ccBubbleRaf);
-      _ccActiveTasks = 0;
-      window._ccCtrl.resume();
       _scheduleCCIdle();
     });
   } else {
@@ -161,6 +192,25 @@ function _showCCBubble(text, isDone) {
   bubble.classList.remove('hidden');
   cancelAnimationFrame(_ccBubbleRaf);
   _ccBubbleRaf = requestAnimationFrame(_updateBubblePos);
+}
+
+function receiveCCTask(task) {
+  const previous = _ccRemoteTask;
+  _ccRemoteTask = task ? { id:task.id, status:task.status, stage:task.stage, name:task.name } : null;
+  if (task?.status === 'running') {
+    const state = window.CCPixelCatController.stateForTask(task);
+    for (const [name,token] of _ccTaskTokens) window._ccActivity.update('request:'+name,state,token);
+  }
+  window._ccActivity.applyTask(task);
+  if (task?.status === 'running') {
+    clearTimeout(_ccIdleTimer);clearTimeout(_ccIdleHideTimer);
+    if (previous?.id !== task.id || previous.status !== task.status || previous.stage !== task.stage || previous.name !== task.name) {
+      _showCCBubble(task.stage || '正在' + task.name,false);
+    }
+  } else if (task && previous?.id === task.id && previous.status === 'running') {
+    _showCCBubble(task.status === 'completed' ? '已完成：' + task.name : task.error || '这次没完成，请再试一次',true);
+    _scheduleCCIdle();
+  }
 }
 
 const _CC_IDLE_PHRASES = [
@@ -178,7 +228,7 @@ function _scheduleCCIdle() {
   clearTimeout(_ccIdleTimer);
   _ccIdleTimer = setTimeout(() => {
     const bubble = document.getElementById('ccTaskBubble');
-    if (_ccActiveTasks === 0 && bubble && bubble.classList.contains('hidden')) {
+    if (!window._ccActivity.isBusy() && window._ccActivity.getState() === 'idle' && bubble && bubble.classList.contains('hidden')) {
       const phrase = _CC_IDLE_PHRASES[Math.floor(Math.random() * _CC_IDLE_PHRASES.length)];
       bubble.innerHTML = `<span>${phrase}</span>`;
       bubble.classList.remove('hidden');
@@ -186,7 +236,7 @@ function _scheduleCCIdle() {
       _ccBubbleRaf = requestAnimationFrame(_updateBubblePos);
       clearTimeout(_ccIdleHideTimer);
       _ccIdleHideTimer = setTimeout(() => {
-        if (_ccActiveTasks === 0) {
+        if (!window._ccActivity.isBusy()) {
           bubble.classList.add('hidden');
           cancelAnimationFrame(_ccBubbleRaf);
         }
@@ -199,6 +249,7 @@ function _scheduleCCIdle() {
 }
 
 const _ccTaskSet = new Set();
+const _ccTaskTokens = new Map();
 
 function showCCTask(taskName) {
   if (_ccTaskSet.has(taskName)) return;
@@ -207,13 +258,15 @@ function showCCTask(taskName) {
   clearTimeout(_ccIdleTimer);
   clearTimeout(_ccIdleHideTimer);
   _ccActiveTasks++;
-  if (_ccActiveTasks === 1) window._ccCtrl.stop();
+  _ccTaskTokens.set(taskName,window._ccActivity.begin('request:'+taskName,'thinking',20));
   _showCCBubble('正在' + taskName + ' =(¯꒳¯ )=', false);
 }
 
 function hideCCTask(taskName,success=true) {
   if (!_ccTaskSet.has(taskName)) return;
   _ccTaskSet.delete(taskName);
+  window._ccActivity.end('request:'+taskName,_ccTaskTokens.get(taskName),{success});
+  _ccTaskTokens.delete(taskName);
   renderAgentControl();
   syncAIStatus().catch(() => {});
   _ccActiveTasks = Math.max(0, _ccActiveTasks - 1);
@@ -255,7 +308,10 @@ async function syncAIStatus() {
     const status = await api('/api/ai/status');
     if (sequence === agentStatusSequence && !agentSwitchPending) {
       aiState = status;settings.agent = status.agent;agentStatusKnown = true;renderAgentControl();
-      if (status.busy && _ccTaskSet.size) _showCCBubble(taskWaitText(status),false);
+      window._ccActivity.setBusy(status);
+      if (status.busy && window._ccActivity.snapshot().activities.some(activity => activity.id === 'backend-busy')) {
+        _showCCBubble(taskWaitText(status),false);
+      }
     }
     return status;
   } catch (error) {
@@ -294,7 +350,8 @@ document.getElementById('agentSelect').addEventListener('change',async event => 
   agentSwitchPending = true;++agentStatusSequence;renderAgentControl();
   try {
     settings = await api('/api/settings',{method:'PUT',body:JSON.stringify({agent:next})});
-    showToast('AI 助手已切换为 '+next+' ✓');
+    const name = Array.from(event.target.options).find(option => option.value === next).textContent;
+    showToast('AI 助手已切换为 '+name+' ✓');
   } catch (error) { if(!error.ccBusy)showToast(error.message); }
   finally {
     agentSwitchPending = false;
@@ -476,6 +533,7 @@ function renderFilterTags() {
   container.innerHTML = html;
 
   container.querySelectorAll('.filter-tag').forEach(chip => {
+    if (chip.dataset.tag !== '__all__') chip.title = chip.dataset.tag;
     chip.addEventListener('click', () => {
       const tag = chip.dataset.tag;
       if (tag === '__all__') { filterAllSelected = true; filterSelectedTags = []; }
@@ -573,6 +631,7 @@ function showMemoDetail(id) {
   document.getElementById('memoDetailContent').textContent = memo.content;
   document.getElementById('memoDetailTime').textContent = formatTime(memo.createdAt);
   document.getElementById('memoDetailModal').classList.remove('hidden');
+  document.getElementById('memoDetailContent').scrollTop = 0;
 }
 
 document.getElementById('memoDetailClose').addEventListener('click', () => { document.getElementById('memoDetailModal').classList.add('hidden'); });
@@ -817,7 +876,9 @@ async function editMemo(id) {
     return `<label class="memo-edit-tag-label"><input type="checkbox" value="${escapeHtml(t)}" ${checked}> ${getTagEmoji(t)} ${escapeHtml(t)}</label>`;
   }).join('');
   const editDiv = document.createElement('div');
-  editDiv.innerHTML = `<textarea class="memo-edit-input">${memo.content}</textarea><div class="memo-edit-tag-picker">${tagCheckboxes}</div><div class="memo-edit-actions"><button class="memo-edit-save">保存</button><button class="memo-edit-cancel">取消</button></div>`;
+  editDiv.innerHTML = `<textarea class="memo-edit-input"></textarea><div class="memo-edit-tag-picker">${tagCheckboxes}</div><div class="memo-edit-actions"><button class="memo-edit-save">保存</button><button class="memo-edit-cancel">取消</button></div>`;
+  // Memo content is plain text, including HTML-looking text and textarea end tags.
+  editDiv.querySelector('textarea').value = memo.content;
   card.querySelector('.memo-card-body').insertBefore(editDiv, card.querySelector('.memo-card-meta'));
   editDiv.querySelectorAll('.memo-edit-tag-label input').forEach(cb => {
     cb.addEventListener('change', () => {
@@ -864,9 +925,7 @@ async function togglePin(id) {
 let searchSequence = 0;
 let searchTimer;
 const updateSearchHint = () => {
-  document.getElementById('searchHint').textContent = document.getElementById('searchMode').value === 'fuzzy'
-    ? '关键词可分开、无序出现，支持忽略标点与空格；不使用 AI 或语义推断。'
-    : '连续文字匹配，忽略大小写与全角差异；查找不使用 AI。';
+  document.getElementById('searchHint').textContent = '';
 };
 document.getElementById('searchInput').addEventListener('input', () => {
   const keyword = document.getElementById('searchInput').value.trim();
@@ -882,6 +941,7 @@ document.getElementById('searchClearBtn').addEventListener('click',clearSearch);
 
 function clearSearch() {
   ++searchSequence;clearTimeout(searchTimer);
+  window._ccActivity.cancel('local-search');
   document.getElementById('searchInput').value = '';
   document.getElementById('searchClearBtn').classList.add('hidden');
   document.getElementById('clearSearchBtn').classList.add('hidden');
@@ -892,6 +952,8 @@ async function doSearch() {
   const keyword = document.getElementById('searchInput').value.trim();
   if (!keyword) return clearSearch();
   const sequence = ++searchSequence;
+  const activity = window._ccActivity.begin('local-search','looking',5);
+  let success = true;
   const params = new URLSearchParams({keyword,mode:document.getElementById('searchMode').value});
   if(filterSelectedTags.length)params.set('tags',JSON.stringify(filterSelectedTags));
   try {
@@ -900,8 +962,14 @@ async function doSearch() {
     filteredMemos = results;
     document.getElementById('clearSearchBtn').classList.remove('hidden');
     renderKanban();
-    document.getElementById('searchHint').textContent = `找到 ${results.length} 条便签 · 本地${document.getElementById('searchMode').value === 'fuzzy' ? '模糊' : '精确'}匹配`;
-  } catch(error) { if(sequence === searchSequence)showToast(error.message); }
+    document.getElementById('searchHint').textContent = `找到 ${results.length} 条便签`;
+  } catch(error) {
+    success = false;
+    if(sequence === searchSequence)showToast(error.message);
+  } finally {
+    if (sequence === searchSequence) window._ccActivity.end('local-search',activity,{success,feedback:!success});
+    else window._ccActivity.cancel('local-search',activity);
+  }
 }
 
 function localDateKey(date = new Date()) {
@@ -1191,9 +1259,10 @@ function renderGraph(data) {
   if(typeof d3==='undefined'){console.error('[Graph] D3 is not loaded');container.textContent='图谱还没准备好哦～检查一下网络，再刷新试试吧～';return;}
   const view=window.memoGraphLayout.makeView(data,graphCollapsed);
   const width=container.clientWidth || 700,height=container.clientHeight || 460;
+  const columns=Math.max(1,Math.round(Math.sqrt(view.clusters.length*width/height)));
+  const rows=Math.ceil(view.clusters.length/columns);
   const anchors=new Map(view.clusters.map((cluster,index)=>{
-    const angle=2*Math.PI*index/Math.max(1,view.clusters.length)-Math.PI/2;
-    return [cluster.id,{x:width/2+(view.clusters.length===1 ? 0 : width*.27*Math.cos(angle)),y:height/2+(view.clusters.length===1 ? 0 : height*.27*Math.sin(angle))}];
+    return [cluster.id,{x:width*(index%columns+.5)/columns,y:height*(Math.floor(index/columns)+.5)/rows}];
   }));
   view.nodes.forEach(node=>{const anchor=anchors.get(node.clusterId) || {x:width/2,y:height/2};node.x=anchor.x+(hash(node.id)%31)-15;node.y=anchor.y+(hash(node.id+'y')%31)-15;});
   try {
@@ -1207,11 +1276,21 @@ function renderGraph(data) {
       const characters=Array.from(edge.relation || '');
       return characters.length>12 ? characters.slice(0,12).join('')+'…' : characters.join('');
     });
-    const labels=scene.append('g').selectAll('text').data(graphCollapsed ? [] : view.clusters).join('text').attr('class','graph-cluster-label').text(cluster=>cluster.title);
-    graphSimulation=d3.forceSimulation(view.nodes)
+    const headingNodes=(graphCollapsed ? [] : view.clusters).map(cluster=>({...cluster,...anchors.get(cluster.id)}));
+    const showCluster=(event,cluster)=>renderGraphSummaryPanel(data,{label:cluster.title,memoIds:cluster.memoIds.length ? cluster.memoIds : [...new Set(view.nodes.filter(item=>item.clusterId===cluster.id).flatMap(item=>item.memoIds))]});
+    const labels=scene.append('g').selectAll('g').data(headingNodes).join('g').attr('class','graph-cluster-heading')
+      .attr('role','button').attr('tabindex',0).attr('aria-label',cluster=>cluster.title)
+      .on('click',showCluster).on('keydown',(event,cluster)=>{if(['Enter',' '].includes(event.key)){event.preventDefault();showCluster(event,cluster);}});
+    labels.append('title').text(cluster=>cluster.title);
+    const headingText=labels.append('text').attr('class','graph-cluster-label').attr('text-anchor','middle');
+    const fitText=(selection,text,maxChars,maxWidth)=>selection.each(function(item){
+      const element=this;
+      element.textContent=window.memoGraphLayout.fitLabel(text(item),maxChars,maxWidth,value=>{element.textContent=value;return element.getComputedTextLength();});
+    });
+    fitText(headingText,cluster=>cluster.title,12,Math.min(156,width-32));
+    graphSimulation=d3.forceSimulation(view.nodes).alphaDecay(.04)
       .force('link',d3.forceLink(view.edges).id(node=>node.id).distance(graphCollapsed ? 130 : 85))
       .force('charge',d3.forceManyBody().strength(graphCollapsed ? -300 : -110))
-      .force('collision',d3.forceCollide().radius(graphCollapsed ? 42 : 24))
       .force('x',d3.forceX(node=>(anchors.get(node.clusterId) || {x:width/2}).x).strength(.16))
       .force('y',d3.forceY(node=>(anchors.get(node.clusterId) || {y:height/2}).y).strength(.16));
     let selectedNodeId=null;
@@ -1220,26 +1299,40 @@ function renderGraph(data) {
       link.classed('is-highlighted',connected);
       linkLabel.classed('is-visible',connected);
     };
-    const selectNode=(event,node)=>{selectedNodeId=node.id;highlightRelations(node.id);scene.selectAll('.graph-node').classed('selected',item=>item.id===node.id);renderGraphSummaryPanel(data,node);};
-    const node=scene.append('g').selectAll('g').data(view.nodes).join('g').attr('class','graph-node').attr('role','button').attr('tabindex',0).attr('aria-label',item=>`${item.label}，查看来源便签`)
+    const selectNode=(event,node)=>{selectedNodeId=node.id;highlightRelations(node.id);scene.selectAll('.graph-node').classed('selected',item=>item.id===node.id).attr('aria-pressed',item=>String(item.id===node.id));renderGraphSummaryPanel(data,node);};
+    const node=scene.append('g').selectAll('g').data(view.nodes).join('g').attr('class','graph-node').attr('role','button').attr('tabindex',0).attr('aria-pressed','false').attr('aria-label',item=>`${item.label}，查看来源便签`)
       .on('click',selectNode).on('keydown',(event,item)=>{if(['Enter',' '].includes(event.key)){event.preventDefault();selectNode(event,item);}})
       .on('mouseenter',(event,item)=>highlightRelations(item.id)).on('mouseleave',()=>highlightRelations(selectedNodeId))
       .on('focus',(event,item)=>highlightRelations(item.id)).on('blur',()=>highlightRelations(selectedNodeId))
       .call(d3.drag().on('start',(event,item)=>{if(!event.active)graphSimulation.alphaTarget(.2).restart();item.fx=item.x;item.fy=item.y;}).on('drag',(event,item)=>{item.fx=event.x;item.fy=event.y;}).on('end',(event,item)=>{if(!event.active)graphSimulation.alphaTarget(0);item.fx=null;item.fy=null;}));
     const fills=['#d1fae5','#fce7f3','#dbeafe','#fef3c7','#ede9fe','#fef9c3'],strokes=['#065f46','#9d174d','#1e40af','#92400e','#5b21b6','#854d0e'];
     const color=item=>view.clusters.findIndex(cluster=>cluster.id===item.clusterId)%fills.length;
-    node.append('circle').attr('r',item=>graphCollapsed ? 12+Math.min(12,Math.sqrt(item.nodeCount || 1)*2) : 7).attr('fill',item=>fills[color(item)]).attr('stroke',item=>strokes[color(item)]).attr('stroke-width',2);
+    const radius=item=>graphCollapsed ? 12+Math.min(12,Math.sqrt(item.nodeCount || 1)*2) : 7;
+    node.style('--graph-node-color',item=>strokes[color(item)]);
+    node.append('circle').attr('class','graph-node-halo').attr('r',item=>radius(item)+6).attr('fill',item=>fills[color(item)]).attr('stroke',item=>strokes[color(item)]).attr('stroke-width',1).attr('aria-hidden','true');
+    node.append('circle').attr('class','graph-node-dot').attr('r',radius).attr('fill',item=>fills[color(item)]).attr('stroke',item=>strokes[color(item)]).attr('stroke-width',2);
     node.append('title').text(item=>item.label);
-    node.append('text').attr('dx',item=>graphCollapsed ? 28 : 12).attr('dy',4).text(item=>Array.from(item.label).length>14 ? Array.from(item.label).slice(0,14).join('')+'…' : item.label);
+    fitText(node.append('text').attr('dx',item=>graphCollapsed ? 28 : 12).attr('dy',4),item=>item.label,graphCollapsed ? 12 : 8,Math.min(graphCollapsed ? 156 : 100,width-64));
+    // Measure after applying actual SVG fonts. Bounds include circle and text,
+    // and headings participate in the same rectangle separation as nodes.
+    node.each(function(item){const box=this.getBBox();Object.assign(item,{left:box.x-2,right:box.x+box.width+2,top:box.y-2,bottom:box.y+box.height+2});});
+    labels.each(function(item){const box=this.getBBox();Object.assign(item,{left:box.x-2,right:box.x+box.width+2,top:box.y-2,bottom:box.y+box.height+2});});
     const centroid=id=>{const members=view.nodes.filter(item=>item.clusterId===id);return members.length ? {x:d3.mean(members,item=>item.x),y:d3.mean(members,item=>item.y)} : anchors.get(id);};
-    graphSimulation.on('tick',()=>{
-      view.nodes.forEach(item=>{item.x=Math.max(25,Math.min(width-25,item.x));item.y=Math.max(25,Math.min(height-25,item.y));});
+    const draw=()=>{
+      headingNodes.forEach(cluster=>{
+        const members=view.nodes.filter(item=>item.clusterId===cluster.id);
+        cluster.x+=(centroid(cluster.id).x-cluster.x)*.08;
+        cluster.y+=((members.length ? d3.min(members,item=>item.y)-32 : anchors.get(cluster.id).y-32)-cluster.y)*.08;
+      });
+      window.memoGraphLayout.separateLabels([...view.nodes,...headingNodes],width,height);
       link.attr('x1',edge=>edge.source.x).attr('y1',edge=>edge.source.y).attr('x2',edge=>edge.target.x).attr('y2',edge=>edge.target.y);
       linkLabel.attr('x',edge=>(edge.source.x+edge.target.x)/2).attr('y',edge=>(edge.source.y+edge.target.y)/2);
       node.attr('transform',item=>`translate(${item.x},${item.y})`);
-      labels.attr('x',cluster=>centroid(cluster.id).x).attr('y',cluster=>{const members=view.nodes.filter(item=>item.clusterId===cluster.id);return members.length ? Math.max(16,d3.min(members,item=>item.y)-28) : anchors.get(cluster.id).y-28;});
+      labels.attr('transform',cluster=>`translate(${cluster.x},${cluster.y})`);
       themeLine.attr('x1',edge=>centroid(edge.source).x).attr('y1',edge=>centroid(edge.source).y).attr('x2',edge=>centroid(edge.target).x).attr('y2',edge=>centroid(edge.target).y);
-    });
+    };
+    graphSimulation.on('tick',draw);
+    draw();
     graphResizeObserver=new ResizeObserver(()=>{if(Math.abs(container.clientWidth-width)>1 || Math.abs(container.clientHeight-height)>1)renderGraph(data);});
     graphResizeObserver.observe(container);
   } catch(error){console.error(error);container.textContent='图谱这次没能画出来哦～请刷新后再试一次吧～';}
@@ -1515,6 +1608,7 @@ document.getElementById('btnHabitTrack').addEventListener('click', async () => {
 });
 
 document.getElementById('tagSummaryClose').addEventListener('click', () => {
+  window.habitWishDialog?.close(false);
   document.getElementById('tagSummaryModal').classList.add('hidden');
 });
 
@@ -1541,7 +1635,7 @@ async function loadHabitPools() {
 function renderHabitPools() {
   const container = document.getElementById('habitPoolList');
   if (habitPools.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">还没有卡池，聊聊你的愿望，或上传一本书开始吧 🌱</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px;text-align:center;padding:20px 0">还没有卡池，聊聊近期计划，或用一份素材开始吧 🌱</p>';
     return;
   }
   container.innerHTML = habitPools.map(pool => `
@@ -1622,62 +1716,130 @@ document.getElementById('habitPoolDetailNameSave').addEventListener('click', asy
   } catch (err) { console.error(err); showToast(err.message); }
 });
 
-// Upload
+// Unified material editor: keep text and file drafts while choosing one source.
 const habitUploadArea = document.getElementById('habitUploadArea');
 const habitFileInput = document.getElementById('habitFileInput');
+const habitMaterialText = document.getElementById('habitMaterialText');
+let habitMaterialSubmitting = false, habitMaterialFile = null, habitMaterialMode = 'text';
 
-habitUploadArea.addEventListener('click', () => habitFileInput.click());
-habitUploadArea.addEventListener('dragover', e => { e.preventDefault(); habitUploadArea.classList.add('dragover'); });
-habitUploadArea.addEventListener('dragleave', () => habitUploadArea.classList.remove('dragover'));
-habitUploadArea.addEventListener('drop', e => {
-  e.preventDefault(); habitUploadArea.classList.remove('dragover');
-  if (e.dataTransfer.files.length) uploadHabitZip(e.dataTransfer.files[0]);
+function renderHabitMaterialInput() {
+  const usesFile = habitMaterialMode === 'file' && Boolean(habitMaterialFile);
+  document.getElementById('habitMaterialModes').classList.toggle('hidden', !habitMaterialFile);
+  document.getElementById('habitUseText').setAttribute('aria-pressed', String(!usesFile));
+  document.getElementById('habitUseFile').setAttribute('aria-pressed', String(usesFile));
+  document.getElementById('habitMaterialTextEditor').classList.toggle('hidden', usesFile);
+  document.getElementById('habitMaterialFilePreview').classList.toggle('hidden', !usesFile);
+  document.getElementById('habitMaterialFileName').textContent = habitMaterialFile?.name || '';
+  document.getElementById('habitMaterialFileMeta').textContent = habitMaterialFile
+    ? `${habitMaterialFile.name.split('.').at(-1).toUpperCase()} · ${habitMaterialFile.size < 1024 * 1024 ? Math.max(1, Math.ceil(habitMaterialFile.size / 1024)) + ' KB' : (habitMaterialFile.size / (1024 * 1024)).toFixed(1) + ' MB'}` : '';
+  document.getElementById('habitMaterialPick').textContent = habitMaterialFile ? '📎 更换素材' : '📎 上传素材';
+  document.getElementById('habitMaterialModeHint').textContent = usesFile
+    ? habitMaterialText.value.trim() ? '本次使用文件生成，已输入的文字会保留。' : '本次使用所选文件生成。'
+    : habitMaterialFile ? '本次使用文字生成，已选文件会保留。' : '也可以把文件拖到这个框里。';
+  habitUploadArea.setAttribute('aria-busy', String(habitMaterialSubmitting));
+  for (const id of ['habitMaterialPick', 'habitMaterialRemove', 'habitUseText', 'habitUseFile']) document.getElementById(id).disabled = habitMaterialSubmitting;
+  habitMaterialText.readOnly = habitMaterialSubmitting;
+  document.getElementById('habitMaterialSubmit').disabled = habitMaterialSubmitting || !(usesFile || habitMaterialText.value.trim());
+}
+
+function habitMaterialFileError(file) {
+  if (!/\.(txt|zip|docx?|pdf)$/i.test(file.name)) return '请选择 TXT、ZIP、Word 或 PDF 素材';
+  if (file.size > 20 * 1024 * 1024) return '素材文件不能超过20 MB，请选一份小一点的素材';
+  if (!file.size) return '这份文件是空的，请换一份有内容的素材';
+  return '';
+}
+
+function selectHabitMaterialFile(file) {
+  if (habitMaterialSubmitting) return;
+  const error = habitMaterialFileError(file);
+  if (error) { habitMaterialError(error);return; }
+  habitMaterialError();habitMaterialFile = file;habitMaterialMode = 'file';renderHabitMaterialInput();
+}
+
+document.getElementById('habitMaterialPick').addEventListener('click', () => { if (!habitMaterialSubmitting) habitFileInput.click(); });
+document.getElementById('habitMaterialRemove').addEventListener('click', () => {
+  if (habitMaterialSubmitting) return;
+  habitMaterialFile = null;habitMaterialMode = 'text';habitFileInput.value = '';
+  habitMaterialError();renderHabitMaterialInput();habitMaterialText.focus();
+});
+document.getElementById('habitUseText').addEventListener('click', () => {
+  if (habitMaterialSubmitting) return;
+  habitMaterialMode = 'text';habitMaterialError();renderHabitMaterialInput();habitMaterialText.focus();
+});
+document.getElementById('habitUseFile').addEventListener('click', () => {
+  if (habitMaterialSubmitting || !habitMaterialFile) return;
+  habitMaterialMode = 'file';habitMaterialError();renderHabitMaterialInput();
+});
+habitMaterialText.addEventListener('input', () => { habitMaterialError();renderHabitMaterialInput(); });
+habitUploadArea.addEventListener('dragover', event => {
+  if (!event.dataTransfer.types.includes('Files')) return;
+  event.preventDefault();if (!habitMaterialSubmitting) habitUploadArea.classList.add('dragover');
+});
+habitUploadArea.addEventListener('dragleave', event => { if (!habitUploadArea.contains(event.relatedTarget)) habitUploadArea.classList.remove('dragover'); });
+habitUploadArea.addEventListener('drop', event => {
+  if (!event.dataTransfer.files.length) return;
+  event.preventDefault();habitUploadArea.classList.remove('dragover');
+  if (habitMaterialSubmitting) return;
+  if (event.dataTransfer.files.length !== 1) { habitMaterialError('一次请选择一份素材文件');return; }
+  selectHabitMaterialFile(event.dataTransfer.files[0]);
 });
 habitFileInput.addEventListener('change', () => {
-  if (habitFileInput.files.length) uploadHabitZip(habitFileInput.files[0]);
+  if (habitFileInput.files.length) selectHabitMaterialFile(habitFileInput.files[0]);
+  habitFileInput.value = '';
 });
 
-async function uploadHabitZip(file) {
-  if (!file.name.endsWith('.zip')) { showToast('请上传ZIP文件'); return; }
-  if (await checkCCAvailable()) return;
-  if (await checkCCBusy()) return;
-  const progress = document.getElementById('habitUploadProgress');
-  const text = progress.querySelector('.habit-progress-text');
-  progress.classList.remove('hidden');
-  habitUploadArea.classList.add('hidden');
-  habitGenerating = true;
-  text.textContent = '正在总结习惯...';
+habitUploadArea.addEventListener('submit', event => {
+  event.preventDefault();void generateHabitMaterial();
+});
 
-  const formData = new FormData();
-  formData.append('zipFile', file);
-
-  try {
-    showCCTask('生成习惯卡池');
-
-    const res = await fetch('/api/habit/pools/generate', { method: 'POST', body: formData });
-    const data = await res.json();
-
-    hideCCTask('生成习惯卡池',res.ok);
-    habitGenerating = false;
-
-    if (data.busy) {
-      console.error('[Habit generation]',data.error);showToast(window.memoMessages.errorMessage(data.error,settings.agent));
-    } else if (data.error) {
-      console.error('[Habit generation]',data.error);showToast(window.memoMessages.errorMessage(data.error,settings.agent));
-    } else {
-      showToast('🎉 卡池生成成功～');
-      loadHabitPools();
-    }
-  } catch (err) {
-    hideCCTask('生成习惯卡池',false);
-    habitGenerating = false;
-    showToast('这次没能读到文件哦～请重新上传试试吧～');
-    console.error(err);
-  }
-  progress.classList.add('hidden');
-  habitUploadArea.classList.remove('hidden');
-  habitFileInput.value = '';
+function habitMaterialError(message = '') {
+  const error = document.getElementById('habitMaterialError');
+  error.textContent = message;error.classList.toggle('hidden', !message);
+  if (message) showToast(message);
 }
+
+async function generateHabitMaterial() {
+  if (habitMaterialSubmitting) return;
+  habitMaterialError();
+  const file = habitMaterialMode === 'file' ? habitMaterialFile : null;
+  const text = file ? '' : habitMaterialText.value.trim();
+  if (file && habitMaterialFileError(file)) { habitMaterialError(habitMaterialFileError(file));return; }
+  if (!file && (!text || text.length > 200000)) {
+    habitMaterialError(text ? '文字不能超过200000字，请缩短后再试' : '请先粘贴文字或选择一份素材');habitMaterialText.focus();return;
+  }
+  habitMaterialSubmitting = true;renderHabitMaterialInput();
+  const progress = document.getElementById('habitUploadProgress');
+  let started = false, success = false;
+  try {
+    if (await checkCCAvailable() || await checkCCBusy()) return;
+    habitGenerating = true;
+    progress.classList.remove('hidden');habitUploadArea.classList.add('hidden');
+    progress.querySelector('.habit-progress-text').textContent = '正在生成习惯卡池…';
+    showCCTask('生成习惯卡池');started = true;
+    const options = { method: 'POST' };
+    if (file) { const body = new FormData();body.append('materialFile', file);options.body = body; }
+    else { options.headers = { 'Content-Type': 'application/json' };options.body = JSON.stringify({ text, sourceName: '粘贴文字' }); }
+    const res = await fetch('/api/habit/pools/generate', options);
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      console.error('[Habit generation]', data.error);
+      habitMaterialError([400, 413].includes(res.status) ? data.error || '这份素材暂时无法读取，请换一份试试' : window.memoMessages.errorMessage(data.error, settings.agent));return;
+    }
+    if (!data.pool) throw new Error('Missing generated pool');
+    success = true;
+    if (file) { habitMaterialFile = null;habitMaterialMode = 'text'; }
+    else habitMaterialText.value = '';
+    await loadHabitPools();showToast(data.pool.sourceTruncated ? '🎉 卡池生成成功～素材较长，已使用前20万字生成' : '🎉 卡池生成成功～');
+  } catch (err) {
+    habitMaterialError('这次生成没能完成，素材还在，可以再试一次');
+    console.error(err);
+  } finally {
+    if (started) hideCCTask('生成习惯卡池', success);
+    habitGenerating = false;habitMaterialSubmitting = false;
+    progress.classList.add('hidden');habitUploadArea.classList.remove('hidden');renderHabitMaterialInput();
+  }
+}
+renderHabitMaterialInput();
 
 async function deleteHabitPool(id) {
   showConfirm('确定删除这个卡池？', async () => {
@@ -1689,7 +1851,7 @@ async function deleteHabitPool(id) {
 function renderDrawPoolPicker() {
   const container = document.getElementById('habitDrawPoolPicker');
   if (habitPools.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-light);font-size:13px">还没有卡池哦～先聊聊愿望或上传一本书，做一组自己的习惯卡吧～</p>';
+    container.innerHTML = '<p style="color:var(--text-light);font-size:13px">还没有卡池哦～先聊聊计划或上传素材，做一组自己的习惯卡吧～</p>';
     document.getElementById('habitDrawBtn').disabled = true;
     return;
   }
@@ -1878,7 +2040,8 @@ document.getElementById('habitCalNext').addEventListener('click', () => {
 
 // === Settings ===
 document.getElementById('settingsToggle').addEventListener('click', () => {
-  document.getElementById('settingsSection').classList.toggle('section-collapsed');
+  const collapsed = document.getElementById('settingsSection').classList.toggle('section-collapsed');
+  document.getElementById('settingsToggle').setAttribute('aria-expanded',String(!collapsed));
 });
 
 const themeEmojis = {
@@ -2265,12 +2428,19 @@ let storageWorking = false;
 const storageMessage = message => { document.getElementById('storageMessage').textContent = message; };
 
 async function storageRequest(url, options = {}) {
-  let response;
-  try { response = await fetch(url, { ...options, headers: { 'X-Memo-Storage':'1', ...options.headers } }); }
-  catch(error) { throw requestError(error.message,url,0); }
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw requestError(data.error || '数据操作失败',url,response.status);
-  return data;
+  const activity = beginCatMutation(url,options);
+  try {
+    let response;
+    try { response = await fetch(url, { ...options, headers: { 'X-Memo-Storage':'1', ...options.headers } }); }
+    catch(error) { throw requestError(error.message,url,0); }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw requestError(data.error || '数据操作失败',url,response.status);
+    finishCatMutation(activity,true);
+    return data;
+  } catch (error) {
+    finishCatMutation(activity,false);
+    throw error;
+  }
 }
 
 async function loadStorageStatus() {
@@ -2425,80 +2595,128 @@ document.querySelectorAll('.modal').forEach(modal => {
 function initCCScene() {
   const cc = document.getElementById('ccScene');
   if (!cc) return;
-  const eyesNormal = document.getElementById('sceneEyesNormal');
-  const eyesGtLt = document.getElementById('sceneEyesGtLt');
-  const eyesCaret = document.getElementById('sceneEyesCaret');
-  const eyesXx = document.getElementById('sceneEyesXx');
-  const thinkTxt = document.getElementById('sceneThinkTxt');
-
-  const STATES = ['idle','thinking','coding','looking','sweeping','error','happy'];
-  const THOUGHTS = ['{ }','</>','...','fn()','0x1','>>>','npm','git','bug?'];
-  let WALK_MIN = 520, WALK_MAX = 900, WALK_STEP = 70;
-  let walkPos = 540, walkDir = 1, stateTimer = null;
-
+  window.CCPixelCat.mount(cc);
   const strip = cc.parentElement;
-  if (strip) {
-    const mainEl = strip.closest('.main');
-    const totalW = mainEl ? mainEl.offsetWidth : strip.offsetWidth;
-    const stripW = strip.offsetWidth;
-    WALK_MIN = Math.floor(totalW * 0.55);
-    WALK_MAX = stripW - 80;
-    if (WALK_MAX <= WALK_MIN) { WALK_MIN = 200; WALK_MAX = 600; }
-    WALK_STEP = Math.max(50, Math.floor((WALK_MAX - WALK_MIN) / 5));
-    walkPos = WALK_MIN + 20;
-  }
-
-  function setEyes(type) {
-    eyesNormal.style.display = type === 'normal' ? 'flex' : 'none';
-    eyesXx.style.display = type === 'x' ? 'flex' : 'none';
-    const useGtLt = Math.random() > 0.5;
-    eyesGtLt.style.display = (type === 'happy' && useGtLt) ? 'flex' : 'none';
-    eyesCaret.style.display = (type === 'happy' && !useGtLt) ? 'flex' : 'none';
-  }
-
-  function setState(state) {
-    STATES.forEach(s => cc.classList.remove('st-' + s));
-    cc.classList.add('st-' + state);
-    if (state === 'error') setEyes('x');
-    else if (state === 'happy') setEyes('happy');
-    else setEyes('normal');
-    if (state === 'thinking') thinkTxt.textContent = THOUGHTS[Math.floor(Math.random() * THOUGHTS.length)];
-    if (state === 'looking') {
-      const c = Math.random() > 0.5 ? '#4888d8' : '#e8c030';
-      cc.querySelectorAll('.qr').forEach(r => r.setAttribute('fill', c));
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const labels = { idle:'休息中', thinking:'思考中', coding:'工作中', looking:'查找中', sweeping:'整理中', error:'遇到问题', happy:'开心' };
+  let walkPos = 0, paused = false, bounds, geometryKey = '';
+  const idlePlan = window.CCPixelCatIdle.create({
+    now:() => performance.now(),
+    onUpdate(plan) {
+      walkPos = plan.position;cc.style.left = walkPos+'px';
+      const record = window.CCPixelCat.mount(cc);
+      if (plan.phase === 'walk') {
+        cc.classList.toggle('flip',plan.direction > 0);
+        if (record.state !== 'walk') window.CCPixelCat.setState(cc,'walk');
+      } else {
+        if (record.state !== 'idle') window.CCPixelCat.setState(cc,'idle');
+        window.CCPixelCat.setIdleAction(cc,plan.action?.name || 'rest',plan.action?.startedAt);
+      }
     }
-  }
+  });
 
-  function walkCycleStep() {
-    cc.classList.add('walking');
-    let nextPos = walkPos + (walkDir * WALK_STEP);
-    if (nextPos > WALK_MAX) { nextPos = WALK_MAX; walkDir = -1; }
-    if (nextPos < WALK_MIN) { nextPos = WALK_MIN; walkDir = 1; }
-    walkPos = nextPos;
-    if (walkDir < 0) cc.classList.add('flip'); else cc.classList.remove('flip');
-    cc.style.left = walkPos + 'px';
-    stateTimer = setTimeout(() => {
-      cc.classList.remove('walking');
-      setState(STATES[Math.floor(Math.random() * STATES.length)]);
-      stateTimer = setTimeout(() => { setState('idle'); walkCycleStep(); }, 2500 + Math.random() * 1500);
-    }, 2000);
+  function stopIdle() {
+    // Tasks, manual stops and geometry changes invalidate a suspended route too.
+    const plan = idlePlan.snapshot(), position = idlePlan.pause();
+    if (plan.active || plan.suspended) walkPos = position;
+    cc.style.left = walkPos+'px';
+  }
+  function walkBounds() {
+    // Filtering only changes tag rows. Never insert a separate mascot row.
+    strip.classList.remove('cat-needs-row');
+    strip.style.removeProperty('min-height');
+    const parent = strip.getBoundingClientRect(), rect = cc.getBoundingClientRect();
+    // The scale is centered on the original hit area. Deriving its inset from
+    // widths avoids subpixel left rounding changing the bounds during a walk.
+    const inset = (cc.offsetWidth-rect.width)/2, padding = 8;
+    const line = getComputedStyle(strip,'::before');
+    const waveRight = parent.left+(parseFloat(line.left) || 0)+(parseFloat(line.width) || 0);
+    const controls = document.querySelectorAll('.filter-bar .filter-label, .filter-bar .filter-tag, .filter-bar .filter-expand, #clearFilterBtn');
+    let gaps = [{ left:Math.max(parent.left+padding,waveRight+padding),right:parent.right-padding }];
+    for (const control of controls) {
+      if (!control.getClientRects().length) continue;
+      const obstacle = control.getBoundingClientRect();
+      if (obstacle.bottom <= rect.top || obstacle.top >= rect.bottom) continue;
+      const left = obstacle.left-padding, right = obstacle.right+padding;
+      // A right-aligned Clear button blocks the right end of a gap; it must
+      // not move the left boundary past the entire available walking area.
+      gaps = gaps.flatMap(gap => {
+        if (right <= gap.left || left >= gap.right) return [gap];
+        const remaining = [];
+        if (left > gap.left) remaining.push({ left:gap.left,right:left });
+        if (right < gap.right) remaining.push({ left:right,right:gap.right });
+        return remaining;
+      });
+    }
+    gaps.sort((a,b) => (b.right-b.left)-(a.right-a.left));
+    // The tag container reserves a mascot-sized gap even on narrow screens.
+    const gap = gaps[0] || { left:parent.right-padding-rect.width,right:parent.right-padding };
+    const min = Math.max(padding-inset,Math.min(parent.width-inset-rect.width-padding,gap.left-parent.left-inset));
+    const max = Math.max(min,gap.right-parent.left-inset-rect.width);
+    return { min,max,canRoam:max-min>=12 };
+  }
+  function setState(state) {
+    const idleAllowed = state === 'idle' && !paused && !reducedMotion.matches && !window._ccActivity.isBusy();
+    if (idleAllowed) {
+      if (document.hidden) {
+        // Returning to this page must continue the wait/walk already in progress.
+        const plan = idlePlan.snapshot(), position = idlePlan.suspend();
+        if (plan.active || plan.suspended) walkPos = position;
+        cc.style.left = walkPos+'px';
+        window.CCPixelCat.setState(cc,'idle');
+        window.CCPixelCat.setIdleAction(cc,'rest');
+      } else if (!idlePlan.snapshot().active) {
+        window.CCPixelCat.setState(cc,'idle');
+        if (!idlePlan.resumeSuspended()) idlePlan.resume(bounds,bounds.canRoam ? walkPos : Math.max(bounds.min,Math.min(bounds.max,walkPos)));
+      }
+    } else {
+      stopIdle();window.CCPixelCat.setState(cc,state);
+      if (state === 'idle') window.CCPixelCat.setIdleAction(cc,'rest');
+    }
+    cc.setAttribute('aria-label','像素小猫，'+labels[state]+'；任务进行中点击查看过程，空闲时点击互动');
+  }
+  function reflow() {
+    const next = walkBounds(), key = [next.min,next.max,next.canRoam].join(':');
+    if (key === geometryKey) return;
+    stopIdle();bounds = next;geometryKey = key;
+    walkPos = Math.max(bounds.min,Math.min(bounds.max,walkPos));cc.style.left = walkPos+'px';
+    setState(window._ccActivity.getState());
   }
 
   cc.addEventListener('click', () => {
-    clearTimeout(stateTimer);
-    cc.classList.remove('walking');
-    const next = STATES[Math.floor(Math.random() * STATES.length)];
-    setState(next);
-    stateTimer = setTimeout(walkCycleStep, 6000);
+    if (_ccTaskSet.size || aiState.busy || _ccRemoteTask?.status === 'running') {
+      window.openAITaskDetails?.();return;
+    }
+    if (window._ccActivity.isBusy() || window._ccActivity.getState() !== 'idle') return;
+    const token = window._ccActivity.begin('cat-greeting','happy',1);
+    window._ccActivity.end('cat-greeting',token);
+  });
+  cc.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      cc.click();
+    }
   });
 
+  bounds = walkBounds();geometryKey = [bounds.min,bounds.max,bounds.canRoam].join(':');
+  walkPos = bounds.canRoam ? bounds.min : bounds.max;cc.style.left = walkPos+'px';
   window._ccCtrl = {
-    stop() { clearTimeout(stateTimer); cc.classList.remove('walking'); setState('idle'); },
-    resume() { setState('idle'); setTimeout(walkCycleStep, 800); },
-    getPos() { return walkPos; }
+    stop() { paused = true;setState(window._ccActivity.getState()); },
+    resume() { paused = false;setState(window._ccActivity.getState()); },
+    getPos() { return walkPos; },
+    getIdlePlan() { return idlePlan.snapshot(); },
+    setState
   };
-
-  setTimeout(walkCycleStep, 2000);
+  window.addEventListener('resize',reflow);
+  const filterBar = document.querySelector('.filter-bar');
+  if (filterBar) {
+    new MutationObserver(reflow).observe(filterBar,{ childList:true,subtree:true,attributes:true,attributeFilter:['class','style'] });
+    new ResizeObserver(reflow).observe(filterBar);
+  }
+  document.addEventListener('visibilitychange',() => setState(window._ccActivity.getState()));
+  reducedMotion.addEventListener('change',() => setState(window._ccActivity.getState()));
+  if (window._ccLatestTask !== undefined) receiveCCTask(window._ccLatestTask);
+  setState(window._ccActivity.getState());
 }
 
 // === Boot ===

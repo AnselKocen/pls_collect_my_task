@@ -15,7 +15,7 @@ try {
 } catch(error) { console.error('Real CLI UI acceptance rejected before startup: '+error.message);process.exit(1); }
 const project=path.resolve(__dirname,'..');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'memo-real-ui-'+agent+'-'));
-const evidence=path.join(__dirname,'acceptance-evidence','live-ui',agent);
+const evidence=path.resolve(process.env.MEMO_ACCEPTANCE_OUT || path.join(__dirname,'acceptance-evidence','live-ui',agent));
 fs.mkdirSync(evidence,{recursive:true});
 app.setPath('userData',path.join(root,'profile'));app.disableHardwareAcceleration();
 app.on('window-all-closed',()=>{}); // Finish report/server cleanup before exiting Electron.
@@ -133,7 +133,7 @@ async function run(){
     document.getElementById('aiTaskClose').click();
     const closed=document.getElementById('aiTaskModal').classList.contains('hidden');
     const stillLocked=document.getElementById('agentSelect').disabled;
-    document.getElementById('aiTaskDetailsBtn').click();
+    window.openAITaskDetails();
     const after=[...document.querySelectorAll('#aiTaskOutput pre')].map((pre,index)=>({id:window.acceptanceMessageIds[index],text:pre.textContent}));
     const preserved=before.length>0 && after.length>=before.length && before.every(previous=>{
       const current=after.find(message=>message.id===previous.id);
@@ -172,6 +172,20 @@ async function run(){
   const graphs=(await json('/api/cc/suggestions')).graphHistory;assert.equal(graphs.length,1);assert.equal(graphs[0].coverage.processedCount,8);assert.ok(graphs[0].nodes.length);
   await until(`document.querySelectorAll('#graphContainer .graph-node').length>0 && document.getElementById('graphNavInfo').textContent==='1 / 1'`);
   assert.ok(await read(`document.getElementById('graphSummaryPanel').textContent.trim().length>0`));
+  if(process.env.MEMO_GRAPH_VISUAL_SETTLE_MS){
+    await delay(Number(process.env.MEMO_GRAPH_VISUAL_SETTLE_MS));
+    report.settledVisualReview=await read(`(()=>{
+      const labels=[...document.querySelectorAll('#graphContainer .graph-node text,#graphContainer .graph-cluster-label')].map((node,index)=>{const r=node.getBoundingClientRect();return {index,text:node.textContent,x:r.x,y:r.y,width:r.width,height:r.height};});
+      const overlaps=[];
+      for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){
+        const a=labels[i],b=labels[j],w=Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x),h=Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y);
+        if(w>3&&h>3)overlaps.push({a:a.text,b:b.text,width:w,height:h});
+      }
+      return {labels,overlaps};
+    })()`);
+    fs.writeFileSync(path.join(evidence,'real-generated-graph.json'),JSON.stringify(graphs[0],null,2)+'\n');
+    await capture('graph-settled.png');
+  }
   await capture('graph-generated.png');
   const relationDisplay=await read(`(()=>{
     const labels=[...document.querySelectorAll('#graphContainer .graph-link-label')];

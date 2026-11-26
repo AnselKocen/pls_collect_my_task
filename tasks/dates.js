@@ -2,6 +2,12 @@ function localDate(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
+function localTimestamp(date) {
+  const pad=value=>String(value).padStart(2,'0');
+  const offset=-date.getTimezoneOffset(),sign=offset<0 ? '-' : '+';
+  return `${localDate(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${sign}${pad(Math.floor(Math.abs(offset)/60))}:${pad(Math.abs(offset)%60)}`;
+}
+
 function parseLocalDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('日期需要 YYYY-MM-DD 格式');
   const [year,month,day] = value.split('-').map(Number);
@@ -30,7 +36,7 @@ function periodFor(action, now = new Date()) {
   const end = addDays(start,action === 'weekly-digest' ? 7 : 2);
   const last = addDays(end,-1);
   return {
-    start:start.toISOString(), end:end.toISOString(), asOf:now.toISOString(),
+    start:start.toISOString(), end:end.toISOString(), asOf:now.toISOString(), asOfLocal:localTimestamp(now),
     date:localDate(now), from:localDate(start), to:localDate(last),
     timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
     ...(action === 'weekly-digest' ? {week:isoWeek(start)} : {})
@@ -44,4 +50,4 @@ function rangeFor({ from, to } = {}) {
   return { ...(start ? {start:start.toISOString()} : {}), ...(last ? {end:addDays(last,1).toISOString()} : {}) };
 }
 
-module.exports = { localDate, parseLocalDate, addDays, isoWeek, periodFor, rangeFor };
+module.exports = { localDate, localTimestamp, parseLocalDate, addDays, isoWeek, periodFor, rangeFor };

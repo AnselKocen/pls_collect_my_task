@@ -7,6 +7,8 @@ data/
 .DS_Store
 .server.pid
 .server.log
+.server-state.json
+.server-control.lock/
 .claude/
 dist/
 .idea/

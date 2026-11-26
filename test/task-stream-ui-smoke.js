@@ -22,7 +22,7 @@ async function emit(value) {await read(`window.fakeSource.listener({data:${JSON.
 async function run() {
   const page=path.join(root,'index.html');
   fs.writeFileSync(page,`<!doctype html><html><body>
-    <button id="aiTaskDetailsBtn" disabled>查看任务详情</button><div id="ccTaskBubble"></div>
+    <div id="ccTaskBubble"></div>
     <button id="tagSuggestGenBtn">生成</button>
     <div id="aiTaskModal" class="hidden"><button id="aiTaskClose">关闭</button>
       <h3 id="aiTaskTitle"></h3><span id="aiTaskStatus"></span><p id="aiTaskMeta"></p>
@@ -47,8 +47,8 @@ async function run() {
   await window.loadFile(page);
   await read('window.fakeSource.onopen()');
   await setSnapshot(snapshot(1));
-  await until('!document.getElementById("aiTaskDetailsBtn").disabled');
-  await read('document.getElementById("aiTaskDetailsBtn").click()');
+  await until('!document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").hidden');
+  await read('document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").click()');
   await until('document.querySelector(".ai-task-empty")?.textContent.includes("正在等待回答")');
 
   // No SSE events are delivered, even though the connection reports open.
@@ -66,7 +66,7 @@ async function run() {
   await until('document.querySelector("#aiTaskOutput pre")?.textContent==="fictional partial with missing middle"');
 
   // Delay a poll response until after a newer completion event has arrived.
-  await read('window.holdNextFetch=true;window.releaseFetch=null;document.getElementById("aiTaskClose").click();document.getElementById("aiTaskDetailsBtn").click()');
+  await read('window.holdNextFetch=true;window.releaseFetch=null;document.getElementById("aiTaskClose").click();document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").click()');
   await until('typeof window.releaseFetch==="function"');
   const completed=snapshot(6,'completed','fictional final answer');
   await emit(completed);
@@ -107,8 +107,8 @@ async function run() {
   fs.writeFileSync(page,noStream);await window.loadFile(page);
   await setSnapshot(snapshot(1,'completed','snapshot only'));
   await read('window.dispatchEvent(new Event("focus"))');
-  await until('!document.getElementById("aiTaskDetailsBtn").disabled');
-  await read('document.getElementById("aiTaskDetailsBtn").click()');
+  await until('!document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").hidden');
+  await read('document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").click()');
   await until('document.querySelector("#aiTaskOutput pre")?.textContent==="snapshot only"');
   console.log(JSON.stringify({silentStreamRecovery:true,completionRecovered:true,duplicateDeltaIgnored:true,missingDeltaRecovered:true,stalePollIgnored:true,restartRecovered:true,legacyStreamingAfterPoll:true,noStreamingFallback:true}));
 }

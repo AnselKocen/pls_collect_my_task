@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { randomUUID, createHash } = require('crypto');
 const { isDeepStrictEqual } = require('util');
-const { DatabaseSync, backup } = require('node:sqlite');
+const { DatabaseSync } = require('node:sqlite');
 const createDefaults = require('./defaults');
 const { VERSION, APPLICATION_ID, migrations } = require('./schema');
 const { searchScore } = require('./search');
@@ -370,7 +370,10 @@ class Store {
     const name=`${kind}-${kind === 'auto' ? localDay()+'-' : ''}${stamp()}-${randomUUID().slice(0,8)}.sqlite`;
     const target=path.join(this.backupDir,name), temporary=target+'.partial';
     try {
-      await backup(this.db,temporary);
+      // Fix the snapshot synchronously before yielding to later application writes.
+      // SQLite copies one consistent committed view (including WAL contents); writes
+      // after this call returns stay in the live database, outside this backup.
+      this.db.prepare('VACUUM INTO ?').run(temporary);
       const copy=new DatabaseSync(temporary,{readOnly:true});
       try { this.checkIntegrity(copy); } finally { copy.close(); }
       fs.renameSync(temporary,target);

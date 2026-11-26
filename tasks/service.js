@@ -1,6 +1,6 @@
 const { randomUUID } = require('crypto');
 const { promptFor, VERSION } = require('./prompts');
-const { localDate, periodFor, rangeFor } = require('./dates');
+const { localDate, parseLocalDate, addDays, periodFor, rangeFor } = require('./dates');
 
 function text(value, name) {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${name} 需要非空文字`);
@@ -97,9 +97,41 @@ function validateTags(result, counts, allowedRecords) {
     return {action:suggestion.action,tags,reason:text(suggestion.reason,'建议理由'),memoIds};
   });
 }
-function validateDigest(result) {
+function digestStatistics(records, period) {
+  const memos=[...new Map(records.map(record=>[record.id,record])).values()],dateCounts={};
+  for(let day=parseLocalDate(period.from);localDate(day)<=period.to;day=addDays(day,1))dateCounts[localDate(day)]=0;
+  for(const memo of memos) {
+    const time=new Date(memo.createdAt);
+    if(Number.isFinite(time.getTime())) {
+      const date=localDate(time);
+      dateCounts[date]=(dateCounts[date] || 0)+1;
+    }
+  }
+  return {totalMemos:memos.length,dateCounts,tagCounts:tagCounts(memos)};
+}
+
+function validateDigestFacts(result, {period,programFacts}={}) {
+  if(!period)return;
+  for(const field of ['date','week'])if(Object.hasOwn(result,field) && result[field]!==period[field])throw new Error(`${field}与程序日期事实不一致，请使用${JSON.stringify(period[field])}或省略该字段`);
+  if(Object.hasOwn(result,'tagTrends')) {
+    const value=result.tagTrends,expected=programFacts.tagCounts;
+    if(!value || typeof value!=='object' || Array.isArray(value) || Object.keys(value).length!==Object.keys(expected).length || Object.keys(expected).some(tag=>!Object.hasOwn(value,tag) || value[tag]!==expected[tag]))throw new Error('tagTrends与程序全范围标签计数不一致，请使用programFacts.tagCounts或省略该字段');
+  }
+  // Check only explicit current-data cutoffs with an explicit zone. Other dates,
+  // quoted history and ordinary numeric/content analysis are not interpreted.
+  const claims=String(result.summary || '').matchAll(/(?:^|[\n。；])\s*(?:(?:本周|本次|本日)(?:范围|统计范围)(?:为|[:：])?[^。\n；]{0,100}[，,]\s*)?(?:本次数据截至|本次数据截止|数据截至|数据截止)\s*(\d{4}-\d{2}-\d{2})[ T]+(\d{1,2}:\d{2})(?::\d{2})?\s*[（(]\s*([^\s）)]+)\s*[）)]/g);
+  for(const claim of claims) {
+    if(claim[1]!==period.date)continue;
+    const zone=claim[3],clock=claim[2].padStart(5,'0');
+    const expected=zone===period.timezone ? period.asOfLocal : /^(?:UTC|GMT|Z)$/i.test(zone) ? period.asOf : null;
+    if(expected && clock!==expected.slice(11,16))throw new Error(`本次截止时间与程序时区事实不一致：${period.timezone}请使用${period.asOfLocal}；UTC请使用${period.asOf}`);
+  }
+}
+
+function validateDigest(result, context) {
   const tasks = list(result.tasks ?? [],'tasks');
   if(tasks.some(task=>typeof task!=='string' || !task.trim()))throw new Error('tasks 必须是非空字符串数组，例如 ["阅读一页"]；没有待办时返回 []，不要使用对象、null 或空字符串');
+  validateDigestFacts(result,context);
   return {summary:text(result.summary,'摘要'),tasks:tasks.map(task => text(task,'待办'))};
 }
 
@@ -159,15 +191,21 @@ class TaskService {
   async digest(action, params = {}, now = new Date()) {
     const period=periodFor(action,now),memos=this.select(params,period),batches=batchRecords(memos,this.batchOptions);
     const counts=tagCounts(memos),parts=[];
+    const programFacts={...digestStatistics(memos,period),batchCount:batches.length};
+    const batchDetails=batches.map((records,index)=>{
+      const stats=digestStatistics(records,period),dates=Object.keys(stats.dateCounts).filter(date=>stats.dateCounts[date]);
+      return {number:index+1,total:batches.length,memoCount:stats.totalMemos,fragmentCount:records.length,dateCounts:stats.dateCounts,tagCounts:stats.tagCounts,memoIds:unique(records.map(record=>record.id)),recordedFrom:dates[0] || null,recordedTo:dates.at(-1) || null,partialMemoIds:unique(records.filter(record=>record.parts>1).map(record=>record.id))};
+    });
+    const validate=result=>validateDigest(result,{period,programFacts});
     if(memos.length) for(const [index,records] of batches.entries()) {
       this.onProgress(`${action==='daily-digest' ? '今日摘要' : '本周总结'} ${index+1}/${batches.length}`);
-      parts.push(await askValidated(this.ask,action,{period,scope:{tags:params.tags ?? []},tagCounts:counts,records},validateDigest));
+      parts.push(await askValidated(this.ask,action,{period,scope:{tags:params.tags ?? []},programFacts,batch:batchDetails[index],tagCounts:counts,records},validate));
     }
     let result=parts[0] || {summary:action==='daily-digest' ? `· ${period.from}，暂无记录\n· ${period.date}，暂无记录` : '本周暂无记录。',tasks:[]};
     if(parts.length>1) {
-      const input={action,period,scope:{tags:params.tags ?? []},tagCounts:counts,summaries:parts};
+      const input={action,period,scope:{tags:params.tags ?? []},programFacts,tagCounts:counts,summaries:parts.map((part,index)=>({...part,batch:batchDetails[index]}))};
       if(JSON.stringify(input).length>60000)throw new Error('摘要归并范围过大，请缩小范围后重试；本次结果未保存');
-      result=await askValidated(this.ask,'digest-merge',input,validateDigest);
+      result=await askValidated(this.ask,'digest-merge',input,validate);
     }
     const digest={...result,...period,empty:memos.length===0,tagTrends:counts,tags:params.tags ?? [],coverage:this.coverage(memos,batches,params,period),generatedAt:now.toISOString()};
     this.store.update('suggestions',data=>{

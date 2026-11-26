@@ -27,7 +27,7 @@ function respond(task, input) {
     return tag ? [{action:'review',tags:[tag],reason:'检查标签边界。',memoIds:[record.id]}] : [];
   }
   if (task === 'tags-merge') return [...new Map(input.suggestions.map(suggestion=>[suggestion.tags.join(','),suggestion])).values()];
-  if (task.endsWith('digest') || task === 'digest-merge') return {summary:'仅总结所提供的范围。',tasks:[],date:'错误的模型日期',week:'错误的模型周编号',tagTrends:{fabricated:999}};
+  if (task.endsWith('digest') || task === 'digest-merge') return {summary:'仅总结所提供的范围。',tasks:[],...(input.period?.date ? {date:input.period.date} : {}),...(input.period?.week ? {week:input.period.week} : {}),tagTrends:input.programFacts?.tagCounts || input.tagCounts || {}};
   throw new Error('Unexpected fake task '+task);
 }
 module.exports={respond};

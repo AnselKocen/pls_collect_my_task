@@ -57,7 +57,7 @@ async function run() {
     const running=document.getElementById('aiTaskStatus').dataset.status==='running';
     document.getElementById('aiTaskClose').click();
     const locked=document.getElementById('agentSelect').disabled;
-    document.getElementById('aiTaskDetailsBtn').click();
+    window.openAITaskDetails();
     return {running,locked,reopened:!document.getElementById('aiTaskModal').classList.contains('hidden'),preserved:document.getElementById('aiTaskOutput').textContent===output};
   })()`);
   assert.ok(partial.running,'Text must arrive before completion');assert.ok(partial.locked);assert.ok(partial.reopened);assert.ok(partial.preserved);

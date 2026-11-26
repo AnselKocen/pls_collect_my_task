@@ -1,0 +1,35 @@
+{
+  "source": "Existing task animations before idle-only scheduling (2026-11-25)",
+  "states": {
+    "thinking": {
+      "duration": 3600,
+      "frames": 24,
+      "sha256": "5720b12e323d86799165207e51b63897e66d93c6c47567c9cd0de014e41c51db"
+    },
+    "coding": {
+      "duration": 1600,
+      "frames": 12,
+      "sha256": "370a7ec5118bf38e10963170be03dee3e942ae1aeb95646d3e613519d82d19a8"
+    },
+    "looking": {
+      "duration": 4000,
+      "frames": 24,
+      "sha256": "2b79b183352a192e91d6cd7592383c64ddf2ed33d8c89fb2494c9a77c02fb002"
+    },
+    "sweeping": {
+      "duration": 2400,
+      "frames": 16,
+      "sha256": "36f39d056ef4bb435c3be4d1dd97ba87d3ea12c3e63bbae8eeee9b7fe8b49117"
+    },
+    "error": {
+      "duration": 3200,
+      "frames": 20,
+      "sha256": "7f6d7d90d71780b6d9ebadaa7fc2418045066c7e9ff70ebe7956280b85d2c293"
+    },
+    "happy": {
+      "duration": 2800,
+      "frames": 20,
+      "sha256": "d777ee6c8b99ee99e6f424f79a37b50698969deb8bde8e4c6647e2ccfb1d74bf"
+    }
+  }
+}

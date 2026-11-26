@@ -71,7 +71,11 @@ test('agent selection persists and locks every manual, scheduled and habit task'
   const form = new FormData();form.append('zipFile',new Blob([zip.toBuffer()]),'book.zip');
   fs.rmSync(marker,{force:true});
   const habit = fetch(base+'/api/habit/pools/generate',{method:'POST',body:form});
-  await started();await select('cc',409);
+  let habitDiagnostic = 'HTTP response pending';
+  habit.then(async response => { habitDiagnostic = { status: response.status, body: await response.clone().text() }; }).catch(error => { habitDiagnostic = error.message; });
+  try { await started(); }
+  catch (error) { throw new Error('Habit model did not start: ' + JSON.stringify(habitDiagnostic) + '\nServer log:\n' + logs, { cause: error }); }
+  await select('cc',409);
   const habitResponse = await habit;assert.equal(habitResponse.status,200);
   assert.equal((await habitResponse.json()).pool.habits.length,30);
   assert.equal(calls().at(-1).agent,'codebuddy');

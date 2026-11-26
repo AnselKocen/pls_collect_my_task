@@ -1,15 +1,11 @@
 @echo off
+setlocal
 chcp 65001 >nul 2>&1
 cd /d "%~dp0"
-
-set PID_FILE=.server.pid
-
-if not exist "%PID_FILE%" (
-    echo 服务未在运行
-    exit /b 0
+where node >nul 2>&1
+if errorlevel 1 (
+    echo 未找到 Node.js，无法安全核验服务身份；请安装 Node.js 22.16 或更新版本后重试。
+    exit /b 1
 )
-
-set /p PID=<"%PID_FILE%"
-taskkill /PID %PID% /F >nul 2>&1
-del "%PID_FILE%"
-echo √ 服务已停止 [PID %PID%]
+node service-control.js stop
+if errorlevel 1 exit /b 1

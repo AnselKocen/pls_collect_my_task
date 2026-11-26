@@ -1,6 +1,6 @@
 (function() {
   const modal=document.getElementById('aiTaskModal'),output=document.getElementById('aiTaskOutput');
-  const details=document.getElementById('aiTaskDetailsBtn'),close=document.getElementById('aiTaskClose');
+  const close=document.getElementById('aiTaskClose');
   const titles={cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy',trae:'Trae'};
   let task=null,connected=false,frame=null,previousFocus=null,syncedAt=0,refreshPending=null;
   let streamId=null,revision=-1,updatesReceived=0;
@@ -11,7 +11,7 @@
     return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
   }
   function render() {
-    frame=null;details.disabled=!task;
+    frame=null;
     document.querySelectorAll('[data-ai-task-details]').forEach(button => {button.hidden=!task;});
     if(modal.classList.contains('hidden') || !task)return;
     document.getElementById('aiTaskTitle').textContent=task.name;
@@ -51,7 +51,6 @@
   };
   function hide() {modal.classList.add('hidden');previousFocus?.focus();}
   close.addEventListener('click',hide);
-  details.addEventListener('click',window.openAITaskDetails);
   modal.addEventListener('click',event => {if(event.target===modal)hide();});
   modal.addEventListener('keydown',event => {
     if(event.key==='Escape'){event.stopPropagation();hide();}
@@ -96,6 +95,10 @@
       message.text+=update.text;
     }
     ++updatesReceived;
+    // Keep the mascot in sync even while task details are closed, and retain
+    // the latest accepted task for a scene that has not finished mounting yet.
+    window._ccLatestTask=task;
+    window.dispatchEvent(new CustomEvent('cc-task-update',{detail:{task}}));
     schedule();
   }
   function refresh() {

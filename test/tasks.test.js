@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {Store}=require('../storage/store');
 const {TaskService,batchRecords}=require('../tasks/service');
-const {periodFor,rangeFor,localDate,isoWeek}=require('../tasks/dates');
+const {periodFor,rangeFor,localDate,localTimestamp,isoWeek}=require('../tasks/dates');
 const {searchScore}=require('../storage/search');
 const {makeView}=require('../public/graph-layout');
 const {respond}=require('./fake-model');
@@ -259,4 +259,84 @@ test('empty text, dangling edges and a failed later batch do not save partial re
   };
   await assert.rejects(new TaskService(store,{ask,batchOptions:{maxRecords:1}}).graph(),/CLI failure/);
   assert.deepEqual(store.read('suggestions'),before);
+});
+
+test('digest cutoff exposes local clock and explicit UTC offset across daylight saving changes',t=>{
+  const previous=process.env.TZ;
+  t.after(()=>{if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;});
+  process.env.TZ='Asia/Shanghai';
+  const now=new Date('2026-11-25T05:39:00Z'),period=periodFor('weekly-digest',now);
+  assert.equal(period.asOf,'2026-11-25T05:39:00.000Z');
+  assert.equal(period.asOfLocal,'2026-11-25T13:39:00+08:00');
+  assert.equal(period.timezone,'Asia/Shanghai');
+  process.env.TZ='America/New_York';
+  assert.equal(localTimestamp(new Date('2026-03-08T06:30:00Z')),'2026-03-08T01:30:00-05:00');
+  assert.equal(localTimestamp(new Date('2026-03-08T07:30:00Z')),'2026-03-08T03:30:00-04:00');
+});
+
+test('digest batches carry complementary local statistics and one authoritative global scope',async t=>{
+  const previous=process.env.TZ;process.env.TZ='Asia/Shanghai';
+  t.after(()=>{if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;});
+  const now=new Date('2026-11-25T05:39:00Z');
+  const memos=Array.from({length:75},(_,i)=>memo('scope-'+i,'虚构记录 '+i,[i%2?'阅读':'散步'],i<47?'2026-11-25T04:00:00Z':'2026-11-24T04:00:00Z'));
+  const store=setup(t,memos),calls=[];
+  const ask=async prompt=>{const task=prompt.match(/^TASK=([^\n]+)/m)[1],input=JSON.parse(prompt.split('\nINPUT_JSON\n')[1].split('\nEND_INPUT_JSON')[0]);calls.push({task,input,prompt});return JSON.stringify({summary:'围绕阅读与散步，记录了短暂的休息。',tasks:[]});};
+  await new TaskService(store,{ask,batchOptions:{maxRecords:40}}).digest('weekly-digest',{},now);
+  const batches=calls.filter(call=>call.task==='weekly-digest'),merge=calls.at(-1).input;
+  assert.equal(batches.length,2);assert.equal(merge.programFacts.totalMemos,75);
+  assert.equal(merge.programFacts.dateCounts['2026-11-25'],47);assert.equal(merge.programFacts.dateCounts['2026-11-24'],28);
+  assert.deepEqual(batches.map(call=>call.input.batch.number),[1,2]);
+  assert.deepEqual(batches.map(call=>call.input.batch.memoCount),[40,35]);
+  for(const {input}of batches){
+    assert.deepEqual(input.programFacts,merge.programFacts);
+    assert.equal(input.batch.memoCount,new Set(input.records.map(record=>record.id)).size);
+    assert.equal(Object.values(input.batch.dateCounts).reduce((sum,count)=>sum+count,0),input.batch.memoCount);
+    assert.equal(input.batch.fragmentCount,input.records.length);assert.equal(input.batch.total,2);
+    assert.deepEqual(input.batch.memoIds,input.records.map(record=>record.id));
+  }
+  assert.deepEqual(merge.summaries.map(part=>part.batch),batches.map(call=>call.input.batch));
+  assert.equal(new Set(merge.summaries.flatMap(part=>part.batch.memoIds)).size,75);
+  assert.equal(merge.period.asOfLocal,'2026-11-25T13:39:00+08:00');
+  assert.equal(store.read('suggestions').weeklyDigest.coverage.processedCount,75);
+});
+
+test('digest global unique-note statistics do not sum overlapping long-note fragments',async t=>{
+  const now=new Date('2026-11-13T12:00:00Z'),store=setup(t,[memo('long','长文本 🌿'.repeat(800))]),{engine,calls}=service(store,{batchOptions:{maxChars:1000}});
+  await engine.digest('daily-digest',{},now);
+  const inputs=calls.filter(call=>call.task==='daily-digest').map(call=>call.input);
+  assert.ok(inputs.length>1);assert.ok(inputs.every(input=>input.programFacts.totalMemos===1));
+  assert.ok(inputs.reduce((sum,input)=>sum+input.batch.memoCount,0)>1);
+  assert.ok(inputs.every(input=>input.batch.partialMemoIds.includes('long')));
+  assert.equal(calls.at(-1).input.programFacts.totalMemos,1);
+});
+
+test('explicit conflicting digest metadata is corrected rather than silently relabelled',async t=>{
+  const now=new Date('2026-11-13T12:00:00Z'),store=setup(t,[memo('a','阅读一页')]),calls=[];
+  const ask=async prompt=>{const input=JSON.parse(prompt.split('\nINPUT_JSON\n')[1].split('\nEND_INPUT_JSON')[0]);calls.push({prompt,input});return JSON.stringify(calls.length===1?{summary:'阅读一页。',date:'1900-01-01',week:'wrong',tagTrends:{invented:9}}:{summary:'阅读一页。',tasks:[]});};
+  const {digest}=await new TaskService(store,{ask}).digest('weekly-digest',{},now);
+  assert.equal(calls.length,2);assert.equal(digest.week,periodFor('weekly-digest',now).week);
+  assert.deepEqual(digest.tagTrends,{A:1});assert.match(calls[1].prompt,/date.*程序日期事实不一致/);
+  const before=store.read('suggestions');
+  for(const bad of [{date:'1900-01-01'},{week:'wrong'},{tagTrends:{A:99}}]){
+    let attempts=0;const invalid=new TaskService(store,{ask:async()=>{attempts++;return JSON.stringify({summary:'内容分析不应掩盖事实字段冲突。',...bad});}});
+    await assert.rejects(invalid.digest('weekly-digest',{},now),/事实不一致|标签计数不一致/);
+    assert.equal(attempts,2);assert.deepEqual(store.read('suggestions'),before);
+  }
+});
+
+test('only explicit current cutoff claims with a named zone are checked in digest prose',async t=>{
+  const previous=process.env.TZ;process.env.TZ='Asia/Shanghai';
+  t.after(()=>{if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;});
+  const now=new Date('2026-11-25T05:39:00Z'),store=setup(t,[memo('a','讨论历史记录中的分歧',[],'2026-11-25T04:00:00Z')]),prompts=[];
+  const wrong='数据截至 2026-11-25 05:39（Asia/Shanghai），内容围绕阅读。';
+  const correct='数据截至 2026-11-25 13:39（Asia/Shanghai），内容围绕阅读。';
+  const engine=new TaskService(store,{ask:async prompt=>{prompts.push(prompt);return JSON.stringify({summary:prompts.length===1?wrong:correct});}});
+  assert.equal((await engine.digest('weekly-digest',{},now)).digest.summary,correct);
+  assert.equal(prompts.length,2);assert.match(prompts[1],/截止时间与程序时区事实不一致/);
+  const before=store.read('suggestions');engine.ask=async()=>JSON.stringify({summary:wrong});
+  await assert.rejects(engine.digest('weekly-digest',{},now),/截止时间与程序时区事实不一致/);
+  assert.deepEqual(store.read('suggestions'),before);
+  for(const summary of ['数据截至 2026-11-25 05:39（UTC），分析了阅读。','历史札记提到1900年11月25日05:39，也讨论了观点分歧；本周读了三条评论。','引用旧资料：数据截至 2025-11-25 05:39（Asia/Shanghai）。','引用同日旧报告：“数据截至 2026-11-25 05:39（Asia/Shanghai）”。这段引文讨论了过去的统计。','没有上周对照，不推断趋势；两篇便签对读书方法存在分歧。']){
+    engine.ask=async()=>JSON.stringify({summary});assert.equal((await engine.digest('weekly-digest',{},now)).digest.summary,summary);
+  }
 });

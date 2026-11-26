@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>像素小猫 · 两种短腿走路</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="cc-cat-themes.css">
+<style>
+body.walk-compare-page { margin:0; padding:30px 20px 40px; color:var(--t-text); background:var(--t-bg); }
+.walk-compare { width:min(100%,940px); margin:0 auto; }
+.walk-compare-header { display:flex; align-items:end; justify-content:space-between; flex-wrap:wrap; gap:18px; }
+.walk-compare h1 { margin:0; font-size:23px; font-weight:600; line-height:1.4; }
+.walk-compare-intro { margin-top:7px; color:var(--t-text-light); font-size:13px; line-height:1.7; }
+.walk-compare-theme { display:flex; align-items:center; gap:9px; color:var(--t-text-light); font-size:13px; }
+.walk-compare-theme select { max-width:100%; padding:8px 30px 8px 11px; border:1px solid var(--t-border-light); border-radius:6px; color:var(--t-text); background:var(--t-card); font:inherit; }
+.walk-compare-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:22px; }
+.walk-compare-controls button { min-width:70px; padding:9px 13px; border:1px solid var(--t-border-light); border-radius:6px; color:var(--t-text); background:var(--t-card); font:inherit; font-size:13px; line-height:1.35; cursor:pointer; }
+.walk-compare-controls button:hover { background:var(--t-secondary); }
+.walk-compare-controls button[aria-pressed="true"] { background:var(--t-secondary); border-color:var(--t-accent); }
+.walk-compare-controls button:focus-visible,.walk-compare select:focus-visible,.walk-compare-back:focus-visible { outline:2px solid var(--t-accent-dark); outline-offset:3px; }
+.walk-compare-speed-label { margin-left:5px; color:var(--t-text-light); font-size:12px; }
+.walk-compare-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:18px; }
+.walk-option { min-width:0; padding:20px 20px 18px; border:1px solid var(--t-border-light); border-radius:11px; background:var(--t-card); }
+.walk-option h2 { margin:0; font-size:17px; font-weight:600; line-height:1.5; }
+.walk-option-letter { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; margin-right:7px; border:1px solid var(--t-border-light); border-radius:5px; color:var(--t-text-light); font-size:13px; font-weight:500; vertical-align:1px; }
+.walk-option-description { margin-top:7px; color:var(--t-text-light); font-size:13px; line-height:1.7; }
+.walk-option-stage { display:flex; align-items:center; justify-content:center; height:250px; margin-top:5px; }
+.walk-option-canvas { display:block; width:290px; height:220px; max-width:100%; object-fit:contain; image-rendering:pixelated; }
+.walk-option-actual { display:flex; align-items:center; justify-content:center; gap:10px; min-height:66px; margin-top:3px; border-top:1px solid var(--t-border-light); padding-top:10px; }
+.walk-option-actual-label { color:var(--t-text-light); font-size:12px; }
+.walk-option-actual .walk-option-canvas { flex:0 0 72.5px; width:72.5px; height:55px; }
+.walk-compare.is-facing-right .walk-option-canvas { transform:scaleX(-1); }
+.walk-compare-footer { display:flex; align-items:center; flex-wrap:wrap; justify-content:space-between; gap:10px; margin-top:18px; color:var(--t-text-light); font-size:12px; line-height:1.7; }
+.walk-compare-back { color:var(--t-text-light); text-underline-offset:3px; }
+.walk-compare-status { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.walk-compare-error { margin-top:16px; padding:12px; border:1px solid var(--t-border-light); border-radius:7px; background:var(--t-card); color:var(--t-text); font-size:13px; }
+@media(max-width:720px) {
+  body.walk-compare-page { padding:24px 16px 32px; }
+  .walk-compare-grid { gap:12px; }
+  .walk-option { padding:16px 10px 15px; }
+  .walk-option-stage { height:210px; }
+  .walk-option-canvas { width:232px; height:176px; }
+  .walk-option h2 { font-size:15px; }
+  .walk-option-letter { width:23px; height:23px; margin-right:4px; }
+  .walk-option-description { font-size:12px; }
+}
+@media(max-width:560px) {
+  .walk-compare-header { align-items:start; gap:14px; }
+  .walk-compare h1 { font-size:21px; }
+  .walk-compare-theme { width:100%; }
+  .walk-compare-theme select { flex:1; }
+  .walk-compare-grid { grid-template-columns:1fr; }
+  .walk-option { padding:18px 16px 16px; }
+  .walk-option-stage { height:238px; }
+  .walk-option-canvas { width:290px; height:220px; }
+  .walk-option h2 { font-size:17px; }
+  .walk-option-description { font-size:13px; }
+  .walk-compare-controls { gap:7px; margin-top:18px; }
+  .walk-compare-controls button { flex:1; min-width:0; padding:10px 9px; white-space:nowrap; }
+  .walk-compare-speed-label { display:none; }
+}
+@media(pointer:coarse) { .walk-compare-controls button,.walk-compare select { min-height:44px; } }
+</style>
+</head>
+<body class="walk-compare-page">
+<main class="walk-compare" id="walkCompare">
+  <header class="walk-compare-header">
+    <div>
+      <h1>两种短腿走路</h1>
+      <p class="walk-compare-intro">同样的头型和步速，看看身体高度与迈步感觉。</p>
+    </div>
+    <label class="walk-compare-theme" for="walkCompareTheme">主题
+      <select id="walkCompareTheme">
+        <option value="gold">焦糖布丁</option>
+        <option value="cozy">慵懒晨光</option>
+        <option value="slate">湖光暖岸</option>
+      </select>
+    </label>
+  </header>
+  <div class="walk-compare-controls" role="group" aria-label="共同播放控制">
+    <button type="button" id="walkComparePause" aria-pressed="false">暂停</button>
+    <button type="button" id="walkCompareSlow" aria-pressed="false">慢速 0.5×</button>
+    <button type="button" id="walkCompareFlip" aria-pressed="false">换个方向</button>
+    <span class="walk-compare-speed-label" id="walkCompareSpeed">当前 1×</span>
+  </div>
+  <section class="walk-compare-grid" aria-label="两种走路对比">
+    <article class="walk-option" data-variant="low">
+      <h2><span class="walk-option-letter">A</span>贴地小碎步</h2>
+      <p class="walk-option-description">低低一团，短爪交替探出。</p>
+      <div class="walk-option-stage">
+        <canvas class="walk-option-canvas" width="58" height="44" role="img" aria-label="A 贴地小碎步，放大预览"></canvas>
+      </div>
+      <div class="walk-option-actual">
+        <span class="walk-option-actual-label">实际大小</span>
+        <canvas class="walk-option-canvas" width="58" height="44" role="img" aria-label="A 贴地小碎步，实际大小"></canvas>
+      </div>
+    </article>
+    <article class="walk-option" data-variant="raised">
+      <h2><span class="walk-option-letter">B</span>微站短腿步</h2>
+      <p class="walk-option-description">身子略抬，短腿迈步更清楚。</p>
+      <div class="walk-option-stage">
+        <canvas class="walk-option-canvas" width="58" height="44" role="img" aria-label="B 微站短腿步，放大预览"></canvas>
+      </div>
+      <div class="walk-option-actual">
+        <span class="walk-option-actual-label">实际大小</span>
+        <canvas class="walk-option-canvas" width="58" height="44" role="img" aria-label="B 微站短腿步，实际大小"></canvas>
+      </div>
+    </article>
+  </section>
+  <footer class="walk-compare-footer">
+    <span>两边同步播放，可暂停比较落脚位置。</span>
+    <a class="walk-compare-back" href="cat-preview.html">查看全部动作</a>
+  </footer>
+  <p class="walk-compare-error" id="walkCompareError" hidden></p>
+  <span class="walk-compare-status" id="walkCompareStatus" aria-live="polite"></span>
+</main>
+<script src="cc-cat.js"></script>
+<script src="cat-walk-options.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.getElementById('walkCompare');
+  const theme = document.getElementById('walkCompareTheme');
+  const pauseButton = document.getElementById('walkComparePause');
+  const slowButton = document.getElementById('walkCompareSlow');
+  const flipButton = document.getElementById('walkCompareFlip');
+  const speedLabel = document.getElementById('walkCompareSpeed');
+  const status = document.getElementById('walkCompareStatus');
+  const error = document.getElementById('walkCompareError');
+  const api = window.CatWalkOptions;
+  if (!api || typeof api.frameForVariant !== 'function') {
+    error.hidden = false;
+    error.textContent = '走路预览暂时没有载入，请刷新后再试。';
+    return;
+  }
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let paused = motion.matches;
+  let speed = 1;
+  let elapsed = 0;
+  let lastTime = performance.now();
+  let palette = {};
+  const cats = [...root.querySelectorAll('.walk-option')].map(card => ({
+    variant: card.dataset.variant,
+    index: -1,
+    canvases: [...card.querySelectorAll('canvas')].map(canvas => {
+      const context = canvas.getContext('2d');
+      context.imageSmoothingEnabled = false;
+      context.setTransform(2,0,0,2,0,0);
+      return { canvas, context };
+    })
+  }));
+  const tokens = {
+    f: '--cat-fur', o: '--cat-outline', p: '--cat-ear', d: '--cat-ear-dark',
+    e: '--cat-eye', n: '--cat-nose', b: '--cat-blush', s: '--cat-shade',
+    m: '--cat-mark', c: '--cat-chest', t: '--cat-tail-tip', a: '--cc-accent',
+    r: '--cc-broom', h: '--cc-broom-head'
+  };
+
+  function readPalette() {
+    const style = getComputedStyle(document.documentElement);
+    palette = { k: '#81939d', l: '#435560' };
+    for (const [code,token] of Object.entries(tokens)) {
+      palette[code] = style.getPropertyValue(token).trim() || '#594735';
+    }
+  }
+  function draw(force = false) {
+    const progress = (elapsed % api.duration) / api.duration;
+    for (const cat of cats) {
+      const frame = api.frameForVariant(cat.variant, progress);
+      if (!force && frame.index === cat.index) continue;
+      cat.index = frame.index;
+      for (const { context } of cat.canvases) {
+        context.clearRect(0,0,29,22);
+        for (const pixel of frame.pixels) {
+          context.fillStyle = palette[pixel.color] || palette.o;
+          context.fillRect(pixel.x+1,pixel.y+4,1,1);
+        }
+      }
+    }
+  }
+  function controls() {
+    pauseButton.textContent = paused ? '继续播放' : '暂停';
+    pauseButton.setAttribute('aria-pressed',String(paused));
+    slowButton.setAttribute('aria-pressed',String(speed === .5));
+    speedLabel.textContent = '当前 ' + speed + '×';
+  }
+  function tick(now) {
+    if (!paused && !document.hidden) elapsed += Math.max(0, now-lastTime)*speed;
+    lastTime = now;
+    draw();
+    requestAnimationFrame(tick);
+  }
+  pauseButton.addEventListener('click',() => {
+    paused = !paused;
+    lastTime = performance.now();
+    controls();
+    status.textContent = paused ? '两种走路均已暂停。' : '两种走路均已继续播放。';
+  });
+  slowButton.addEventListener('click',() => {
+    speed = speed === 1 ? .5 : 1;
+    controls();
+    status.textContent = '两种走路以 ' + speed + ' 倍速度播放。';
+  });
+  flipButton.addEventListener('click',() => {
+    const facingRight = root.classList.toggle('is-facing-right');
+    flipButton.setAttribute('aria-pressed',String(facingRight));
+    status.textContent = facingRight ? '两只小猫向右走。' : '两只小猫向左走。';
+  });
+  theme.addEventListener('change',() => {
+    document.documentElement.dataset.theme = theme.value === 'gold' ? '' : theme.value;
+    readPalette();
+    draw(true);
+    status.textContent = '已切换到' + theme.selectedOptions[0].textContent + '。';
+  });
+  document.addEventListener('visibilitychange',() => { lastTime = performance.now(); });
+  motion.addEventListener('change',event => {
+    if (event.matches) { paused = true; controls(); }
+  });
+  readPalette();
+  controls();
+  draw(true);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

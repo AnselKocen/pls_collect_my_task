@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>记忆手帐 ♥ — Memo Journal</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="cc-cat-themes.css">
+  <link rel="stylesheet" href="cc-cat.css">
+  <link rel="stylesheet" href="cc-cat-symbols.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -62,7 +65,7 @@
       <!-- CC Walk Strip -->
       <div class="cc-walk-strip">
         <div id="ccTaskBubble" class="cc-task-bubble hidden"></div>
-        <div class="cc-container st-idle" id="ccScene">
+        <div class="cc-container st-idle" id="ccScene" role="button" tabindex="0" aria-label="像素小猫，点击互动；任务进行中可查看过程">
           <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
           <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
           <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
@@ -72,11 +75,11 @@
           <div class="blue-px" style="top:12px;right:10px"></div>
           <div class="blue-px" style="top:4px;right:24px"></div>
           <div class="cc-bubble">
-            <div class="cc-bubble-box"><div class="cc-bubble-eye"></div><div class="cc-bubble-eye"></div></div>
+            <div class="cc-bubble-box"><span class="cat-idle-note">…</span></div>
             <span class="bdot bdot1"></span><span class="bdot bdot2"></span>
           </div>
           <div class="cc-think">
-            <div class="cc-think-box"><span class="cc-think-txt" id="sceneThinkTxt">...</span></div>
+            <div class="cc-think-box"><span class="cc-think-txt" id="sceneThinkTxt">…</span></div>
             <span class="bdot bdot1"></span><span class="bdot bdot2"></span>
           </div>
           <div class="cc-laptop">
@@ -93,22 +96,12 @@
               <rect x="2" y="5" width="2" height="1" class="qr" fill="#4888d8"/>
             </svg>
           </div>
-          <div class="cc-err" style="font-family:'Courier New',monospace">ERROR</div>
+          <div class="cat-status-note">再试一下</div>
           <div class="cc-broom">
             <div class="broom-stick"></div><div class="broom-head"></div><div class="broom-edge"></div>
           </div>
           <div class="cc-inner">
-            <div class="cc-sprite">
-              <div class="cc-claw L"></div>
-              <div class="cc-claw R"></div>
-              <div class="cc-body"></div>
-              <div class="cc-eyes" id="sceneEyesNormal"><div class="cc-eye"></div><div class="cc-eye"></div></div>
-              <div class="cc-eyes-gt-lt" id="sceneEyesGtLt"><div class="eye-gt"></div><div class="eye-lt"></div></div>
-              <div class="cc-eyes-caret" id="sceneEyesCaret"><div class="eye-caret"></div><div class="eye-caret"></div></div>
-              <div class="cc-eyes-xx" id="sceneEyesXx"><div class="eye-x"></div><div class="eye-x"></div></div>
-              <div class="cc-legs"><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div><div class="cc-leg"></div></div>
-              <div class="cc-shadow-bar"></div>
-            </div>
+            <div class="cc-sprite"></div>
           </div>
         </div>
       </div>
@@ -116,7 +109,7 @@
       <div class="search-bar">
         <div class="search-dual">
           <div class="search-half">
-            <label class="search-label">本地便签查找</label>
+            <label class="search-label" for="searchInput">查找便签</label>
             <div class="search-half-row search-input-wrap">
               <input type="text" id="searchInput" maxlength="200" placeholder="输入内容或标签查找便签">
               <button id="searchClearBtn" class="search-clear-btn hidden" title="清空">✕</button>
@@ -127,7 +120,7 @@
             <select id="searchMode"><option value="exact">精确匹配</option><option value="fuzzy">模糊匹配</option></select>
           </div>
         </div>
-        <p id="searchHint" class="search-hint" aria-live="polite">连续文字匹配，忽略大小写与全角差异；查找不使用 AI。</p>
+        <p id="searchHint" class="search-hint" role="status" aria-live="polite"></p>
         <button id="clearSearchBtn" class="btn-small hidden" style="display:none!important"></button>
       </div>
 
@@ -147,22 +140,25 @@
         </div>
       </div>
 
-      <div class="sidebar-section collapsible" id="settingsSection">
-        <div class="sidebar-title section-toggle" id="settingsToggle"><span class="tape tape-sidebar-2">设置 <span class="arrow">▾</span></span></div>
-        <div id="settingsPanel" class="section-body settings-panel">
-          <div class="agent-setting-row">
-            <label for="agentSelect">AI 助手</label>
-            <select id="agentSelect" disabled aria-describedby="agentHint">
-              <option value="cc">cc</option>
-              <option value="codex">codex</option>
-              <option value="codebuddy">codebuddy</option>
-            </select>
+      <div class="sidebar-section collapsible section-collapsed" id="settingsSection">
+        <button class="sidebar-title section-toggle" id="settingsToggle" type="button" aria-expanded="false" aria-controls="agentSettingsPanel"><span class="tape tape-sidebar-2">设置 <span class="arrow" aria-hidden="true">▾</span></span></button>
+        <div id="settingsPanel" class="settings-panel">
+          <div id="agentSettingsPanel" class="section-body agent-settings-panel">
+            <div class="agent-setting-row">
+              <label for="agentSelect">AI 助手</label>
+              <div class="agent-choice">
+                <select id="agentSelect" disabled aria-describedby="agentHint">
+                  <option value="cc">Claude Code</option>
+                  <option value="codex">Codex</option>
+                  <option value="codebuddy">CodeBuddy</option>
+                </select>
+              </div>
+            </div>
+            <p id="agentHint" class="agent-setting-hint" role="status" aria-live="polite"></p>
           </div>
-          <p id="agentHint" class="agent-setting-hint" role="status" aria-live="polite"></p>
-          <button id="aiTaskDetailsBtn" class="btn-small" type="button" disabled>查看任务详情</button>
-          <div style="font-size:12px;color:var(--t-text-light);margin-bottom:2px">每日整理时间 <span id="dailyTimeDisplay" style="font-weight:700;color:var(--t-text)">23:00</span></div>
-          <button id="btnScheduledTasks" class="btn-small" style="width:100%;margin-bottom:6px">更多定时任务</button>
-          <button id="btnDataManagement" class="btn-small" style="width:100%;margin-bottom:6px">数据与备份</button>
+          <div class="settings-daily-time">每日整理时间 <span id="dailyTimeDisplay">23:00</span></div>
+          <button id="btnScheduledTasks" class="btn-small settings-action">更多定时任务</button>
+          <button id="btnDataManagement" class="btn-small settings-action">数据与备份</button>
           <label>主题配色</label>
           <div class="theme-nav">
             <button id="themePrev" class="theme-arrow" title="上一个">‹</button>
@@ -365,42 +361,44 @@
         <!-- Panel: 卡池管理 -->
         <div class="habit-panel" id="habitPanelPools">
           <button type="button" id="habitWishStart" class="habit-wish-entry">
-            <span class="habit-wish-entry-icon" aria-hidden="true">🌱</span>
-            <span><strong>你最近想做什么？</strong><small>聊聊你的愿望，做一组适合自己的习惯卡</small></span>
+            <span class="habit-wish-entry-icon" aria-hidden="true">💬</span>
+            <span><strong>和AI助手聊聊近期计划</strong><small>为你生成专属习惯卡池！</small></span>
             <span aria-hidden="true">→</span>
           </button>
-          <section id="habitWishWizard" class="habit-wish-wizard hidden" aria-label="从愿望生成习惯卡池">
-            <div class="habit-wish-heading">
-              <strong>从一个小愿望开始</strong>
-              <button type="button" id="habitWishHide" class="btn-small" aria-label="收起愿望对话">收起</button>
-            </div>
-            <p id="habitWishStep" class="habit-wish-step"></p>
-            <div id="habitWishMessages" class="habit-wish-messages" role="log" aria-label="愿望对话"></div>
-            <p id="habitWishStatus" class="habit-wish-status" role="status"></p>
-            <div id="habitWishOptions" class="habit-wish-options" role="group" aria-label="选择你的回答"></div>
-            <form id="habitWishForm" class="habit-wish-form">
-              <label id="habitWishInputLabel" for="habitWishInput">你的愿望</label>
-              <textarea id="habitWishInput" rows="2" maxlength="500" placeholder="比如学英语、整理房间、开始画画…" required></textarea>
-              <button type="submit" id="habitWishSubmit" class="btn-primary">聊聊这个愿望</button>
-            </form>
-            <div id="habitWishError" class="habit-wish-error hidden">
-              <p id="habitWishErrorText" role="alert"></p>
-              <button type="button" id="habitWishRetry" class="btn-small">再试一次</button>
-            </div>
-            <div id="habitWishSuccess" class="habit-wish-success hidden">
-              <p>✨ 30张习惯卡准备好了，今天就抽一张试试吧。</p>
-              <button type="button" id="habitWishView" class="btn-small">看看我的卡池</button>
-            </div>
-            <div class="habit-wish-footer"><button type="button" id="habitWishRestart" class="btn-small">换个愿望</button></div>
+          <section id="habitWishProgress" class="habit-wish-progress hidden" aria-label="习惯卡池生成状态">
+            <div class="habit-wish-progress-icon" aria-hidden="true"></div>
+            <div class="habit-wish-progress-copy" role="status"><strong id="habitWishProgressTitle"></strong><p id="habitWishProgressText"></p></div>
+            <button type="button" id="habitWishResume" class="btn-small">查看对话</button>
           </section>
-          <div class="habit-upload-area" id="habitUploadArea">
-            <p>📁 拖拽or上传「书籍生成的skills.zip」</p>
-            <input type="file" id="habitFileInput" accept=".zip" hidden>
-          </div>
-          <p class="habit-upload-hint">没有书籍生成的zip？前往 <a href="https://pdf2app.cn" target="_blank" rel="noopener">pdf2app.cn</a>，上传你的书籍即可生成！</p>
-          <div id="habitUploadProgress" class="habit-upload-progress hidden">
+          <form id="habitUploadArea" class="habit-upload-area habit-material-form" aria-labelledby="habitMaterialTitle">
+            <p id="habitMaterialTitle" class="habit-material-title">粘贴文字或上传素材，生成专属习惯卡池！</p>
+            <div id="habitMaterialModes" class="habit-material-modes hidden" role="group" aria-label="选择本次生成使用的素材">
+              <button type="button" id="habitUseText" class="habit-material-mode" aria-pressed="true">粘贴文字</button>
+              <button type="button" id="habitUseFile" class="habit-material-mode" aria-pressed="false">使用已选文件</button>
+            </div>
+            <div id="habitMaterialTextEditor" class="habit-material-text-editor">
+              <label for="habitMaterialText">把想实践的内容贴在这里</label>
+              <textarea id="habitMaterialText" rows="4" maxlength="200000" placeholder="读书摘录、学习笔记，或一段带给你启发的文字…" aria-describedby="habitMaterialModeHint"></textarea>
+            </div>
+            <div id="habitMaterialFilePreview" class="habit-material-file hidden">
+              <span class="habit-material-file-icon" aria-hidden="true">📄</span>
+              <div class="habit-material-file-copy"><strong id="habitMaterialFileName"></strong><span id="habitMaterialFileMeta"></span></div>
+              <button type="button" id="habitMaterialRemove" class="habit-material-remove" aria-label="移除已选素材">移除</button>
+            </div>
+            <p id="habitMaterialModeHint" class="habit-material-mode-hint" role="status"></p>
+            <div class="habit-material-actions">
+              <div class="habit-material-upload-choice">
+                <button type="button" id="habitMaterialPick" class="btn-small">📎 上传素材</button>
+                <span class="habit-material-types">TXT · ZIP · Word · PDF</span>
+              </div>
+              <button type="submit" id="habitMaterialSubmit" class="btn-primary" disabled>生成专属习惯卡池</button>
+            </div>
+            <input type="file" id="habitFileInput" accept=".txt,.zip,.doc,.docx,.pdf" hidden>
+            <p id="habitMaterialError" class="habit-material-error hidden" role="alert"></p>
+          </form>
+          <div id="habitUploadProgress" class="habit-upload-progress hidden" role="status">
             <div class="habit-spinner"></div>
-            <p class="habit-progress-text">正在总结习惯...</p>
+            <p class="habit-progress-text">正在生成习惯卡池…</p>
           </div>
           <div id="habitPoolList" class="habit-pool-list"></div>
         </div>
@@ -455,6 +453,36 @@
 
 
       </div>
+    </div>
+
+    <!-- Independent second-level habit conversation -->
+    <div id="habitWishWizard" class="modal habit-wish-modal hidden">
+      <section class="modal-content habit-wish-dialog" role="dialog" aria-modal="true" aria-labelledby="habitWishTitle" tabindex="-1">
+        <div class="habit-wish-heading">
+          <strong id="habitWishTitle">💬 聊聊近期计划</strong>
+          <button type="button" id="habitWishHide" class="btn-small" aria-label="收起计划对话">收起 ✕</button>
+        </div>
+        <p id="habitWishStep" class="habit-wish-step"></p>
+        <div class="habit-wish-dialog-body">
+          <div id="habitWishMessages" class="habit-wish-messages" role="log" aria-label="计划对话"></div>
+          <p id="habitWishStatus" class="habit-wish-status" role="status"></p>
+          <div id="habitWishOptions" class="habit-wish-options" role="group" aria-label="选择你的回答"></div>
+          <form id="habitWishForm" class="habit-wish-form">
+            <label id="habitWishInputLabel" for="habitWishInput">你的计划</label>
+            <textarea id="habitWishInput" rows="2" maxlength="500" placeholder="比如学英语、整理房间、开始画画…" required></textarea>
+            <button type="submit" id="habitWishSubmit" class="btn-primary">聊聊这个计划</button>
+          </form>
+          <div id="habitWishError" class="habit-wish-error hidden">
+            <p id="habitWishErrorText" role="alert"></p>
+            <button type="button" id="habitWishRetry" class="btn-small">再试一次</button>
+          </div>
+          <div id="habitWishSuccess" class="habit-wish-success hidden">
+            <p>✨ 30张习惯卡准备好了，今天就抽一张试试吧。</p>
+            <button type="button" id="habitWishView" class="btn-small">看看我的卡池</button>
+          </div>
+        </div>
+        <div class="habit-wish-footer"><button type="button" id="habitWishRestart" class="btn-small">换个计划</button></div>
+      </section>
     </div>
 
     <!-- Habit Day Detail Popover -->
@@ -635,7 +663,7 @@
               </div>
               <div class="guide-section">
                 <h4>🌻 特色玩法</h4>
-                <p>• <b>习惯养成</b>：上传书籍 ZIP（饮食、运动、观鸟手册等），每天抽取习惯卡打卡</p>
+                <p>• <b>习惯养成</b>：和 AI 聊聊计划，或上传素材、粘贴文字生成专属卡池，每天抽取习惯卡打卡</p>
                 <p>• <b>任务盲盒</b>：迷茫时随机抽取一条待办，让 AI 帮你做决定</p>
                 <p>• <b>定时提醒</b>：设置未来时间点，到点会收到系统通知</p>
               </div>
@@ -705,6 +733,10 @@
 
   <script src="graph-layout.js"></script>
   <script src="messages.js"></script>
+  <script src="cc-cat-symbols.js"></script>
+  <script src="cc-cat.js"></script>
+  <script src="cc-cat-controller.js"></script>
+  <script src="cc-cat-idle.js"></script>
   <script src="app.js"></script>
   <script src="habit-wish.js"></script>
   <script src="task-stream.js"></script>

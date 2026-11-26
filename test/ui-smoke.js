@@ -31,22 +31,24 @@ async function run(){
  const out=process.env.MEMO_UI_SCREENSHOT_DIR;
  if(out)fs.mkdirSync(out,{recursive:true});
  await until('agentStatusKnown && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`document.getElementById('settingsToggle').click()`);
  await window.webContents.executeJavaScript(`
    if(taskWaitText({task:'标签整理 1/1',elapsedMs:65000})!=='正在处理：标签整理 1/1 · 已等待1分5秒，请稍等')throw new Error('Task duration not shown');
  `);
  await window.webContents.executeJavaScript(`
    var field=document.getElementById('agentSelect');
-   if([...field.options].map(option=>option.value).join(',')!=='cc,codex,codebuddy,trae')throw new Error('Wrong assistant options');
+   if([...field.options].map(option=>option.value).join(',')!=='cc,codex,codebuddy')throw new Error('Wrong assistant options');
    field.value='codex';field.dispatchEvent(new Event('change'));
  `);
  await until('settings.agent==="codex" && !document.getElementById("agentSelect").disabled');
  const loaded=once(window.webContents,'did-finish-load');window.webContents.reload();await loaded;
  await until('agentStatusKnown && settings.agent==="codex" && !document.getElementById("agentSelect").disabled');
  await window.webContents.executeJavaScript(`
+   if(document.getElementById('settingsToggle').getAttribute('aria-expanded')!=='false')throw new Error('Settings did not start collapsed after reload');
+   document.getElementById('settingsToggle').click();
    var label=document.querySelector('label[for="agentSelect"]').getBoundingClientRect();
    var field=document.getElementById('agentSelect').getBoundingClientRect();
    if(field.x<label.right || Math.abs((field.y+field.height/2)-(label.y+label.height/2))>4)throw new Error('Assistant label and dropdown are not on one row');
-   document.getElementById('settingsSection').classList.remove('section-collapsed');
  `);
  if(out)fs.writeFileSync(path.join(out,'agent-settings.png'),(await window.webContents.capturePage()).toPNG());
  fs.writeFileSync(invalidMode,'slow');
@@ -80,7 +82,7 @@ async function run(){
    var partialText=document.getElementById('aiTaskOutput').textContent;
    document.getElementById('aiTaskClose').click();
    if(!document.getElementById('agentSelect').disabled)throw new Error('Closing details unlocked the assistant');
-   document.getElementById('aiTaskDetailsBtn').click();
+   window.openAITaskDetails();
    if(document.getElementById('aiTaskOutput').textContent!==partialText)throw new Error('Reopening lost partial text');
    if(document.getElementById('aiTaskOutput').textContent.includes('PRIVATE_THINKING'))throw new Error('Private reasoning leaked');
  `);
@@ -91,7 +93,7 @@ async function run(){
  fs.writeFileSync(invalidMode,'partial-failure');
  await window.webContents.executeJavaScript(`document.getElementById('digestRegenBtn').click()`);
  await until('document.getElementById("digestRegenBtn").disabled');
- await window.webContents.executeJavaScript(`document.getElementById('aiTaskDetailsBtn').click()`);
+ await window.webContents.executeJavaScript(`window.openAITaskDetails()`);
  await until('document.getElementById("aiTaskStatus").dataset.status==="failed" && !document.getElementById("agentSelect").disabled');
  await window.webContents.executeJavaScript(`
    if(!document.getElementById('aiTaskStage').textContent.includes('登录'))throw new Error('Stream failure lacks a friendly message');
