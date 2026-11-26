@@ -57,6 +57,17 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function compareMemoDisplayOrder(a, b) {
+  const pinned = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
+  if (pinned) return pinned;
+  if (a.pinned) {
+    const aOrder = Number.isInteger(a.initialOrder) && a.initialOrder >= 0 && a.initialOrder < 6 ? a.initialOrder : 6;
+    const bOrder = Number.isInteger(b.initialOrder) && b.initialOrder >= 0 && b.initialOrder < 6 ? b.initialOrder : 6;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+  }
+  return new Date(b.createdAt) - new Date(a.createdAt);
+}
+
 function requestError(detail,path,status) {
   console.error('[Request]',{path,status,detail});
   const error=new Error(window.memoMessages.errorMessage(detail,settings.agent || 'cc'));
@@ -369,6 +380,7 @@ async function init() {
   document.getElementById('app').classList.remove('hidden');
   try {
     [allTags, settings, memos] = await Promise.all([api('/api/tags'), api('/api/settings'), api('/api/memos')]);
+    memos.sort(compareMemoDisplayOrder);
     renderTagSelector();
     renderFilterTags();
     loadSettings();
@@ -647,9 +659,9 @@ async function sendMemo() {
   try {
     const memo = await api('/api/memos', { method: 'POST', body: JSON.stringify({ content, tags: selectedTags }) });
     memos.unshift(memo);
-    memos.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.createdAt) - new Date(a.createdAt));
+    memos.sort(compareMemoDisplayOrder);
     input.value = '';
-    renderFilterTags(); renderKanban();
+    renderFilterTags(); applyFilters();
   } catch (err) { console.error(err);showToast(err.message); }
 }
 
@@ -799,7 +811,7 @@ function renderTagManagerList() {
               const res = await api(`/api/tags/${encodeURIComponent(tag)}`, { method: 'PUT', body: JSON.stringify({ newTag: newName }) });
               if (res.error === 'exists') { showModalToast('标签已经存在了喔～'); return; }
               allTags = res.tags;
-              memos = await api('/api/memos');
+              memos = (await api('/api/memos')).sort(compareMemoDisplayOrder);
             }
             const effectiveName = newName;
             const tagTapes = settings.tagTapes || {};
@@ -826,7 +838,7 @@ function renderTagManagerList() {
         try {
           const res = await api(`/api/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
           allTags = res.tags;
-          memos = await api('/api/memos');
+          memos = (await api('/api/memos')).sort(compareMemoDisplayOrder);
           settings = await api('/api/settings');
           renderTagManagerList(); renderTagSelector(); renderFilterTags(); renderKanban();
         } catch (err) { console.error(err); }
@@ -915,8 +927,8 @@ async function togglePin(id) {
   try {
     await api(`/api/memos/${id}`, { method: 'PUT', body: JSON.stringify({ pinned }) });
     memo.pinned = pinned;
-    memos.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.createdAt) - new Date(a.createdAt));
-    renderKanban();
+    memos.sort(compareMemoDisplayOrder);
+    applyFilters();
     showToast(pinned ? '已置顶' : '已取消置顶');
   } catch (err) { console.error(err); }
 }

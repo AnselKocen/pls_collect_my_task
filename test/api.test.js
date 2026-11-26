@@ -46,7 +46,7 @@ test('API compatibility, AI history races, backup/export/restore and restart', {
     const res=await fetch(base+route,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
     const data=await res.json();assert.equal(res.status,expected,JSON.stringify(data));return data;
   }
-  assert.equal((await request('/api/memos')).length,5);
+  assert.equal((await request('/api/memos')).length,6);
   await request('/api/tags',{method:'POST',body:{tag:'测试',emoji:'🌿'}});
   const memo=await request('/api/memos',{method:'POST',body:{content:'数据库的中文记录 🌿',tags:['测试']}});
   await request(`/api/memos/${memo.id}`,{method:'PUT',body:{pinned:true}});
@@ -89,7 +89,7 @@ test('API compatibility, AI history races, backup/export/restore and restart', {
   await generating;
   const graphs=(await request('/api/cc/suggestions')).graphHistory;
   assert.equal(graphs.length,1);assert.ok(graphs[0].nodes.length);assert.notEqual(graphs[0].id,'old-graph');
-  assert.equal(graphs[0].coverage.processedCount,6);
+  assert.equal(graphs[0].coverage.processedCount,7);
   assert.ok(graphs[0].nodes.every(node=>node.memoIds.length===1));
   fs.writeFileSync(invalid,'graph');
   await request('/api/cc/ask',{method:'POST',body:{action:'graph'},expected:400});
@@ -102,25 +102,25 @@ test('API compatibility, AI history races, backup/export/restore and restart', {
   assert.match(weekly.digest.week,/^\d{4}-W\d{2}$/);
   assert.equal((await request('/api/cc/suggestions')).weeklyDigests[0].from,weekly.digest.from);
   const tagSuggestions=await request('/api/cc/ask',{method:'POST',body:{action:'tag-suggestions'}});
-  assert.equal(tagSuggestions.coverage.processedCount,6);
+  assert.equal(tagSuggestions.coverage.processedCount,7);
 
-  const status=await request('/api/storage/status');assert.equal(status.counts.memos,6);
+  const status=await request('/api/storage/status');assert.equal(status.counts.memos,7);
   await request('/api/storage/backup',{method:'POST',expected:403});
   const hostile=await fetch(base+'/api/storage/backup',{method:'POST',headers:{Origin:'https://untrusted.example','X-Memo-Storage':'1'}});assert.equal(hostile.status,403);
   const saved=await request('/api/storage/backup',{method:'POST',storage:true});
   const download=await fetch(base+'/api/storage/backups/'+saved.name);assert.equal(download.status,200);
   const snapshot=Buffer.from(await download.arrayBuffer());assert.equal(snapshot.subarray(0,15).toString(),'SQLite format 3');
   const exported=new AdmZip(Buffer.from(await(await fetch(base+'/api/storage/export')).arrayBuffer()));
-  assert.equal(JSON.parse(exported.readAsText('memos.json')).memos.length,6);
+  assert.equal(JSON.parse(exported.readAsText('memos.json')).memos.length,7);
   assert.equal(JSON.parse(exported.readAsText('settings.json')).theme,'mint');
   assert.ok(exported.getEntry('ai_suggestions.json'));
   await request(`/api/memos/${memo.id}`,{method:'DELETE'});
-  assert.equal((await request('/api/memos')).length,5);
-  await request('/api/storage/restore',{method:'POST',storage:true,body:{name:saved.name}});
   assert.equal((await request('/api/memos')).length,6);
+  await request('/api/storage/restore',{method:'POST',storage:true,body:{name:saved.name}});
+  assert.equal((await request('/api/memos')).length,7);
   const malformed=new FormData();malformed.append('backup',new Blob(['broken']),'broken.sqlite');
   const bad=await fetch(base+'/api/storage/restore',{method:'POST',headers:{'X-Memo-Storage':'1'},body:malformed});assert.equal(bad.status,400);
-  assert.equal((await request('/api/memos')).length,6);
+  assert.equal((await request('/api/memos')).length,7);
   const form=new FormData();form.append('backup',new Blob([snapshot]),'backup.sqlite');
   const restored=await fetch(base+'/api/storage/restore',{method:'POST',headers:{'X-Memo-Storage':'1'},body:form});assert.equal(restored.status,200);
   assert.equal(fs.readdirSync(path.join(dir,'restore_upload')).length,0);
@@ -134,9 +134,9 @@ test('API compatibility, AI history races, backup/export/restore and restart', {
   child.kill('SIGTERM');await once(child,'close');
   fs.writeFileSync(path.join(dir,'memos.json'),'stale broken JSON is not reimported');
   child=await launch(children,dir,port);
-  assert.equal((await request('/api/memos')).length,6);
+  assert.equal((await request('/api/memos')).length,7);
   assert.equal((await request('/api/settings')).theme,'mint');
   assert.equal((await request('/api/habit/log')).logs[0].completed,true);
   await request('/api/tags/'+encodeURIComponent('重命名'),{method:'DELETE'});
-  assert.equal((await request('/api/memos')).length,5); // Existing tag deletion semantics.
+  assert.equal((await request('/api/memos')).length,6); // Existing tag deletion semantics.
 });

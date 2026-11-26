@@ -82,7 +82,7 @@ test('start verifies health, reuses only its matching instance, and stop/restart
   assert.equal(post.status, 200);
   passed(await f.run('stop')); assert.ok(!fs.existsSync(f.pidPath)); assert.ok(!fs.existsSync(f.statePath));
   passed(await f.run('start')); assert.notEqual(f.state().instanceId, original.instanceId);
-  assert.equal((await (await fetch(f.base + '/api/memos')).json()).length, 6);
+  assert.equal((await (await fetch(f.base + '/api/memos')).json()).length, 7);
   passed(await f.run('stop'));
 });
 

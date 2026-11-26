@@ -33,7 +33,7 @@ function writeFixture(dir,data) { for(const [file,value] of Object.entries(data)
 
 test('fresh database seeds once and reopening uses SQLite, not stale JSON', t => {
   const dir=temporary(t);let store=new Store(dir);
-  assert.equal(store.read('memos').memos.length,5);
+  assert.equal(store.read('memos').memos.length,6);
   store.update('memos',data=>{data.memos=[];});store.close();
   fs.writeFileSync(path.join(dir,'memos.json'),'not valid JSON');
   store=new Store(dir);assert.equal(store.read('memos').memos.length,0);store.close();
@@ -90,7 +90,7 @@ test('two connections retain their additions using read-modify-write transaction
   const dir=temporary(t),a=open(t,dir),b=open(t,dir);
   a.update('memos',data=>{data.memos.push({id:'a',content:'A',tags:[]});});
   b.update('memos',data=>{data.memos.push({id:'b',content:'B',tags:[]});});
-  assert.equal(a.read('memos').memos.length,7);
+  assert.equal(a.read('memos').memos.length,8);
 });
 
 test('reminder queue, one-time deletion and duplicate suppression are atomic', t => {

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="1 1.093117409 21 15.303643725" shape-rendering="crispEdges">
+  <title>暹罗像素猫猫头</title>
+  <desc>按参考图的23×16格原样描摹，共208个有色格。</desc>
+  <g transform="scale(1 1.093117409)">
+    <path fill="#020201" d="M5 1h2v1H5z M16 1h2v1H16z M4 2h1v1H4z M7 2h2v1H7z M14 2h2v1H14z M18 2h1v1H18z M4 3h1v1H4z M9 3h5v1H9z M18 3h1v1H18z M4 4h1v1H4z M18 4h1v1H18z M4 5h1v1H4z M18 5h1v1H18z M3 6h1v1H3z M19 6h1v1H19z M3 7h1v1H3z M19 7h1v1H19z M1 8h4v1H1z M18 8h4v1H18z M3 9h1v1H3z M8 9h1v1H8z M14 9h1v1H14z M19 9h1v1H19z M1 10h4v1H1z M8 10h1v1H8z M11 10h1v1H11z M14 10h1v1H14z M18 10h4v1H18z M3 11h1v1H3z M19 11h1v1H19z M4 12h1v1H4z M18 12h1v1H18z M5 13h1v1H5z M17 13h1v1H17z M6 14h11v1H6z"/>
+    <path fill="#B2A294" d="M5 2h2v1H5z M16 2h2v1H16z M5 3h4v1H5z M14 3h4v1H14z M5 4h3v1H5z M15 4h3v1H15z M5 5h1v1H5z M17 5h1v1H17z M9 7h5v1H9z M8 8h2v1H8z M13 8h2v1H13z M7 9h1v1H7z M15 9h1v1H15z M7 10h1v1H7z M15 10h1v1H15z M9 11h1v1H9z M13 11h1v1H13z"/>
+    <path fill="#F6EEE2" d="M8 4h7v1H8z M6 5h11v1H6z M4 6h15v1H4z M4 7h5v1H4z M14 7h5v1H14z M5 8h3v1H5z M15 8h3v1H15z M4 9h3v1H4z M16 9h3v1H16z M5 10h2v1H5z M16 10h2v1H16z M4 11h3v1H4z M16 11h3v1H16z M5 12h13v1H5z M6 13h11v1H6z"/>
+    <path fill="#A38567" d="M10 8h3v1H10z M9 9h5v1H9z M9 10h2v1H9z M12 10h2v1H12z M10 11h3v1H10z"/>
+    <path fill="#F6C2CB" d="M7 11h2v1H7z M14 11h2v1H14z"/>
+    <g fill="#020201" shape-rendering="geometricPrecision">
+      <rect x="8" y="9" width="1" height="2"/>
+      <rect x="14" y="9" width="1" height="2"/>
+      <rect x="11" y="10" width="1" height="1"/>
+    </g>
+  </g>
+</svg>

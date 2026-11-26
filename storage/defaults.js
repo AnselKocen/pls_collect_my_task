@@ -5,33 +5,39 @@ module.exports = function createDefaults() {
     'memos.json': { memos: [
       {
         id: 'welcome-1',
-        content: '欢迎来到记忆手帐Memo Journal ~ 尽情探索吧 ❤️ 点击「智能助手」tag查看指南',
+        content: '欢迎来到记忆手帐Memo Journal ~ 尽情探索吧 ❤️',
         tags: ['欢迎'],
-        createdAt: now, updatedAt: now, pinned: true
-      },
-      {
-        id: 'welcome-2',
-        content: '习惯养成✨ - 上传任何你想养成习惯的书籍，例如饮食、运动，甚至观鸟手册。每天抽取你的习惯卡片🃏，坚持然后填满打卡日历吧！',
-        tags: ['特色玩法'],
-        createdAt: now, updatedAt: now, pinned: true
+        createdAt: now, updatedAt: now, pinned: true, initialOrder: 0
       },
       {
         id: 'welcome-3',
-        content: '这是一个专属于你的便签手帐本，AI作为你的小助理，能帮你完成一系列任务。在设置里选择并登录 Claude Code、Codex 或 CodeBuddy 后，就能使用 AI 功能哦💗',
+        content: '这是一个专属于你的便签手帐本，AI作为你的小助理，能帮你完成一系列任务。现在支持 Codex、Claude Code 和 CodeBuddy，登录对应的CLI后，在设置里选择你使用的助手，就能使用AI相关功能哦💗',
         tags: ['指南'],
-        createdAt: now, updatedAt: now, pinned: true
-      },
-      {
-        id: 'welcome-4',
-        content: '一次只能处理一个 AI 任务，完成后可以在设置里切换助手。',
-        tags: ['AI助手'],
-        createdAt: now, updatedAt: now
+        createdAt: now, updatedAt: now, pinned: true, initialOrder: 1
       },
       {
         id: 'welcome-5',
         content: '小技巧：按CMD+R可以刷新噢',
         tags: ['tips'],
-        createdAt: now, updatedAt: now
+        createdAt: now, updatedAt: now, pinned: true, initialOrder: 2
+      },
+      {
+        id: 'welcome-2',
+        content: '习惯养成✨ - 上传任何你想养成习惯的书籍，例如饮食、运动，甚至观鸟手册。如果没有素材，你也可以和助手聊聊。AI助手会帮你生成习惯卡池！每天抽取你的习惯卡片🃏，坚持然后填满打卡日历吧！',
+        tags: ['特色玩法'],
+        createdAt: now, updatedAt: now, pinned: true, initialOrder: 3
+      },
+      {
+        id: 'welcome-4',
+        content: '思绪太杂乱，任务太多？让AI助手帮你画一张便签关联地图，看看便签们隐藏的关联吧！🌾',
+        tags: ['特色玩法'],
+        createdAt: now, updatedAt: now, pinned: true, initialOrder: 4
+      },
+      {
+        id: 'welcome-6',
+        content: '事情越堆越多……不知道该先处理哪个？试试任务盲盒！随机抽取一张便签～今天就从这个任务开始吧～🎲',
+        tags: ['特色玩法'],
+        createdAt: now, updatedAt: now, pinned: true, initialOrder: 5
       }
     ] },
     'settings.json': {
@@ -39,10 +45,10 @@ module.exports = function createDefaults() {
       dailyDigestTime: '23:55',
       weeklyDigestDay: 'sunday',
       weeklyDigestTime: '23:59',
-      tags: ['欢迎', '特色玩法', '指南', 'AI助手', 'tips'],
-      tagOrder: ['欢迎', '特色玩法', '指南', 'AI助手', 'tips'],
-      tagEmojis: { '欢迎': '🍮', '特色玩法': '🍯', '指南': '🍩', 'AI助手': '🧁', 'tips': '💫' },
-      tagTapes: { '欢迎': 'tape-3', '特色玩法': 'tape-4', '指南': 'tape-1', 'AI助手': 'tape-6', 'tips': 'tape-8' }
+      tags: ['欢迎', '特色玩法', '指南', 'tips'],
+      tagOrder: ['欢迎', '特色玩法', '指南', 'tips'],
+      tagEmojis: { '欢迎': '🍮', '特色玩法': '🍯', '指南': '🍩', 'tips': '💫' },
+      tagTapes: { '欢迎': 'tape-3', '特色玩法': 'tape-4', '指南': 'tape-1', 'tips': 'tape-8' }
     },
     'ai_suggestions.json': {
       dailyDigest: null,
