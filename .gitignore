@@ -17,3 +17,13 @@ coffee.html
 
 ai-config.json
 ai-config.json.tmp
+
+# Project-specific deployment keys stay local.
+/.deploy_ed25519
+/.deploy_ed25519.pub
+
+# Generated previews and acceptance evidence.
+/output/
+/test/*-evidence/
+/test/final-acceptance-checklist.html
+/test/final-acceptance-checklist.json

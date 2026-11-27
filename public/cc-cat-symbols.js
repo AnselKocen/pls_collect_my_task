@@ -16,7 +16,17 @@
       '.....######.', '.....######.', '.....##..##.', '.....##..##.',
       '.....##..##.', '.....##..##.', '.....##..##.', '...####..##.',
       '..#####.###.', '..####.####.', '.......###..', '............'
-    ]
+    ],
+    shake: [
+      '.##....##.', '##....##..', '##....##..', '.##....##.',
+      '..##....##', '..##....##', '.##....##.'
+    ],
+    sleep: [
+      '.######.', '########', '.....###', '....###.', '...###..',
+      '..###...', '.###....', '########', '.######.'
+    ],
+    'sleep-small': ['####', '..##', '.##.', '####', '####'],
+    'sleep-medium': ['.####.', '######', '...###', '..###.', '.###..', '######', '.####.']
   };
   const RING_DOTS = [[4,0], [7,1], [9,4], [7,7], [4,9], [1,7], [0,4], [1,1]];
 
@@ -59,10 +69,18 @@
     const group = document.createElement('span');
     group.className = 'cat-state-symbols';
     group.setAttribute('aria-hidden','true');
-    for (const state of ['thinking','looking','error','happy']) {
+    for (const state of ['thinking','looking','error','happy','shake','sleep']) {
       const symbol = document.createElement('span');
       symbol.className = 'cat-state-symbol cat-symbol-'+state;
-      symbol.append(glyph(document,state));
+      if (state === 'sleep') {
+        for (const [index,name] of ['sleep-small','sleep-medium','sleep'].entries()) {
+          const z = document.createElement('span');
+          z.className = 'cat-sleep-z cat-sleep-z-'+index;
+          z.style.setProperty('--z-phase',(index*.4)+'s');
+          z.append(glyph(document,name));
+          symbol.append(z);
+        }
+      } else symbol.append(glyph(document,state));
       group.append(symbol);
     }
     container.append(group);

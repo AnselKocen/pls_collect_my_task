@@ -1,0 +1,23 @@
+.room{
+  /* Coarse fallback until the theme's traced outline is ready. Only exterior
+     paper is hidden; room colors, cat and foreground remain intact. Inline
+     SVG also works when the page is opened with file://. */
+  --room-outline:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1254 1254'%3E%3Cdefs%3E%3Cfilter id='edge' x='-5%25' y='-5%25' width='110%25' height='110%25' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur stdDeviation='1.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M16 351 L627 34 L1239 351 L1239 945 L631 1261 L16 945 Z' fill='white' filter='url(%23edge)'/%3E%3C/svg%3E");
+  -webkit-mask-image:var(--room-outline);mask-image:var(--room-outline);
+  -webkit-mask-size:100% 100%;mask-size:100% 100%;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  mask-mode:alpha;
+}
+.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.room-theme-controls{display:flex;align-items:center;gap:8px;font-size:14px}
+.room-theme-controls label{color:var(--muted);white-space:nowrap}
+.room-theme-picker{display:flex;align-items:center;height:40px;border:1px solid var(--line);border-radius:2px;background:var(--surface);box-shadow:2px 2px 0 var(--shadow)}
+.room-theme-picker button{width:30px;height:38px;border:0;background:none;font-size:22px;line-height:1}
+.room-theme-picker select{min-width:132px;max-width:166px;height:38px;border:0;border-inline:1px solid var(--line);border-radius:0;padding:0 7px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.room-theme-picker select:focus-visible{outline:2px solid var(--sage);outline-offset:3px}
+.room-theme-controls[aria-busy="true"] label{opacity:.65}
+.tool[aria-pressed="true"]{color:var(--active-text,var(--paper))}
+.room-theme-error{flex-basis:100%;color:var(--ink);font-size:13px;text-align:right;max-width:390px;margin:0}
+@media(max-width:800px){.header{flex-wrap:wrap;gap:14px}.header-actions{gap:10px}.room-theme-controls{gap:7px}.room-theme-controls label{font-size:13px}}
+@media(max-width:650px){.header{padding-bottom:12px}.identity{flex:1}.header-actions{width:100%;justify-content:space-between;flex-wrap:wrap}.room-theme-picker{height:38px}.room-theme-picker button,.room-theme-picker select{height:36px}.room-theme-picker select{min-width:127px;max-width:149px;font-size:13px}.room-theme-controls{font-size:13px}.stage{max-height:calc(100svh - 340px);max-width:calc(100svh - 340px)}.room-theme-error{text-align:left;max-width:none}}
+@media(max-width:370px){.room-theme-controls{gap:5px}.room-theme-controls label{display:none}.room-theme-picker select{min-width:115px;max-width:124px}.room-theme-picker button{width:26px}}

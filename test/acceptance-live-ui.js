@@ -42,8 +42,8 @@ async function until(expression,timeout=15000,{task=false}={}){
   while(Date.now()<end){
     if(await read(expression))return;
     if(task){
-      const state=await read(`({status:document.getElementById('aiTaskStatus').dataset.status,stage:document.getElementById('aiTaskStage').textContent,started:window.memoTaskStream?.task?.startedAt})`);
-      // The task-status element is updated by SSE. Do not turn a failed real call into a retry/fake.
+      const state=await read(`({status:window._ccLatestTask?.status,stage:window._ccLatestTask?.error || window._ccLatestTask?.stage,started:window._ccLatestTask?.startedAt})`);
+      // Task metadata is updated by SSE. Do not turn a failed real call into a retry/fake.
       if(state.status==='failed')throw new Error('Real '+agent+' UI task failed: '+state.stage+'\n'+logs.slice(-5000));
     }
     await delay(40);
@@ -100,60 +100,50 @@ async function run(){
   passed('cli-and-isolation','真实 CLI、临时数据库及独立桌面会话',{cli,records:8});
 
   if(!graphOnly){
-  begin('tag-stream-ui','点击标签整理、完成前可见增量、锁和关闭重开');
+  begin('tag-stream-ui','点击标签整理、后台回答增量、锁和结果跳转');
   await read(`document.getElementById('btnTagSuggest').click()`);
   await until(`!document.getElementById('tagSuggestModal').classList.contains('hidden')`);
   await read(`
     window.streamSamples=[];window.streamStart=performance.now();
-    // Passive second subscription records actual server message IDs; it never alters UI/model data.
-    window.acceptanceMessageIds=[];
-    window.acceptanceSource=new EventSource('/api/ai/events');
-    window.acceptanceSource.addEventListener('task',event=>{
-      const update=JSON.parse(event.data);
-      if(update.type==='snapshot')window.acceptanceMessageIds=(update.task?.messages || []).map(message=>message.id);
-      else if(update.type==='delta' && !window.acceptanceMessageIds.includes(update.message.id))window.acceptanceMessageIds.push(update.message.id);
-    });
-    window.streamObserver=new MutationObserver(()=>{
-      const chars=[...document.querySelectorAll('#aiTaskOutput pre')].reduce((n,node)=>n+node.textContent.length,0);
-      const modalVisible=!document.getElementById('aiTaskModal').classList.contains('hidden');
-      if(modalVisible && document.getElementById('aiTaskStatus').dataset.status==='running' && chars>(window.streamSamples.at(-1)?.chars || 0))window.streamSamples.push({ms:Math.round(performance.now()-window.streamStart),chars});
-    });
-    window.streamObserver.observe(document.getElementById('aiTaskOutput'),{childList:true,subtree:true,characterData:true});
+    window.streamListener=event=>{
+      const task=event.detail.task,chars=(task?.messages || []).reduce((n,m)=>n+m.text.length,0);
+      if(task?.status==='running' && chars>(window.streamSamples.at(-1)?.chars || 0))window.streamSamples.push({ms:Math.round(performance.now()-window.streamStart),chars});
+    };
+    window.addEventListener('cc-task-update',window.streamListener);
     document.getElementById('tagSuggestGenBtn').click();
   `);
-  await until(`!document.querySelector('#tagSuggestGenBtn + [data-ai-task-details]').hidden`);
-  await read(`document.querySelector('#tagSuggestGenBtn + [data-ai-task-details]').click()`);
-  await until(`!document.getElementById('aiTaskModal').classList.contains('hidden')`);
-  await until(`document.querySelector('#aiTaskOutput pre')?.textContent.length>0`,timeoutMs,{task:true});
-  await until(`window.acceptanceMessageIds.length>=document.querySelectorAll('#aiTaskOutput pre').length`);
-  const partial=await read(`(()=>{
-    const before=[...document.querySelectorAll('#aiTaskOutput pre')].map((pre,index)=>({id:window.acceptanceMessageIds[index],text:pre.textContent}));
-    const running=document.getElementById('aiTaskStatus').dataset.status==='running';
+  await until(`window._ccLatestTask?.status==='running' && _ccLatestTask.messages.some(m=>m.text.length>0)`,timeoutMs,{task:true});
+  const partial=await read(`(async()=>{
+    const before=_ccLatestTask.messages.map(m=>({...m}));
+    const running=_ccLatestTask.status==='running';
     const locked=document.getElementById('agentSelect').disabled;
-    document.getElementById('aiTaskClose').click();
-    const closed=document.getElementById('aiTaskModal').classList.contains('hidden');
+    document.getElementById('tagSuggestClose').click();
+    const closed=document.getElementById('tagSuggestModal').classList.contains('hidden');
     const stillLocked=document.getElementById('agentSelect').disabled;
-    window.openAITaskDetails();
-    const after=[...document.querySelectorAll('#aiTaskOutput pre')].map((pre,index)=>({id:window.acceptanceMessageIds[index],text:pre.textContent}));
-    const preserved=before.length>0 && after.length>=before.length && before.every(previous=>{
+    const blocked=!(await window.openAITaskDestination());
+    const after=_ccLatestTask.messages;
+    const preserved=before.length>0 && before.every(previous=>{
       const current=after.find(message=>message.id===previous.id);
       return previous.id && current && current.text.startsWith(previous.text);
     });
-    return {running,locked,closed,stillLocked,reopened:!document.getElementById('aiTaskModal').classList.contains('hidden'),preserved};
+    return {running,locked,closed,stillLocked,blocked,buttonHidden:document.querySelector('#tagSuggestGenBtn + [data-ai-task-details]').hidden,preserved,noTranscript:!document.getElementById('aiTaskModal')};
   })()`);
-  assert.ok(partial.running,'The first visible text must arrive before completion');
+  assert.ok(partial.running,'The first reply text must arrive before completion');
   for(const [key,value] of Object.entries(partial))assert.equal(value,true,'Partial task check failed: '+key);
   await capture('tag-stream-partial.png');
-  await until(`document.getElementById('aiTaskStatus').dataset.status==='completed' && !document.getElementById('tagSuggestGenBtn').disabled && !document.getElementById('agentSelect').disabled`,timeoutMs,{task:true});
+  await until(`window._ccLatestTask?.status==='completed' && !document.getElementById('tagSuggestGenBtn').disabled && !document.getElementById('agentSelect').disabled`,timeoutMs,{task:true});
+  await until(`!document.querySelector('#tagSuggestGenBtn + [data-ai-task-details]').hidden`);
+  await read(`document.querySelector('#tagSuggestGenBtn + [data-ai-task-details]').click()`);
+  await until(`!document.getElementById('tagSuggestModal').classList.contains('hidden')`);
   const samples=await read('window.streamSamples');report.streamSamples=samples;
-  assert.ok(samples.length>=3,'Expected at least 3 visible text increases while running with snapshot polling blocked: '+JSON.stringify(samples));
-  const tagState=await read(`({history:tagSuggestHistory.length,renderedHistory:document.querySelectorAll('#tagSuggestHistory .tag-summary-item').length,answer:[...document.querySelectorAll('#aiTaskOutput pre')].at(-1)?.textContent || ''})`);
+  assert.ok(samples.length>=3,'Expected at least 3 retained text increases while running with snapshot polling blocked: '+JSON.stringify(samples));
+  const tagState=await read(`({history:tagSuggestHistory.length,renderedHistory:document.querySelectorAll('#tagSuggestHistory .tag-summary-item').length,answer:_ccLatestTask.messages.at(-1)?.text || ''})`);
   assert.equal(tagState.history,1);assert.equal(tagState.renderedHistory,1);
   const parsed=JSON.parse(tagState.answer.trim().replace(/^\x60\x60\x60(?:json)?\s*/i,'').replace(/\s*\x60\x60\x60$/,''));assert.ok(Array.isArray(parsed));
   const tagSaved=await json('/api/cc/suggestions');assert.equal(tagSaved.tagSuggestionHistory.length,1);assert.equal(tagSaved.tagSuggestionHistory[0].coverage.processedCount,8);
   await capture('tag-stream-completed.png');
-  passed('tag-stream-ui','标签整理真实流式、锁、关闭重开、结果校验和历史保存',{...partial,visibleGrowthSamples:samples.length,firstVisibleMs:samples[0].ms,suggestions:parsed.length,processedCount:8,history:1});
-  await read(`window.streamObserver.disconnect();window.acceptanceSource.close();document.getElementById('aiTaskClose').click();document.getElementById('tagSuggestClose').click()`);
+  passed('tag-stream-ui','标签整理真实回答留存、锁、结果跳转、校验和历史保存',{...partial,retainedGrowthSamples:samples.length,firstReplyMs:samples[0].ms,suggestions:parsed.length,processedCount:8,history:1});
+  await read(`window.removeEventListener('cc-task-update',window.streamListener);document.getElementById('tagSuggestClose').click()`);
 
   begin('daily-digest-ui','点击生成今日摘要并展开、保存');
   assert.equal(await read(`document.getElementById('digestBanner').classList.contains('hidden')`),false);
@@ -240,7 +230,7 @@ app.whenReady().then(run).catch(async error=>{
   report.success=false;report.error={message:error.message,stack:error.stack};
   if(currentCheck && !report.checks.some(check=>check.id===currentCheck.id))report.checks.push({...currentCheck,status:'failed',error:{message:error.message,stack:error.stack}});
   console.error(error.stack);process.exitCode=1;
-  try{if(window && !window.isDestroyed())report.failureUi=await read(`({taskStatus:document.getElementById('aiTaskStatus')?.dataset.status,taskStage:document.getElementById('aiTaskStage')?.textContent,toast:document.querySelector('.toast')?.textContent})`);await capture('failed.png');}catch(captureError){report.captureError=captureError.message;}
+  try{if(window && !window.isDestroyed())report.failureUi=await read(`({taskStatus:window._ccLatestTask?.status,taskStage:window._ccLatestTask?.error || window._ccLatestTask?.stage,toast:document.querySelector('.toast')?.textContent})`);await capture('failed.png');}catch(captureError){report.captureError=captureError.message;}
 }).finally(async()=>{
   if(child && child.exitCode===null && child.signalCode===null){child.kill('SIGTERM');await once(child,'close');}
   report.finishedAt=new Date().toISOString();report.browserErrors=browserErrors;delete report.currentCheck;persist();

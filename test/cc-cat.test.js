@@ -19,12 +19,15 @@ const bounds = pixels => ({
 });
 
 function assertConnected(pixels, name) {
-  // Half-cell eyes and rear-paw edges render on the native doubled canvas.
-  // Compare the actual covered subcells rather than treating every mark as 1x1.
+  // Preserve half-cell coverage for the original sprite. The refined rear paws
+  // use tenths of a cell, so compare those frames at their exact finer scale.
+  const scale = pixels.some(({x, y, w = 1, h = 1}) =>
+    [x, y, w, h].some(value => !Number.isInteger(value * 2))) ? 10 : 2;
   const remaining = new Set();
   for (const { x, y, w = 1, h = 1 } of pixels) {
-    for (let dy = 0; dy < h * 2; dy++) for (let dx = 0; dx < w * 2; dx++) {
-      remaining.add(`${x * 2 + dx},${y * 2 + dy}`);
+    const left = Math.round(x * scale), top = Math.round(y * scale);
+    for (let dy = 0; dy < Math.round(h * scale); dy++) for (let dx = 0; dx < Math.round(w * scale); dx++) {
+      remaining.add(`${left + dx},${top + dy}`);
     }
   }
   const pending = [remaining.values().next().value];
@@ -62,7 +65,7 @@ test('the default cat is a low loaf with its haunch and short tail behind the he
   }
 });
 
-test('all eight complete animation cycles stay on the pixel grid and inside the canvas', () => {
+test('all complete animation cycles stay on the pixel grid and inside their canvas', () => {
   assert.deepEqual(Object.keys(ANIMATIONS).sort(), [...STATES, 'walk'].sort());
   const supportedColors = new Set([...publicFile('cc-cat.css').matchAll(/\.cat-color-([a-z])\s*\{/g)].map(match => match[1]));
   let checked = 0;
@@ -70,19 +73,33 @@ test('all eight complete animation cycles stay on the pixel grid and inside the 
     assert.ok(animation.duration > 0 && Number.isInteger(animation.frames) && animation.frames >= 2);
     for (const [index, frame] of framesFor(state).entries()) {
       assert.equal(frame.index, index, `${state} skipped frame ${index}`);
+      const viewport = frame.viewport || {
+        width: WIDTH + LEFT_PADDING, height: HEIGHT + TOP_PADDING, left: LEFT_PADDING, top: TOP_PADDING
+      };
+      assert.ok(Number.isInteger(viewport.width) && viewport.width > 0 && Number.isInteger(viewport.height) && viewport.height > 0,
+        `${state}/${index}: invalid canvas size`);
+      assert.ok(Number.isInteger(viewport.left) && Number.isInteger(viewport.top), `${state}/${index}: invalid drawing origin`);
       for (const [part, pixels] of Object.entries({ ...frame.parts, composite: frame.pixels })) {
         assert.equal(coordinates(pixels).size, pixels.length, `${state}/${index}/${part} repeats a pixel`);
         for (const { x, y, color, w = 1, h = 1 } of pixels) {
-          const gridScale = ['composite', 'foot-left', 'foot-right'].includes(part) ? 2 : 1;
-          assert.ok(Number.isInteger(x * gridScale) && x >= -LEFT_PADDING && x + w <= WIDTH, `${state}/${index}/${part}: invalid x ${x}`);
-          const topPadding = ['head', 'tail-tip', 'composite'].includes(part) ? TOP_PADDING : 0;
-          assert.ok(Number.isInteger(y) && y >= -topPadding && y + h <= HEIGHT, `${state}/${index}/${part}: invalid y ${y}`);
-          assert.ok(w > 0 && w <= 1 && Number.isInteger(w * 2), `${state}/${index}/${part}: invalid width ${w}`);
+          const subpixelPart = ['composite', 'foot-left', 'foot-right'].includes(part);
+          const refined = viewport.rasterScale === 10 && subpixelPart;
+          const gridScale = subpixelPart ? refined ? 10 : 2 : 1;
+          const onGrid = (value, scale) => scale === 10
+            ? Math.abs(value * scale - Math.round(value * scale)) < 1e-9 : Number.isInteger(value * scale);
+          assert.ok(onGrid(x, gridScale) && x >= -viewport.left && x + w <= viewport.width - viewport.left, `${state}/${index}/${part}: invalid x ${x}`);
+          const topPadding = frame.viewport ? viewport.top : ['head', 'tail-tip', 'composite'].includes(part) ? TOP_PADDING : 0;
+          assert.ok(Number.isInteger(y) && y >= -topPadding && y + h <= viewport.height - viewport.top, `${state}/${index}/${part}: invalid y ${y}`);
+          assert.ok(w > 0 && w <= 1 && onGrid(w, refined ? 10 : 2), `${state}/${index}/${part}: invalid width ${w}`);
           assert.ok(h > 0 && h <= 1 && Number.isInteger(h * 2), `${state}/${index}/${part}: invalid height ${h}`);
           assert.ok(supportedColors.has(color), `${state}/${index}/${part}: missing color swatch ${color}`);
         }
       }
-      assertConnected(frame.pixels, `${state}/${index} complete silhouette`);
+      if (state === 'yarn') {
+        const cat = compositeFrame({...frame.parts, prop:[]}, frame.expression, frame.pose);
+        assertConnected(cat, `${state}/${index} complete cat silhouette`);
+        assertConnected(frame.parts.prop, `${state}/${index} independent ball silhouette`);
+      } else assertConnected(frame.pixels, `${state}/${index} complete silhouette`);
       checked++;
     }
   }
@@ -114,7 +131,9 @@ test('half-cell paw edges preserve uncovered haunch color through later layers',
 test('faces remain attached to the head throughout every animation', () => {
   for (const state of Object.keys(ANIMATIONS)) for (const frame of framesFor(state)) {
     const head = coordinates(frame.parts.head);
-    for (const expression of ['normal', 'curious', 'smile']) {
+    const expressions = ['normal', 'curious', 'smile'];
+    if (['gentle','sleep'].includes(frame.expression)) expressions.push(frame.expression);
+    for (const expression of expressions) {
       const face = expressionPixels(expression, frame.pose);
       assert.ok(face.some(pixel => pixel.color === 'n'), `${state} loses its nose`);
       assert.ok(face.filter(pixel => pixel.color === 'e').length >= 2, `${state} loses its eyes`);
@@ -147,11 +166,14 @@ test('the mouth stays centered between the eyes for smiling and glancing faces',
   }
 });
 
-test('every action visibly animates and has its own sequence', () => {
+test('active actions animate, the sleeping cat rests and every action has its own sequence', () => {
   const sequences = new Set();
   for (const state of Object.keys(ANIMATIONS)) {
     const signatures = framesFor(state).map(frame => signature(frame.pixels));
-    assert.ok(new Set(signatures).size >= 2, `${state} has no visible movement`);
+    if (state === 'belly') {
+      assert.equal(new Set(signatures).size, 1, 'the sleeping cat stays still with its sleeping expression');
+      assert.ok(framesFor(state).every(frame => frame.expression === 'sleep'), 'the resting sequence keeps its closed-eye sleep face');
+    } else assert.ok(new Set(signatures).size >= 2, `${state} has no visible movement`);
     sequences.add([...new Set(signatures)].sort().join('|'));
   }
   assert.equal(sequences.size, Object.keys(ANIMATIONS).length, 'different actions must produce different poses');

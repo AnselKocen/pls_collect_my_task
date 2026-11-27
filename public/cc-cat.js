@@ -6,16 +6,18 @@
   const LEFT_PADDING = 1;
   const TOP_PADDING = 4;
   const RENDER_SCALE = 2;
-  const STATES = ['idle', 'thinking', 'coding', 'looking', 'sweeping', 'error', 'happy'];
+  const STATES = ['idle', 'thinking', 'coding', 'looking', 'sweeping', 'error', 'happy', 'stretch', 'yarn', 'belly', 'stand'];
   const ANIMATIONS = {
     idle: { duration: 5600, frames: 40 }, walk: { duration: 1120, frames: 8 },
     thinking: { duration: 3600, frames: 24 }, coding: { duration: 1600, frames: 12 },
     looking: { duration: 4000, frames: 24 }, sweeping: { duration: 2400, frames: 16 },
-    error: { duration: 3200, frames: 20 }, happy: { duration: 2800, frames: 20 }
+    error: { duration: 3200, frames: 20 }, happy: { duration: 2800, frames: 20 },
+    stretch: { duration: 5800, frames: 58 }, yarn: { duration: 4000, frames: 40 },
+    belly: { duration: 5600, frames: 56 }, stand: { duration: 4800, frames: 32 }
   };
   const COLOR_CODES = 'fopdenbsmctaklrh';
-  // Idle-only gestures live outside ANIMATIONS and frameForState. Task poses,
-  // their timings, and their success/failure feedback stay exactly as before.
+  // Idle-only gestures have their own schedule, separate from task actions
+  // and their success/failure feedback timings.
   const IDLE_ACTIONS = {
     rest:{ duration:1, frames:1 }, blink:{ duration:900, frames:12 }, ear:{ duration:900, frames:12 },
     look:{ duration:2400, frames:32 }, tail:{ duration:2400, frames:32 },
@@ -25,7 +27,134 @@
   let animationRequest = null;
   const motion = global.matchMedia?.('(prefers-reduced-motion: reduce)');
 
+  // The stretch starts with a short, footless silhouette. Head and torso pop
+  // up one cell together as the paws appear, then the back takes one more step.
+  const REFERENCE_STAND_ROWS = [
+    "..........................####...",
+    ".........................#wwww##.",
+    "........................#wwwwww#.",
+    ".................#####..#wg##gww#",
+    "................wwwwww##wg#..#gw#",
+    "................wwwwwwg#wg#..#gw#",
+    "................wwwwwwwwwg#..#gw#",
+    "................wwwwwwwwwg#.#gw#.",
+    "................wwwwwwwww#w#www#.",
+    "................wwwwwwwww#w#ww#..",
+    "................wwwwwwwwww#w##...",
+    "................wwwwwwwwww#......",
+    "................wwwwwwwwww#......",
+    "...gwwwwwwwwwgggwwwwwwwwww#......",
+    "...##ggggggggwwwwwwwwwwwww#......",
+    "...#wwwwwwwwwwwwwgwwwwwwww#......",
+    "...#wwwwwwwwwwwwwwgwwwwww#.......",
+    "...#wwwwwwwwwwww###gwwwww#.......",
+    "....#wwwgggwwwg#.#gdgwww#........",
+    "....#wwwwswwww#..#ggdwww#........",
+    ".....#wwwswwwg#...#gdwww#........",
+    ".....#wwwdwww#....#gdww#.........",
+    ".....#wwwdwww#....#gdww#.........",
+    "......#ww#ww#.....#gdw#..........",
+    "......#pp#pp#.....#w#w#..........",
+    "......#######.....#####.........."
+  ];
+  function createReferenceStandParts(pose) {
+    const parts = Object.fromEntries(Object.keys(PARTS).map(name=>[name,new Map()]));
+    const put = (part,pixel) => parts[part].set(`${pixel.x},${pixel.y}`,pixel);
+    PARTS.head.forEach(pixel=>put('head',{...pixel,x:pixel.x+pose.headX,y:pixel.y+pose.headY}));
+    const colors = { w:'f', '#':'o', g:'s', s:'s', d:'m', p:'p' };
+    const backLower = 2-(pose.backLift || 0);
+    const chestCenter = expressionPixels('normal',pose).find(pixel=>pixel.color === 'n').x;
+    const legOffset = chestCenter-9;
+    REFERENCE_STAND_ROWS.forEach((row,y)=>{
+      [...row].forEach((color,x)=>{
+        if (color === '.') return;
+        // Remove torso columns between the shoulders and haunch; move the
+        // rear legs and complete curl together so all four feet keep their width.
+        if ((y < 18 && x >= 16 && x <= 18) || (y >= 18 && y <= 22)) return;
+        let part = 'body';
+        if (x >= 24 && y <= 12) part = y < 8 ? 'tail-tip' : 'tail';
+        else if (y >= 18) part = x <= 9 ? 'paw-left' : x <= 15 ? 'paw-right' : x <= 20 ? 'foot-left' : 'foot-right';
+        let coat = colors[color];
+        if (color === 'w' && x <= 12 && y >= 13) coat = 'c';
+        if (color === 'w' && part === 'tail-tip' && y <= 2) coat = 't';
+        const forepaw = part === 'paw-left' || part === 'paw-right';
+        const leg = forepaw || part === 'foot-left' || part === 'foot-right';
+        const lowerBack = part === 'tail-tip' || part === 'tail' || part === 'body' && y <= 12;
+        put(part,{
+          x:(x >= 17 ? x-3 : x)+(leg ? legOffset : 0),
+          y:(y > 22 ? y-5 : y)+(lowerBack ? backLower : 0), color:coat
+        });
+      });
+    });
+    // Anchor the chest crease to the mouth while the back rises.
+    for (const dx of [-1,0,1]) put('body',{x:chestCenter+dx,y:16,color:'s'});
+    put('body',{x:chestCenter,y:17,color:'s'});
+    // Close the footless starting silhouette. Once the paws appear, continue
+    // the coat down to their roots without a dark horizontal seam.
+    if (pose.popStretch) for (let x = 5; x <= 21; x++) {
+      put('body',{x,y:18,color:pose.pawsOut ? (x <= 12 ? 'c' : 'f') : 'o'});
+    }
+    // Add one fur column to each rear leg, then shift the rear pair one cell
+    // right. Keep the outlines thin and the front paws on their mouth centreline.
+    for (const name of ['foot-left','foot-right']) {
+      const source = [...parts[name].values()];
+      const left = Math.min(...source.map(pixel=>pixel.x));
+      const furColumn = left+(name === 'foot-left' ? 1 : 0);
+      const shift = name === 'foot-left' ? 1 : 2;
+      parts[name].clear();
+      for (const pixel of source) {
+        const x = pixel.x+shift+(pixel.x > furColumn ? 1 : 0);
+        put(name,{...pixel,x});
+        if (pixel.x === furColumn) put(name,{...pixel,x:x+1});
+      }
+      // Trim 0.2 of a cell from the last fur column, keeping a full-width edge.
+      const widened = [...parts[name].values()];
+      const trimColumn = Math.max(...widened.map(pixel=>pixel.x))-1;
+      parts[name].clear();
+      for (const pixel of widened) {
+        if (pixel.x === trimColumn) put(name,{...pixel,w:.8});
+        else if (pixel.x > trimColumn) put(name,{...pixel,x:Math.round((pixel.x-.2)*10)/10});
+        else put(name,pixel);
+      }
+    }
+    if (pose.popStretch) {
+      for (const name of ['body','tail','tail-tip']) {
+        const source = [...parts[name].values()];
+        parts[name].clear();
+        for (const pixel of source) put(name,{...pixel,y:pixel.y-pose.bodyLift});
+      }
+      // No paw artwork exists in the starting frame. All four approved paws
+      // appear together at their original positions on the upward pop beat.
+      if (!pose.pawsOut) for (const name of ['paw-left','paw-right','foot-left','foot-right']) parts[name].clear();
+    }
+    return Object.fromEntries(Object.entries(parts).map(([name,pixels])=>[name,[...pixels.values()]]));
+  }
+
+  function createYarnParts(pose) {
+    // Use the same full-size loaf and glancing head as the looking action.
+    const parts = createParts({...pose,yarn:false});
+    const cells = new Map();
+    const key = (x,y) => `${x},${y}`;
+    const rows = [[0,1,3],[1,0,4],[2,0,4],[3,0,4],[4,1,3]];
+    const mask = new Set();
+    for (const [y,left,right] of rows) for (let x=left;x<=right;x++) mask.add(key(x,y));
+    for (const position of mask) {
+      const [x,y] = position.split(',').map(Number);
+      const edge = [[-1,0],[1,0],[0,-1],[0,1]].some(([dx,dy]) => !mask.has(key(x+dx,y+dy)));
+      cells.set(position,{x:x+pose.ballX,y:y+14,color:edge ? 'o' : 'p'});
+    }
+    const windings = [
+      [[1,1],[2,2],[3,3]], [[3,1],[2,2],[1,3]],
+      [[1,2],[2,2],[3,2]], [[2,1],[2,2],[2,3]]
+    ];
+    for (const [x,y] of windings[pose.winding]) cells.get(key(x,y)).color = 'd';
+    parts.prop = [...cells.values()];
+    return parts;
+  }
+
   function createParts(pose = {}) {
+    if (pose.referenceStand) return createReferenceStandParts(pose);
+    if (pose.yarn) return createYarnParts(pose);
     const parts = {};
     const names = ['foot-back', 'tail-tip', 'tail', 'body', 'foot-left', 'foot-right', 'head', 'prop', 'paw-left', 'paw-right'];
     names.forEach(name => { parts[name] = new Map(); });
@@ -135,7 +264,7 @@
     if (pose.paw === 'chin') {
       rect('paw-left', 4, 12, 3, 3, 'c'); run('paw-left', 11, 5, 7, 'o'); run('paw-left', 12, 5, 7, 'c');
     } else if (pose.paw === 'wave') {
-      rect('paw-left', 2, 11, 4, 3, 'c'); run('paw-left', 10, 2, 3, 'o'); run('paw-left', 11, 1, 3, 'o');
+      rect('paw-left', 2, 11, 4, 3, 'c'); run('paw-left', 10, 2, 3, 'o'); dot('paw-left', 1, 11, 'o');
       run('paw-left', 12, 1, 3, 'c'); dot('paw-left', 1, 13, 'o');
     }
     if (pose.prop === 'laptop') {
@@ -154,10 +283,44 @@
       dot('prop', 1+sweep, 17, 'r'); dot('prop', 3+sweep, 17, 'r');
       run('paw-left', 12, 2+sweep, 5, 'c'); dot('paw-left', 2+sweep, 11, 'o');
     }
+
     return Object.fromEntries(Object.entries(parts).map(([name,pixels]) => [name,[...pixels.values()]]));
   }
 
   function expressionPixels(expression = 'normal', pose = {}) {
+    if (pose.hideFace) return [];
+    if (expression === 'sleep') {
+      const dx = pose.headX || 0, dy = pose.headY || 0;
+      return [
+        {x:5+dx,y:8+dy,color:'e'}, {x:6+dx,y:8+dy,color:'e'},
+        {x:10+dx,y:8+dy,color:'e'}, {x:11+dx,y:8+dy,color:'e'},
+        {x:8+dx,y:9+dy,color:'n'}
+      ];
+    }
+    if (expression === 'gentle') {
+      const pixels = [], dx = pose.headX || 0, dy = pose.headY || 0;
+      const dot = (x,y,color='e')=>pixels.push({x:x+dx,y:y+dy,color});
+      dot(8,9,'n');
+      if (pose.blink) {
+        dot(5.5,8); dot(10.5,8);
+      } else {
+        dot(4.5,7); dot(5.5,8);
+        dot(11.5,7); dot(10.5,8);
+      }
+      for (const x of [3.5,4.5,11.5,12.5]) dot(x,9,'b');
+      return pixels;
+    }
+    if (pose.face) {
+      const {x,y}=pose.face, pixels=[];
+      const dot=(dx,dy,color='e')=>pixels.push({x:x+dx,y:y+dy,color});
+      dot(0,2,'n');
+      const smiling=expression === 'smile' || expression === 'happy';
+      for (const eye of [-2.5,2.5]) {
+        if (smiling) { dot(eye-.5,0); dot(eye+.5,0); }
+        else { if (!pose.blink) dot(eye,0); dot(eye,1); }
+      }
+      return pixels;
+    }
     const pixels = [];
     const dx = pose.headX || 0, dy = pose.headY || 0;
     const gaze = pose.gaze || 0;
@@ -179,14 +342,17 @@
   function compositeFrame(parts, expression = 'normal', pose = {}) {
     const pixels = new Map();
     const halfCellRemainders = new Set();
+    const viewport = pose.viewport || { width:WIDTH+LEFT_PADDING, height:HEIGHT+TOP_PADDING, left:LEFT_PADDING, top:TOP_PADDING };
     const layers = pose.walk
       ? ['foot-back','foot-left','tail-tip','tail','body','foot-right','head','face','paw-left','paw-right']
-      : ['foot-back','tail-tip','tail','body','foot-left','foot-right','head','face','prop','paw-left','paw-right'];
+      : pose.yarn
+        ? ['foot-back','tail-tip','tail','body','foot-left','foot-right','head','face','paw-left','paw-right','prop']
+        : ['foot-back','tail-tip','tail','body','foot-left','foot-right','head','face','prop','paw-left','paw-right'];
     layers.forEach(name => {
       const marks = name === 'face' ? expressionPixels(expression,pose) : parts[name] || [];
       marks.forEach(pixel => {
-        if (pixel.x < -LEFT_PADDING || pixel.x >= WIDTH || pixel.y < -TOP_PADDING || pixel.y >= HEIGHT) return;
-        const key = (pixel.y+TOP_PADDING) * (WIDTH+LEFT_PADDING) + pixel.x + LEFT_PADDING;
+        if (pixel.x < -viewport.left || pixel.x >= viewport.width-viewport.left || pixel.y < -viewport.top || pixel.y >= viewport.height-viewport.top) return;
+        const key = (pixel.y+viewport.top) * viewport.width + pixel.x + viewport.left;
         // A half-cell toe covers only half of the body beneath it; keep the
         // other half painted so a narrow paw cannot cut a hole in the haunch.
         if (pixel.w === .5) {
@@ -220,8 +386,52 @@
     if (name === 'sweeping') { pose.prop = 'broom'; pose.sweep = p >= .25 && p < .65 ? 1 : 0; pose.gaze = -1; }
     if (name === 'error') { pose.earDrop = p >= .2 && p < .8 ? 1 : 0; pose.headY = p >= .3 && p < .6 ? 1 : 0; pose.blink = index === 17; }
     if (name === 'happy') { if (p >= .2 && p < .65) pose.paw = 'wave'; pose.tail = p >= .2 && p < .4 || p >= .5 && p < .65 ? -1 : 0; }
+    if (name === 'belly') {
+      pose.breathe = p >= .35 && p < .6 ? 1 : 0;
+      expression = 'sleep';
+    }
+    if (name === 'yarn') {
+      pose.yarn = true;
+      const travel = Math.min(index,animation.frames-1-index);
+      pose.ballX = -8+Math.min(20,Math.round(travel*20/16));
+      pose.winding = (pose.ballX+8)%4;
+      const centre = pose.ballX+2;
+      pose.gaze = centre <= 4 ? -1 : centre >= 12 ? 1 : 0;
+      pose.headX = pose.gaze;
+      pose.headY = 0;
+      pose.viewport = {width:37,height:23,left:9,top:4,pixelSize:5,baseline:21,offsetX:-40};
+    }
+    if (name === 'stand' || name === 'stretch') {
+      pose.referenceStand = true;
+      pose.headX = 0; pose.headY = 1;
+      pose.viewport = {width:33,height:26,left:0,top:0,baseline:21,rasterScale:10};
+      expression = 'gentle';
+      if (name === 'stretch') {
+        // Insert ten 100ms frames at the peak. Every other accepted pose and
+        // beat keeps its original timing, including the one-step paw reveal.
+        const beat = index < 30 ? index : index < 40 ? 29 : index-10;
+        pose.popStretch = true;
+        pose.pawsOut = beat >= 10 && beat < 38;
+        pose.bodyLift = pose.pawsOut ? 1 : 0;
+        pose.headY -= pose.bodyLift;
+        // Preserve the lifted tail tip without moving the screen-space floor.
+        pose.viewport = {...pose.viewport,height:27,top:1,baseline:22};
+        // Whole-body lift first; a separate back-only step follows later.
+        pose.backLift = beat >= 20 && beat < 30 ? 2 : 1;
+        pose.blink = beat === 26 || beat === 27;
+        // One small side-mark wiggle while the cat holds completely still.
+        if (index >= 30 && index < 34) pose.symbolBeat = [0,1,-1,0][index-30];
+      } else pose.blink = index === 21 || index === 22;
+    }
     const parts = createParts(pose);
-    const frame = { index, pose, expression, parts, pixels:compositeFrame(parts,expression,pose) };
+    const frame = {index,pose,expression,parts,pixels:compositeFrame(parts,expression,pose)};
+    if (name === 'stretch') {
+      if (pose.symbolBeat !== undefined) frame.phase = 'shake';
+      frame.headPixelSize = 5;
+      frame.bodyPixels = compositeFrame({...parts,head:[]},expression,{...pose,hideFace:true});
+      frame.headPixels = compositeFrame({head:parts.head},expression,pose);
+    }
+    if (pose.viewport) frame.viewport = pose.viewport;
     frameCache.set(key,frame);
     return frame;
   }
@@ -254,30 +464,80 @@
   }
   function draw(record, now, force = false) {
     const idle = record.state === 'idle' && record.idleAction;
-    const progress = record.static || motion?.matches ? 0 : idle ? (now-idle.startedAt)/IDLE_ACTIONS[idle.name].duration : (now-record.startedAt) / ANIMATIONS[record.state].duration;
+    const progress = record.manualProgress ?? (record.static || motion?.matches ? 0 : idle ? (now-idle.startedAt)/IDLE_ACTIONS[idle.name].duration : (now-record.startedAt) / ANIMATIONS[record.state].duration);
     const frame = idle ? frameForIdleAction(idle.name,progress) : frameForState(record.state,progress);
     const signature = record.state + ':' + (idle ? idle.name : '') + ':' + frame.index + ':' + record.expression;
     if (!force && signature === record.signature) return;
     record.signature = signature;
-    const pixels = record.expression ? compositeFrame(frame.parts,record.expression,frame.pose) : frame.pixels;
-    record.context.clearRect(0,0,WIDTH+LEFT_PADDING,HEIGHT+TOP_PADDING);
-    for (const pixel of pixels) { record.context.fillStyle = record.palette[pixel.color]; record.context.fillRect(pixel.x+LEFT_PADDING,pixel.y+TOP_PADDING,pixel.w ?? 1,pixel.h ?? 1); }
+    const phase = frame.phase || record.state;
+    if (record.container.dataset.catPhase !== phase) record.container.dataset.catPhase = phase;
+    record.container.style.setProperty('--cat-shake-offset',((frame.pose.symbolBeat || 0)*2)+'px');
+    const symbolTime = frame.index*ANIMATIONS[record.state].duration/ANIMATIONS[record.state].frames/1000;
+    record.container.style.setProperty('--cat-symbol-time',symbolTime.toFixed(3)+'s');
+    const pixels = frame.headPixelSize ? frame.bodyPixels : record.expression ? compositeFrame(frame.parts,record.expression,frame.pose) : frame.pixels;
+    const viewport = frame.viewport || { width:WIDTH+LEFT_PADDING, height:HEIGHT+TOP_PADDING, left:LEFT_PADDING, top:TOP_PADDING };
+    const rasterScale = viewport.rasterScale || RENDER_SCALE;
+    if (record.canvas.width !== viewport.width*rasterScale || record.canvas.height !== viewport.height*rasterScale) {
+      record.canvas.width = viewport.width*rasterScale; record.canvas.height = viewport.height*rasterScale;
+      record.context.imageSmoothingEnabled = false; record.context.scale(rasterScale,rasterScale);
+    }
+    if (frame.viewport) {
+      const pixelSize = viewport.pixelSize || 145/viewport.width;
+      const height = pixelSize*viewport.height;
+      const baseline = pixelSize*(viewport.baseline ?? viewport.height);
+      record.art.style.width = (pixelSize*viewport.width)+'px';
+      record.art.style.height = height+'px'; record.art.style.top = (117-baseline)+'px';
+      record.art.style.left = (viewport.offsetX || 0)+'px';
+    } else { record.art.style.removeProperty('width'); record.art.style.removeProperty('height'); record.art.style.removeProperty('top'); record.art.style.removeProperty('left'); }
+    record.context.clearRect(0,0,viewport.width,viewport.height);
+    for (const pixel of pixels) { record.context.fillStyle = record.palette[pixel.color]; record.context.fillRect(pixel.x+viewport.left,pixel.y+viewport.top,pixel.w ?? 1,pixel.h ?? 1); }
+    if (frame.headPixelSize) {
+      // Only the head uses the original idle's five-pixel cell size. The body
+      // canvas, feet, tail and their screen positions retain the accepted scale.
+      const head = frame.parts.head;
+      const left = Math.min(...head.map(pixel=>pixel.x)), top = Math.min(...head.map(pixel=>pixel.y));
+      const right = Math.max(...head.map(pixel=>pixel.x))+1, bottom = Math.max(...head.map(pixel=>pixel.y))+1;
+      const width = right-left, height = bottom-top, headScale = 10;
+      if (!record.headCanvas) {
+        record.headCanvas = record.canvas.ownerDocument.createElement('canvas');
+        record.headCanvas.className = 'cat-head-canvas';
+        record.headCanvas.style.cssText = 'position:absolute;display:block;image-rendering:pixelated;pointer-events:none';
+        record.art.append(record.headCanvas);
+      }
+      const headCanvas = record.headCanvas;
+      if (headCanvas.width !== width*headScale || headCanvas.height !== height*headScale) {
+        headCanvas.width = width*headScale; headCanvas.height = height*headScale;
+      }
+      const bodyPixel = viewport.pixelSize || 145/viewport.width;
+      const anchor = expressionPixels('normal',frame.pose).find(pixel=>pixel.color === 'n').x+.5;
+      headCanvas.style.left = ((anchor+viewport.left)*bodyPixel-(anchor-left)*frame.headPixelSize)+'px';
+      headCanvas.style.top = ((bottom+viewport.top)*bodyPixel-height*frame.headPixelSize)+'px';
+      headCanvas.style.width = (width*frame.headPixelSize)+'px';
+      headCanvas.style.height = (height*frame.headPixelSize)+'px';
+      const context = headCanvas.getContext('2d');
+      context.setTransform(headScale,0,0,headScale,0,0);context.imageSmoothingEnabled = false;
+      context.clearRect(0,0,width,height);
+      const marks = record.expression ? compositeFrame({head},record.expression,frame.pose) : frame.headPixels;
+      for (const pixel of marks) { context.fillStyle = record.palette[pixel.color]; context.fillRect(pixel.x-left,pixel.y-top,pixel.w ?? 1,pixel.h ?? 1); }
+    } else if (record.headCanvas) {
+      record.headCanvas.remove();record.headCanvas = null;
+    }
   }
   function tick(now) {
     animationRequest = null;
     for (const record of mounted) {
       if (!record.container.isConnected) { record.observer?.disconnect(); mounted.delete(record); instances.delete(record.container); continue; }
-      if (!record.static) draw(record,now);
+      if (!record.static && record.manualProgress == null) draw(record,now);
     }
     schedule();
   }
   function schedule() {
     if (animationRequest !== null || !global.document || global.document.hidden || motion?.matches) return;
-    if ([...mounted].some(record => !record.static)) animationRequest = global.requestAnimationFrame(tick);
+    if ([...mounted].some(record => !record.static && record.manualProgress == null)) animationRequest = global.requestAnimationFrame(tick);
   }
   function refresh(record) {
     const state = currentState(record.container);
-    if (state !== record.state) { record.state = state; record.expression = null;record.idleAction = null; record.startedAt = global.performance.now(); }
+    if (state !== record.state) { record.state = state; record.expression = null;record.idleAction = null; record.manualProgress = null; record.startedAt = global.performance.now(); palette(record); }
     draw(record,global.performance.now(),true);
     schedule();
   }
@@ -293,7 +553,7 @@
     for (const code of COLOR_CODES) { const swatch = document.createElement('span'); swatch.className = 'cat-color-'+code; swatch.dataset.color = code; swatches.append(swatch); }
     art.append(canvas,swatches); sprite.classList.add('cc-cat-sprite'); sprite.replaceChildren(art);
     global.CCPixelCatSymbols?.mount(container);
-    const record = { container, canvas, swatches, context:canvas.getContext('2d'), state:currentState(container), expression:null, startedAt:global.performance.now(), static:container.dataset.previewStatic === 'true' };
+    const record = { container, art, canvas, swatches, context:canvas.getContext('2d'), state:currentState(container), expression:null, startedAt:global.performance.now(), static:container.dataset.previewStatic === 'true' };
     record.context.imageSmoothingEnabled = false;
     // Keep full-size square eyes sharp when positioned halfway between grid cells.
     record.context.scale(RENDER_SCALE,RENDER_SCALE);
@@ -324,9 +584,34 @@
     record.idleAction = { name,startedAt };record.expression = null;
     draw(record,global.performance.now(),true);schedule();
   }
+  function getProgress(container) {
+    const record = mount(container);
+    if (!record) return 0;
+    if (record.manualProgress != null) return record.manualProgress;
+    const idle = record.state === 'idle' && record.idleAction;
+    const duration = idle ? IDLE_ACTIONS[idle.name].duration : ANIMATIONS[record.state].duration;
+    return ((global.performance.now()-(idle ? idle.startedAt : record.startedAt))/duration)%1;
+  }
+  function setProgress(container,progress) {
+    const record = mount(container);
+    if (!record) return;
+    record.manualProgress = Number.isFinite(progress) ? Math.max(0,Math.min(1-1e-8,progress)) : 0;
+    draw(record,global.performance.now(),true);
+  }
+  function play(container) {
+    const record = mount(container);
+    if (!record || record.manualProgress == null) return;
+    const idle = record.state === 'idle' && record.idleAction;
+    const duration = idle ? IDLE_ACTIONS[idle.name].duration : ANIMATIONS[record.state].duration;
+    const startedAt = global.performance.now()-record.manualProgress*duration;
+    if (idle) idle.startedAt = startedAt;
+    else record.startedAt = startedAt;
+    record.manualProgress = null;
+    draw(record,global.performance.now(),true);schedule();
+  }
   function mountAll(root = global.document) { root?.querySelectorAll('.cc-container').forEach(mount); }
   function repaint() { for (const record of mounted) { palette(record); draw(record,global.performance.now(),true); } schedule(); }
-  const api = { SIZE,WIDTH,HEIGHT,LEFT_PADDING,TOP_PADDING,STATES,ANIMATIONS,IDLE_ACTIONS,PARTS,createParts,expressionPixels,compositeFrame,frameForState,frameForIdleAction,mount,mountAll,setExpression,setState,setIdleAction };
+  const api = { SIZE,WIDTH,HEIGHT,LEFT_PADDING,TOP_PADDING,STATES,ANIMATIONS,IDLE_ACTIONS,PARTS,createParts,expressionPixels,compositeFrame,frameForState,frameForIdleAction,mount,mountAll,setExpression,setState,setIdleAction,getProgress,setProgress,play };
   global.CCPixelCat = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (global.document) {

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#FBF7E9">
+<meta name="description" content="一间装满猫窝、猫爬架、玩具与好梦的像素小屋。">
+<title>猫咪的秘密基地</title>
+<link rel="stylesheet" href="cc-cat-themes.css">
+<link rel="stylesheet" href="cc-cat.css">
+<style>
+  :root{color-scheme:light;--paper:#FBF7E9;--ink:#4a3a28;--muted:#8a7a68;--line:#c8b8a0;--sage:#8a7a68;--surface:#FEFCF6;--dot:#b4a78a35;--shadow:#6e62451a}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-width:300px;min-height:100%;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+  body{background-color:var(--paper);background-image:radial-gradient(var(--dot) .7px,transparent .7px);background-size:12px 12px;color:var(--ink);transition:background-color .65s,color .65s}
+  body.night{color-scheme:dark;--paper:#303c39;--ink:#ece2c8;--muted:#b6bca5;--line:#657368;--sage:#d6ce9b;--surface:#3b4941;--dot:#c1d0b014;--shadow:#0e1b2940}
+  button,a{-webkit-tap-highlight-color:transparent}
+  button{font:inherit;color:inherit;cursor:pointer}
+  button:disabled{opacity:.35;cursor:default}
+  a{color:inherit;text-underline-offset:4px}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--sage);outline-offset:5px}
+  button:focus:not(:focus-visible){outline:none}
+  .app{min-height:100svh;display:flex;flex-direction:column;padding:0 clamp(18px,4vw,64px)}
+  .header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 0 17px;flex:none}
+  .identity{display:flex;align-items:center;gap:15px}
+  .cat-mark{width:58px;height:44px;image-rendering:pixelated;flex:none;filter:drop-shadow(0 3px 0 var(--shadow))}
+  h1{font-size:20px;letter-spacing:2px;margin:0;font-weight:600;line-height:1.5}
+  .tagline{margin:4px 0 0;font-size:14px;letter-spacing:1px;color:var(--muted)}
+  .light-toggle{display:flex;align-items:center;gap:9px;border:1px solid var(--line);padding:9px 13px;background:var(--surface);font-size:14px;border-radius:2px;box-shadow:2px 2px 0 var(--shadow);white-space:nowrap}
+  .pixel-sun{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:2;shape-rendering:crispEdges}
+  .light-toggle .moon-icon{display:none}
+  .night .light-toggle .sun-icon{display:none}.night .light-toggle .moon-icon{display:block}
+  .viewer{position:relative;flex:1;min-height:350px;display:flex;align-items:center;justify-content:center;isolation:isolate}
+  .viewer::before{content:"";width:min(62vw,580px);height:min(62vw,580px);border-radius:50%;background:#edc76715;filter:blur(35px);position:absolute;z-index:-1;opacity:0;transition:opacity .65s;pointer-events:none}
+  .night .viewer::before{opacity:1}
+  .stage{position:relative;width:min(100%,calc(100svh - 258px),850px);aspect-ratio:1;overflow:hidden;touch-action:pan-y;user-select:none}
+  .stage.zoomed{touch-action:none;cursor:grab}.stage.dragging{cursor:grabbing}
+  .scene{position:absolute;inset:0;transform-origin:50% 50%;will-change:transform;transition:filter .65s}
+  .room{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;-webkit-user-drag:none;pointer-events:none;transition:filter .65s}
+  .night .scene{filter:brightness(.69) saturate(.78) sepia(.13)}
+  .night .scene::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 62% 37%,#ffd79422 0,transparent 45%);mix-blend-mode:screen;pointer-events:none}
+  .error{display:none;position:absolute;inset:10%;align-items:center;justify-content:center;text-align:center;line-height:1.9;padding:30px;border:1px dashed var(--line);background:var(--surface);color:var(--muted);font-size:15px}
+  .stage.failed .error{display:flex}.stage.failed .scene{visibility:hidden}
+  .hotspot{display:none;position:absolute;left:var(--x);top:var(--y);width:24px;height:24px;transform:translate(-50%,-50%);border:2px solid #fff8de;background:#8a7a68;box-shadow:0 0 0 1px #6a5a48,2px 3px 0 #40382738;border-radius:50%;align-items:center;justify-content:center;z-index:4;transition:background .15s}
+  .hotspot::before,.hotspot::after{content:"";position:absolute;background:#fff8de;width:8px;height:2px}.hotspot::after{transform:rotate(90deg)}
+  .hotspot:hover,.hotspot[aria-expanded="true"]{background:#b4804f}
+  .exploring .hotspot{display:flex}
+  .detail-note{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:min(350px,calc(100% - 30px));background:var(--surface);border:1px solid var(--line);padding:15px 39px 15px 16px;box-shadow:4px 4px 0 var(--shadow);font-size:16px;line-height:1.7;z-index:5}
+  .detail-note[hidden]{display:none}.detail-note strong{display:block;color:var(--sage);font-weight:600;font-size:16px;margin-bottom:4px;letter-spacing:1px}
+  .detail-note p{margin:0;color:var(--muted)}
+  .note-close{position:absolute;right:9px;top:9px;background:none;border:0;width:27px;height:27px;font-size:21px;line-height:1}
+  .footer{flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding:13px 0 23px}
+  .toolbar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  .zoom-control{display:flex;align-items:center;border:1px solid var(--line);background:var(--surface);height:40px;box-shadow:2px 2px 0 var(--shadow);border-radius:2px}
+  .zoom-control button{border:0;background:none;min-width:36px;height:38px;font-size:21px;line-height:1}
+  .zoom-control .reset{font:14px "SFMono-Regular",Consolas,monospace;letter-spacing:.3px;width:58px;min-width:58px;border-left:1px solid var(--line);border-right:1px solid var(--line);height:24px}
+  .tool{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 13px;border:1px solid var(--line);background:var(--surface);font-size:14px;text-decoration:none;box-shadow:2px 2px 0 var(--shadow);border-radius:2px}
+  .tool:hover,.light-toggle:hover{background:var(--paper)}.tool[aria-pressed="true"]{background:var(--sage);color:var(--paper);border-color:var(--sage)}
+  .tool svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:miter}
+  .quiet-links{display:flex;align-items:center;justify-content:center;gap:16px;font-size:14px;letter-spacing:.6px;color:var(--muted)}
+  .quiet-links button{border:0;background:none;padding:0;font-size:inherit;letter-spacing:inherit}.quiet-links a{text-decoration:none}.quiet-links a:hover,.quiet-links button:hover{color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+  .cat-controls{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 14px;font-size:14px}
+  .cat-location{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:9px;color:var(--muted)}
+  .cat-location-current{min-width:178px;padding:8px 11px;border:1px solid var(--line);border-radius:2px;background:var(--surface);color:var(--ink);font:inherit;white-space:nowrap}
+  .hotspot.numbered{font:600 12px "SFMono-Regular",Consolas,monospace;color:#fff8de}
+  .hotspot.numbered::before,.hotspot.numbered::after{display:none}
+  .cat-place-note{color:var(--muted);font-size:14px;white-space:nowrap}
+  .room-cat-world{position:absolute;left:0;top:0;width:1254px;height:1254px;transform-origin:0 0;pointer-events:none;z-index:1;visibility:hidden}
+  .room-cat-world.ready{visibility:visible}
+  .room-cat-world .cc-container{position:absolute;width:150px;height:117px;bottom:auto;scale:var(--room-cat-scale,.52);transform:none;transform-origin:75px 117px;transition:none;filter:none;pointer-events:auto;cursor:pointer}
+  .room-cat-world .cc-container.flip{scale:calc(-1 * var(--room-cat-scale,.52)) var(--room-cat-scale,.52)}
+  .room-cat-world .cc-inner,.room-cat-world .cc-sprite{position:relative;width:150px;height:117px}
+  /* Align only the opening stretch silhouette with the resting floor. */
+  .room-cat-world #roomCat[data-node="scratch"].st-stretch .cc-cat-art{animation:catScratchOpeningFloor 5.8s steps(1,end) infinite paused;animation-delay:calc(-1 * var(--cat-symbol-time,0s))}
+  @keyframes catScratchOpeningFloor{0%{transform:translateY(calc(290px / 33))}17.2%,100%{transform:translateY(0)}}
+  .room-cat-shadow{position:absolute;width:64px;height:9px;border-radius:50%;background:#4a3a2821;transform:translate(-50%,-40%);pointer-events:none}
+  .room-foreground{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2;image-rendering:pixelated}
+  .room-foreground image{image-rendering:pixelated}
+  .divider{width:2px;height:2px;background:var(--muted)}
+  .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  dialog{width:min(470px,calc(100vw - 36px));max-height:calc(100svh - 60px);border:1px solid var(--line);border-radius:2px;background:var(--surface);color:var(--ink);padding:30px;box-shadow:8px 8px 0 #35382720;line-height:1.8}
+  dialog::backdrop{background:#222d2980;backdrop-filter:blur(3px)}
+  dialog h2{font-size:20px;letter-spacing:2px;margin:0 0 5px;font-weight:600}dialog .intro{font-size:16px;color:var(--muted);margin:0 0 22px}
+  dialog dl{margin:0}dialog dt{font-size:16px;font-weight:600;color:var(--sage);margin-top:15px}dialog dd{font-size:16px;color:var(--muted);margin:3px 0 0}
+  .dialog-close{position:absolute;top:16px;right:16px;width:28px;height:28px;border:0;background:none;font-size:25px}
+  dialog .prompt-link{display:inline-block;margin-top:24px;font-size:14px}
+  @media(min-width:1500px){.header{padding-top:30px}.stage{width:min(100%,calc(100svh - 255px),950px)}}
+  @media(max-width:650px){.app{padding:0 16px}.header{padding:19px 0 18px;gap:8px}.identity{gap:9px}.cat-mark{width:44px;height:34px}h1{font-size:16px;letter-spacing:1.4px}.tagline{font-size:14px;letter-spacing:0;margin-top:2px}.light-toggle{font-size:14px;padding:8px 9px;gap:6px}.pixel-sun{width:14px;height:14px}.viewer{min-height:300px}.stage{width:100%;max-height:calc(100svh - 210px);max-width:calc(100svh - 210px)}.toolbar{gap:8px}.tool{font-size:14px;padding:0 11px;min-height:42px}.zoom-control{height:42px}.zoom-control button{height:40px}.footer{padding:18px 0 25px;gap:17px}.quiet-links{font-size:14px;gap:13px}.hotspot{width:24px;height:24px}.detail-note{font-size:16px;padding:12px 35px 12px 14px;bottom:10px}dialog{padding:25px}}
+  @media(max-width:380px){.cat-mark{display:none}.tool{padding:0 9px;gap:5px}.toolbar{gap:6px}.zoom-control button{min-width:31px}.zoom-control .reset{min-width:45px;width:45px}}
+  @media(max-width:650px){.cat-controls{gap:10px}.cat-place-note{flex-basis:100%;text-align:center}.cat-controls .tool{min-height:38px}.stage{max-height:calc(100svh - 290px);max-width:calc(100svh - 290px)}.footer{gap:12px}.quiet-links{flex-wrap:wrap;row-gap:8px}.cat-location-current{min-height:38px}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+</style>
+<link rel="stylesheet" href="cat-sanctuary-themes.css?v=2">
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="identity">
+      <canvas class="cat-mark" id="catMark" width="58" height="44" aria-hidden="true"></canvas>
+      <div><h1>猫咪的秘密基地</h1><p class="tagline">一屋子的喜欢，都给你。</p></div>
+    </div>
+    <div class="header-actions">
+      <div class="room-theme-controls" id="roomThemeControls" aria-busy="false">
+        <label for="roomThemeSelect">小窝配色</label>
+        <div class="room-theme-picker">
+          <button id="roomThemePrev" type="button" aria-label="上一个主题">‹</button>
+          <select id="roomThemeSelect" aria-label="小窝和小猫的主题配色"></select>
+          <button id="roomThemeNext" type="button" aria-label="下一个主题">›</button>
+        </div>
+      </div>
+    <button class="light-toggle" id="lightToggle" type="button" aria-pressed="false" aria-label="切换到晚灯">
+      <svg class="pixel-sun sun-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 6h6v8H7zM6 7v6m8-6v6M9 0v3m0 14v3M0 9h3m14 0h3M2 2l2 2m12 12 2 2M16 4l2-2M2 18l2-2"/></svg>
+      <svg class="pixel-sun moon-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M9 2H6v2H4v3H2v6h2v3h3v2h6v-2h3v-3h2v-3h-5V8h-3V5H9z"/></svg>
+      <span id="lightLabel">暖昼</span>
+    </button>
+      <output id="roomThemeStatus" class="visually-hidden" role="status" aria-live="polite"></output>
+    </div>
+  </header>
+
+  <main class="viewer" aria-label="像素猫咪小屋场景">
+    <div class="stage" id="stage" tabindex="0" aria-label="场景画布，可使用加减按钮缩放，放大后拖动查看">
+      <div class="scene" id="scene">
+        <img class="room" id="room" src="assets/cat-sanctuary/room-v3-pixel.png" width="1254" height="1254" draggable="false" alt="一座温暖而丰富的等距像素猫咪小屋，墙上布满阶梯、猫洞、吊床与连桥，地上有木质猫爬架、蘑菇爬架、柔软猫窝、猫抓板、玩具与喂食角。">
+        <div class="cc-walk-strip room-cat-world" id="roomCatWorld">
+          <div class="room-cat-shadow" id="roomCatShadow" aria-hidden="true"></div>
+          <div class="cc-container st-idle" id="roomCat" role="button" tabindex="0" aria-label="点击猫咪播放一个随机动作"><div class="cc-inner"><div class="cc-sprite"></div></div></div>
+        </div>
+        <svg class="room-foreground" id="roomForeground" viewBox="0 0 1254 1254" aria-hidden="true"></svg>
+        <div id="roomNodeHotspots"></div>
+      </div>
+      <div class="error" role="status">场景图片还没到家。<br>请确认 assets/cat-sanctuary/room-v3-pixel.png 与本页放在一起。</div>
+      <aside class="detail-note" id="detailNote" hidden aria-live="polite"><strong id="detailTitle"></strong><p id="detailBody"></p><button class="note-close" id="noteClose" type="button" aria-label="关闭细节说明">×</button></aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="toolbar" aria-label="场景控制">
+      <div class="zoom-control" role="group" aria-label="缩放场景">
+        <button id="zoomOut" type="button" aria-label="缩小场景" disabled>−</button>
+        <button class="reset" id="resetView" type="button" aria-label="恢复全景"><span id="zoomLabel">100%</span></button>
+        <button id="zoomIn" type="button" aria-label="放大场景">+</button>
+      </div>
+      <button class="tool" id="exploreToggle" type="button" aria-pressed="false"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="7.5" cy="7.5" r="4.5"/><path d="m11 11 4 4M5 7.5h5M7.5 5v5"/></svg><span>探索细节</span></button>
+      <a class="tool" id="downloadScene" href="assets/cat-sanctuary/room-v3-pixel.png" download="猫咪的秘密基地-像素版.png"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2v9m-4-4 4 4 4-4M3 12v3h12v-3"/></svg><span>保存图片</span></a>
+    </div>
+    <div class="cat-controls" aria-label="小猫活动">
+      <div class="cat-location"><span>小猫在</span><output class="cat-location-current" id="catLocation" aria-label="猫咪当前点位" aria-live="polite"></output><button class="tool" id="catNextLocation" type="button" aria-label="切换到下一个猫咪点位">下一个</button></div>
+      <button class="tool" id="catAutoToggle" type="button" aria-pressed="true">自动闲逛</button>
+      <output class="cat-place-note" id="catPlaceNote" aria-live="polite">找个舒服的地方趴一会儿</output>
+    </div>
+    <div class="quiet-links"><button id="inventoryOpen" type="button">看看小屋里有什么</button><span class="divider" aria-hidden="true"></span><a data-room-prompt href="assets/cat-sanctuary/prompt-v3-pixel.txt" target="_blank" rel="noopener">生图提示词</a></div>
+    <span class="visually-hidden" id="viewStatus" role="status" aria-live="polite"></span>
+  </footer>
+</div>
+
+<dialog id="inventoryDialog" aria-labelledby="inventoryTitle">
+  <button class="dialog-close" id="inventoryClose" type="button" aria-label="关闭小屋清单">×</button>
+  <h2 id="inventoryTitle">把喜欢装满小屋</h2>
+  <p class="intro">从墙顶到地毯，每一处都有猫咪的小快乐。</p>
+  <dl>
+    <dt>猫墙漫游道</dt><dd>高低踏板、猫脸小屋、圆形猫洞、吊床与连桥，把整面墙变成冒险路线。</dd>
+    <dt>爬高与躲猫猫</dt><dd>木质多层猫爬架、抓柱、梯子、筒形猫窝，再加一座软乎乎的蘑菇爬架。</dd>
+    <dt>到处都能睡好觉</dt><dd>藤编窝、软垫窝、条纹布窝、窗边小床；晒太阳和打盹，各有专属角落。</dd>
+    <dt>玩到忘记时间</dt><dd>毛线球、逗猫棒、小老鼠、滚珠轨道与猫抓板，散落在柔软的地毯旁。</dd>
+    <dt>认真过猫咪生活</dt><dd>食碗、水碗、零食罐、玩具篮、猫草和收纳架，让热闹的小屋也有生活的秩序。</dd>
+  </dl>
+  <a class="prompt-link" data-room-prompt href="assets/cat-sanctuary/prompt-v3-pixel.txt" target="_blank" rel="noopener">查看完整生图提示词</a>
+</dialog>
+
+<script src="assets/cat-sanctuary/layout.js?v=1ee02bc42417"></script>
+<script src="assets/cat-sanctuary/themes/catalog.js?v=1"></script>
+<script src="assets/cat-sanctuary/themes/outlines.js?v=1"></script>
+<script src="theme-sync.js?v=1"></script>
+<script src="cc-cat.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), scene = $('scene'), image = $('room');
+  const zoomIn = $('zoomIn'), zoomOut = $('zoomOut'), zoomLabel = $('zoomLabel');
+  let zoom = 1, offsetX = 0, offsetY = 0, drag = null, exploring = false, activeHotspot = null;
+  const clamp = (value,min,max) => Math.max(min,Math.min(max,value));
+  const details = {
+    wall:['猫墙漫游道','猫脸小屋、圆洞和高低踏板连成一条路线。沿着墙爬高，再找一处吊床歇歇脚。'],
+    tower:['木质猫爬架','抓柱、梯子、多层平台和藏身的小屋，爬到高处就能拥有整间房的风景。'],
+    mushroom:['蘑菇小森林','软软的平台和圆圆的猫洞，把一小片森林搬进猫咪的家。'],
+    bridge:['空中连桥','小小木板用绳索串起，在高低平台间连成一段猫咪专属的空中散步道。'],
+    nests:['条纹软猫窝','柔软的条纹围住蓬松的小垫子。躲在猫爬架的下层，安安静静睡一个好觉。'],
+    toys:['玩具小天地','毛线球、小老鼠、逗猫棒和猫抓板。这里的每一个小东西，都有被扑倒的理由。'],
+    food:['吃饱了再去冒险','食碗、水碗、猫草和小零食收在一起，忙着玩耍也要好好吃饭。']
+  };
+  function renderView() {
+    const bounds = stage.getBoundingClientRect();
+    offsetX = clamp(offsetX,-bounds.width*(zoom-1)/2,bounds.width*(zoom-1)/2);
+    offsetY = clamp(offsetY,-bounds.height*(zoom-1)/2,bounds.height*(zoom-1)/2);
+    scene.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${zoom})`;
+    stage.classList.toggle('zoomed',zoom > 1);
+    zoomLabel.textContent = `${Math.round(zoom*100)}%`;
+    zoomIn.disabled = zoom >= 3; zoomOut.disabled = zoom <= 1;
+  }
+  function setZoom(value) {
+    zoom = clamp(Math.round(value*100)/100,1,3);
+    renderView();
+    $('viewStatus').textContent = `场景缩放至 ${Math.round(zoom*100)}%，${zoom>1?'可以拖动查看':'已显示全景'}`;
+  }
+  zoomIn.addEventListener('click',() => setZoom(zoom+.25));
+  zoomOut.addEventListener('click',() => setZoom(zoom-.25));
+  $('resetView').addEventListener('click',() => {offsetX=0;offsetY=0;setZoom(1)});
+  stage.addEventListener('keydown',event => {
+    if(event.target !== stage) return;
+    if(event.key==='+'||event.key==='='){event.preventDefault();setZoom(zoom+.25)}
+    if(event.key==='-'){event.preventDefault();setZoom(zoom-.25)}
+    if(event.key==='0'){offsetX=0;offsetY=0;setZoom(1)}
+    if(zoom>1 && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){
+      event.preventDefault();offsetX+=event.key==='ArrowLeft'?35:event.key==='ArrowRight'?-35:0;offsetY+=event.key==='ArrowUp'?35:event.key==='ArrowDown'?-35:0;renderView();
+    }
+  });
+  stage.addEventListener('pointerdown',event => {
+    if(zoom<=1||event.button!==0||event.target.closest('button,aside,[role="button"]'))return;
+    drag={id:event.pointerId,x:event.clientX,y:event.clientY,ox:offsetX,oy:offsetY};
+    stage.setPointerCapture(event.pointerId);stage.classList.add('dragging');
+  });
+  stage.addEventListener('pointermove',event => {
+    if(!drag||drag.id!==event.pointerId)return;
+    offsetX=drag.ox+event.clientX-drag.x;offsetY=drag.oy+event.clientY-drag.y;renderView();
+  });
+  function stopDrag(){drag=null;stage.classList.remove('dragging')}
+  stage.addEventListener('pointerup',stopDrag);stage.addEventListener('pointercancel',stopDrag);stage.addEventListener('lostpointercapture',stopDrag);
+  window.addEventListener('resize',renderView);
+  function closeDetail(){
+    $('detailNote').hidden=true;
+    if(activeHotspot)activeHotspot.setAttribute('aria-expanded','false');
+    activeHotspot=null;
+  }
+  $('exploreToggle').addEventListener('click',() => {
+    exploring=!exploring;stage.classList.toggle('exploring',exploring);$('exploreToggle').setAttribute('aria-pressed',String(exploring));
+    if(!exploring)closeDetail();
+    $('viewStatus').textContent=exploring?'已显示场景细节点，点击编号查看':'已隐藏场景细节点';
+  });
+  document.querySelectorAll('.hotspot').forEach(button => button.addEventListener('click',() => {
+    if(activeHotspot===button){closeDetail();return}
+    closeDetail();activeHotspot=button;button.setAttribute('aria-expanded','true');
+    const detail=details[button.dataset.detail];$('detailTitle').textContent=detail[0];$('detailBody').textContent=detail[1];$('detailNote').hidden=false;
+  }));
+  $('noteClose').addEventListener('click',closeDetail);
+  $('lightToggle').addEventListener('click',() => {
+    const night=document.body.classList.toggle('night');
+    $('lightToggle').setAttribute('aria-pressed',String(night));$('lightToggle').setAttribute('aria-label',night?'切换到暖昼':'切换到晚灯');$('lightLabel').textContent=night?'晚灯':'暖昼';
+    document.querySelector('meta[name="theme-color"]').content=getComputedStyle(document.body).getPropertyValue('--paper').trim();
+  });
+  const inventory=$('inventoryDialog');
+  $('inventoryOpen').addEventListener('click',() => inventory.showModal());
+  $('inventoryClose').addEventListener('click',() => inventory.close());
+  inventory.addEventListener('click',event => {if(event.target===inventory){const r=inventory.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)inventory.close()}});
+  document.addEventListener('keydown',event => {if(event.key==='Escape')closeDetail()});
+  function showImageError(){stage.classList.add('failed');$('downloadScene').removeAttribute('download')}
+  image.addEventListener('error',showImageError);
+  image.addEventListener('load',() => stage.classList.remove('failed'));
+  if(image.complete && image.naturalWidth===0)showImageError();
+  renderView();
+})();
+</script>
+<script src="cat-sanctuary.js?v=theme-scene-1"></script>
+<script src="cat-sanctuary-themes.js?v=2"></script>
+</body>
+</html>

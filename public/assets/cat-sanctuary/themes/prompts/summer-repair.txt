@@ -1,0 +1,9 @@
+Use case: precise-object-edit.
+Input image 1 is the CURRENT THEMED ROOM and the edit target.
+Input image 2 is the ORIGINAL ROOM, supplied ONLY as a structural reference for the mushroom-shaped cat tree's top dome and its doorway. Do not copy the original room colors or change the existing theme.
+
+Make exactly ONE LOCAL STRUCTURAL CORRECTION. In the center-right mushroom cat tree, the TOP FELT DOME (roughly source pixels x720–855, y540–630 in a 1254 square) was incorrectly redrawn as an all-leaf canopy. Restore that part to the same rounded half-dome cat nest with a clearly visible dark arched HALF-ROUND FRONT ENTRANCE as in image 2. The front doorway must be open, visibly dark inside, with its original cushion/lip at the bottom, in exactly the original position and scale. Preserve the clean stepped rounded dome silhouette and fuzzy felt pixel texture. Do not make it a solid dome, leaf umbrella, flower, layered leaves or fully covered canopy. There must be a recognizable independent upper nest entrance, separate from the lower circular tree-cubby entrance.
+
+Keep the current themed color family of image 1 on the repaired felt dome, with the theme-appropriate darker shade inside the arch. Make no other changes: the entire rest of image 1, its exact full isometric composition, all furniture/colors/wood grain, pale floor, walls, individual leaves, existing lower tree-cubby, platforms, ladder, tall cat castle, rope net/bridge, windows, nests, paw rug, toys and warm lighting must stay unchanged. Keep crisp square-pixel art and the same full uncropped square framing. No cats/animals, no text/UI/watermarks.
+
+THEME: 晴川浅夏. Keep the current lemon/lime/soft-green and cream colors; the corrected felt dome should use the light spring-green/lemon highlights already in image 1 and deep olive inside the arched opening, while restoring the ORIGINAL plain rounded felt form.

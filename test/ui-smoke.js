@@ -67,37 +67,36 @@ async function run(){
  fs.writeFileSync(invalidMode,'stream-slow');
  blockTaskSnapshot=true; // This check must pass through SSE without snapshot polling.
  await window.webContents.executeJavaScript(`document.getElementById('digestRegenBtn').click()`);
- await until('!document.querySelector("#digestRegenBtn + [data-ai-task-details]").hidden && document.getElementById("digestRegenBtn").disabled');
- await window.webContents.executeJavaScript(`document.querySelector('#digestRegenBtn + [data-ai-task-details]').click()`);
- await until('document.querySelector("#aiTaskOutput pre")?.textContent.length>0 && document.getElementById("aiTaskStatus").dataset.status==="running"');
- const growth=[await window.webContents.executeJavaScript('document.querySelector("#aiTaskOutput pre").textContent.length')];
+ await until('document.getElementById("digestRegenBtn").disabled');
+ if(await window.webContents.executeJavaScript('!!document.querySelector("#digestRegenBtn + [data-ai-task-details]")'))throw new Error('Homepage digest has a redundant navigation button');
+ await until('window._ccLatestTask?.messages.some(m=>m.text.length>0) && window._ccLatestTask.status==="running"');
+ const growth=[await window.webContents.executeJavaScript('_ccLatestTask.messages.reduce((n,m)=>n+m.text.length,0)')];
  for(let i=0;i<80 && growth.length<3;i++) {
-   const sample=await window.webContents.executeJavaScript('({chars:document.querySelector("#aiTaskOutput pre")?.textContent.length || 0,running:document.getElementById("aiTaskStatus").dataset.status==="running"})');
+   const sample=await window.webContents.executeJavaScript('({chars:_ccLatestTask.messages.reduce((n,m)=>n+m.text.length,0),running:_ccLatestTask.status==="running"})');
    if(sample.running && sample.chars>growth.at(-1))growth.push(sample.chars);
    await delay(15);
  }
- if(growth.length<3)throw new Error('Expected at least three visible text lengths while generating, without polling: '+JSON.stringify(growth));
- console.log(JSON.stringify({liveStreamVisibleGrowth:growth,snapshotPollingBlocked:true}));
- await window.webContents.executeJavaScript(`
-   var partialText=document.getElementById('aiTaskOutput').textContent;
-   document.getElementById('aiTaskClose').click();
-   if(!document.getElementById('agentSelect').disabled)throw new Error('Closing details unlocked the assistant');
-   window.openAITaskDetails();
-   if(document.getElementById('aiTaskOutput').textContent!==partialText)throw new Error('Reopening lost partial text');
-   if(document.getElementById('aiTaskOutput').textContent.includes('PRIVATE_THINKING'))throw new Error('Private reasoning leaked');
- `);
+ if(growth.length<3)throw new Error('Expected at least three retained text lengths while generating, without polling: '+JSON.stringify(growth));
+ console.log(JSON.stringify({liveStreamRetainedGrowth:growth,snapshotPollingBlocked:true}));
+ await window.webContents.executeJavaScript(`(async()=>{
+   var partialText=_ccLatestTask.messages.map(m=>m.text).join('');
+   if(await window.openAITaskDestination())throw new Error('Running homepage task allowed result navigation');
+   if(!document.getElementById('agentSelect').disabled)throw new Error('Navigating unlocked the assistant');
+   if(document.getElementById('aiTaskModal'))throw new Error('A transcript modal remains');
+   if([...document.querySelectorAll('[data-ai-task-details]')].some(e=>e.getClientRects().length))throw new Error('Running task exposed a result-navigation button');
+   if(!_ccLatestTask.messages.map(m=>m.text).join('').startsWith(partialText))throw new Error('Navigating lost partial text');
+   if(JSON.stringify(_ccLatestTask.messages).includes('PRIVATE_THINKING'))throw new Error('Private reasoning leaked');
+ })()`);
  if(out)fs.writeFileSync(path.join(out,'task-stream-partial.png'),(await window.webContents.capturePage()).toPNG());
- await until('document.getElementById("aiTaskStatus").dataset.status==="completed" && !document.getElementById("agentSelect").disabled');
+ await until('window._ccLatestTask?.status==="completed" && !document.getElementById("agentSelect").disabled');
  blockTaskSnapshot=false;
- await window.webContents.executeJavaScript(`document.getElementById('aiTaskClose').click()`);
  fs.writeFileSync(invalidMode,'partial-failure');
  await window.webContents.executeJavaScript(`document.getElementById('digestRegenBtn').click()`);
  await until('document.getElementById("digestRegenBtn").disabled');
- await window.webContents.executeJavaScript(`window.openAITaskDetails()`);
- await until('document.getElementById("aiTaskStatus").dataset.status==="failed" && !document.getElementById("agentSelect").disabled');
+ await window.webContents.executeJavaScript(`window.openAITaskDestination()`);
+ await until('window._ccLatestTask?.status==="failed" && !document.getElementById("agentSelect").disabled');
  await window.webContents.executeJavaScript(`
-   if(!document.getElementById('aiTaskStage').textContent.includes('登录'))throw new Error('Stream failure lacks a friendly message');
-   document.getElementById('aiTaskClose').click();
+   if(!_ccLatestTask.error.includes('登录'))throw new Error('Stream failure lacks a friendly message');
  `);
  fs.rmSync(invalidMode);
 

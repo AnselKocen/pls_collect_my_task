@@ -115,10 +115,37 @@ async function run() {
     if(!document.getElementById('habitWishWizard').classList.contains('hidden'))throw new Error('Retry did not shrink automatically');
     if(habitPools.length!==1 || habitPools[0].habits.length!==30)throw new Error('Wrong pool count');
     if(habitPools[0].wishContext.purpose!=='想和朋友一起享受画画' || habitPools[0].wishContext.effort!=='每天五分钟，轻松一点')throw new Error('Custom answers not saved');
+    window.firstWishPoolId=habitPools[0].id;
+    window.firstWishConversation=document.getElementById('habitWishMessages').textContent;
+    if(document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('An unviewed completion needs a reachable entry');
+    document.getElementById('tagSummaryClose').click();document.getElementById('btnHabitTrack').click();
+    if(document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Unviewed completion disappeared on reopen');
+  `);
+  const otherResponse=await fetch(`http://127.0.0.1:${port}/api/habit/pools/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'另一份独立素材：观察窗外光线，阅读一页，写下新的发现。'})});
+  const otherResult=await otherResponse.json();
+  if(!otherResponse.ok || !otherResult.pool)throw new Error('Other-pool fixture failed: '+JSON.stringify(otherResult));
+  await window.webContents.executeJavaScript(`(async()=>{
+    await loadHabitPools();
+    showHabitPoolDetail(${JSON.stringify(otherResult.pool.id)});
+    if(document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Opening a different pool cleared the completion');
+    document.getElementById('habitPoolDetailClose').click();
+    showHabitPoolDetail('missing-pool-id');
+    if(document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('A missing pool cleared the completion');
     document.getElementById('habitWishResume').click();
     if(document.querySelectorAll('.habit-pool-detail-item').length!==30)throw new Error('Pool detail integration failed');
+    if(document.getElementById('habitPoolDetailModal').classList.contains('hidden') || habitDetailPoolId!==window.firstWishPoolId)throw new Error('The requested wish pool did not actually open');
+    if(!document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Viewed completion stayed in the parent');
+    if(!document.getElementById('habitWishSuccess').classList.contains('hidden'))throw new Error('Viewed completion stayed in the conversation');
+    if(document.getElementById('habitWishMessages').textContent!==window.firstWishConversation)throw new Error('Marking viewed erased the conversation');
     document.getElementById('habitPoolDetailClose').click();
-  `);
+    document.getElementById('tagSummaryClose').click();document.getElementById('btnHabitTrack').click();
+    if(!document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Viewed completion reappeared on reopen');
+    window.habitWishDialog.open();
+    if(!document.getElementById('habitWishSuccess').classList.contains('hidden'))throw new Error('Viewed conversation repeated the success prompt');
+    if(document.getElementById('habitWishMessages').textContent!==window.firstWishConversation)throw new Error('Reopened history lost the answers');
+    if(document.getElementById('habitWishRestart').disabled)throw new Error('Viewed conversation cannot start another plan');
+    window.habitWishDialog.close();
+  })()`);
   window.setSize(1100, 900);await delay(150);
   if (out) fs.writeFileSync(path.join(out, 'wish-success.png'), (await window.webContents.capturePage()).toPNG());
   await window.webContents.executeJavaScript(`
@@ -140,10 +167,40 @@ async function run() {
   await delay(100);
   if(!await window.webContents.executeJavaScript(`document.querySelector('#habitWishWizard [role="dialog"]').contains(document.activeElement)`))throw new Error('Natural answer click then Tab escaped the child dialog');
   await until('document.querySelectorAll(".habit-wish-option").length===4');
-  await window.webContents.executeJavaScript(`document.getElementById('habitWishHide').click()`);
+  await window.webContents.executeJavaScript(`document.querySelector('.habit-wish-option').click()`);
+  await until(`habitPools.length===3 && document.getElementById('habitWishProgress').classList.contains('is-complete')`);
+  await window.webContents.executeJavaScript(`
+    if(document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('A new generation did not create a new completion notice');
+    if(document.getElementById('habitWishSuccess').classList.contains('hidden'))throw new Error('New conversation success did not reset its viewed state');
+    var newPool=habitPools.find(pool=>pool.sourceType==='wish' && pool.id!==window.firstWishPoolId);
+    if(!newPool || newPool.habits.length!==30)throw new Error('New plan was not automatically saved');
+    var resultCTA=document.querySelector('#habitUploadProgress + [data-ai-task-details]');
+    var completedBubble=document.getElementById('ccTaskBubble');
+    if(!resultCTA || resultCTA.hidden || resultCTA.disabled)throw new Error('The new pool needs a reachable result navigation entry');
+    if(completedBubble.classList.contains('hidden') || !completedBubble.querySelector('[data-ai-task-details]:not([hidden])'))throw new Error('The new pool completion bubble was not reachable');
+    showHabitPoolDetail(window.firstWishPoolId);
+    if(document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Viewing an older wish cleared the newer completion');
+    if(resultCTA.hidden || completedBubble.classList.contains('hidden'))throw new Error('Viewing an older pool cleared the newer task navigation entry');
+    document.getElementById('habitPoolDetailClose').click();
+    var beforeViewedCatState=window._ccActivity.getState();
+    document.querySelector('.habit-pool-card[data-id="'+newPool.id+'"] .habit-pool-info').click();
+    if(document.getElementById('habitPoolDetailModal').classList.contains('hidden') || habitDetailPoolId!==newPool.id)throw new Error('The newly generated pool did not actually open');
+    if(!document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Opening the generated pool from the pool list did not mark it viewed');
+    if(!resultCTA.hidden)throw new Error('Viewed pool left its ordinary inline navigation entry visible');
+    if(!completedBubble.classList.contains('hidden'))throw new Error('Viewed pool left its completed navigation bubble visible');
+    if(window._ccActivity.getState()!==beforeViewedCatState)throw new Error('Clearing viewed navigation changed the cat feedback state');
+    document.getElementById('habitPoolDetailClose').click();
+    document.getElementById('tagSummaryClose').click();document.getElementById('btnHabitTrack').click();
+  `);
+  await delay(2600);
+  await window.webContents.executeJavaScript(`
+    if(!document.querySelector('#habitUploadProgress + [data-ai-task-details]').hidden)throw new Error('Polling revived the viewed pool navigation entry');
+    if(!document.getElementById('habitWishProgress').classList.contains('hidden'))throw new Error('Reopening revived the viewed completion banner');
+  `);
+  if(out)fs.writeFileSync(path.join(out,'wish-viewed-clean.png'),(await window.webContents.capturePage()).toPNG());
   const calls = fs.readFileSync(capture, 'utf8').trim().split('\n').map(JSON.parse);
   if (calls.filter(call => call.task === 'habit-wish-question').length !== 4) throw new Error('Unexpected extra questions');
-  console.log(JSON.stringify({ visibleStreamLengths: lengths, twoGuidedQuestions: true, fourOptions: true, customAnswers: true, collapseAndReopen: true, naturalOptionClickFocus: true, narrowLayout: true, invalidResultsRejected: true, retry: true, savedCards: 30 }));
+  console.log(JSON.stringify({ visibleStreamLengths: lengths, twoGuidedQuestions: true, fourOptions: true, customAnswers: true, collapseAndReopen: true, naturalOptionClickFocus: true, narrowLayout: true, invalidResultsRejected: true, retry: true, automaticSave: true, unviewedNoticeRetained: true, onlyMatchingPoolMarksViewed: true, viewedNoticeStaysHiddenOnReopen: true, conversationRetained: true, nextGenerationHasFreshNotice: true, viewedPoolCtaHidden: true, olderPoolKeepsNewCta: true, completedBubbleClosed: true, catFeedbackUnchanged: true, savedWishPools: 2, savedCardsPerPool: 30 }));
 }
 app.whenReady().then(run).catch(error => { console.error(error.stack);process.exitCode = 1; }).finally(async () => {
   window?.destroy();

@@ -4,6 +4,7 @@
   const input = el('habitWishInput');
   const parent = el('tagSummaryModal'), parentContent = parent.querySelector('.modal-content');
   const dialog = wizard.querySelector('[role="dialog"]');
+  const viewedPoolIds = new Set();
   let returnFocus = entry;
   let state = fresh();
 
@@ -15,7 +16,8 @@
   }
   function render() {
     const focusWasInside = dialog.contains(document.activeElement);
-    const labels = { wish: '1 / 3 · 一个愿望', purpose: '2 / 3 · 期待的变化', effort: '3 / 3 · 适合你的投入', generate: '正在准备你的卡池', done: '你的愿望，变成了30张小卡片' };
+    const unseenPool = Boolean(state.pool && !viewedPoolIds.has(state.pool.id));
+    const labels = { wish: '1 / 3 · 一个愿望', purpose: '2 / 3 · 期待的变化', effort: '3 / 3 · 适合你的投入', generate: '正在准备你的卡池', done: unseenPool ? '你的愿望，变成了30张小卡片' : '本次对话记录' };
     el('habitWishStep').textContent = labels[state.step];
     const messages = el('habitWishMessages');messages.replaceChildren();
     for (const message of state.messages) {
@@ -42,14 +44,14 @@
     el('habitWishSubmit').disabled = state.pending;
     el('habitWishError').classList.toggle('hidden', !state.error);
     el('habitWishErrorText').textContent = state.error;
-    el('habitWishSuccess').classList.toggle('hidden', !state.pool);
+    el('habitWishSuccess').classList.toggle('hidden', !unseenPool);
     el('habitWishRestart').disabled = state.pending;
     const generating = state.pending && state.step === 'generate';
     const progress = el('habitWishProgress');
-    progress.classList.toggle('hidden', !generating && !state.error && !state.pool);
+    progress.classList.toggle('hidden', !generating && !state.error && !unseenPool);
     progress.classList.toggle('is-generating', generating);
     progress.classList.toggle('is-error', Boolean(state.error));
-    progress.classList.toggle('is-complete', Boolean(state.pool));
+    progress.classList.toggle('is-complete', unseenPool);
     el('habitWishProgressTitle').textContent = generating ? '正在生成习惯卡池' : state.error ? state.step === 'generate' ? '这次生成需要再试一下' : '对话暂时停了一下' : '专属习惯卡池已准备好';
     el('habitWishProgressText').textContent = generating ? '正在把你的计划整理成30张小卡片，可以先做点别的。' : state.error ? state.error : '30张小习惯，陪你从今天开始。';
     el('habitWishResume').textContent = state.pool ? '查看卡池' : state.error ? '返回对话重试' : '查看对话';
@@ -76,6 +78,14 @@
   function viewPool() {
     if (!state.pool) return;
     close();showHabitPoolDetail(state.pool.id);
+  }
+  function markViewed(poolId) {
+    if (typeof poolId !== 'string' || !poolId) return;
+    // A task can open its saved pool before this request's final response is
+    // read. Remember the ID now so that late response cannot revive the notice.
+    viewedPoolIds.add(poolId);
+    window.markAITaskDestinationViewed?.(poolId);
+    if (state.pool?.id === poolId) render();
   }
 
   function choose(index) {
@@ -137,7 +147,7 @@
     let started = false, success = false;
     try {
       if (await checkCCAvailable()) throw userError('请先在设置中连接所选 AI 助手，再回来继续吧～');
-      showCCTask(task);started = true;
+      showCCTask(task, { type:stage === 'generate' ? 'habit-pool' : 'habit-wish', source:'wish', step:stage });started = true;
       const response = await fetch('/api/habit/wish', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage, wish: state.wish, purpose: state.purpose, effort: state.effort, requestId: state.requestId })
@@ -153,6 +163,7 @@
       if (stage === 'generate') {
         if (!result.pool) throw new Error('AI 结果校验：缺少卡池');
         state.pool = result.pool;state.step = 'done';
+        window.setAITaskNavigationResult?.(task, { type:'habit-pool', source:'wish', step:'generate', id:result.pool.id, generatedAt:result.pool.createdAt });
         await loadHabitPools();showToast('🎉 你的愿望卡池生成了～');
       } else {
         state.current.text = result.question;state.options = result.options;
@@ -198,6 +209,6 @@
     if (state.pending) return;state = fresh();input.value = '';render();input.focus();
   });
   el('habitWishView').addEventListener('click', viewPool);
-  window.habitWishDialog = { close };
+  window.habitWishDialog = { close, open, markViewed };
   render();
 })();

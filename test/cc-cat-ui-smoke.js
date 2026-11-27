@@ -105,6 +105,8 @@ function assertCompactGeometry(geometry) {
 async function run() {
   const dataDir=path.join(root,'data');fs.mkdirSync(dataDir);
   const data=require('../storage/defaults')();
+  // The collapsed/expanded layout checks require more than five fixture tags.
+  data['settings.json'].tags.push('布局测试一','布局测试二');
   for (const [file,value] of Object.entries(data)) fs.writeFileSync(path.join(dataDir,file),JSON.stringify(value));
   const node=process.env.MEMO_TEST_NODE || process.execPath;
   const quote=value=>"'"+value.replace(/'/g,"'\\''")+"'";
@@ -134,10 +136,12 @@ async function run() {
   passed('main scene mounts the approved single-canvas sprite');
 
   await clickDaily();await expectState('thinking');await expectState('coding');
+  await js(`document.getElementById('digestBanner').classList.add('digest-collapsed')`);
   await js(`document.getElementById('ccScene').click()`);
-  await until(`!document.getElementById('aiTaskModal').classList.contains('hidden')`);
+  assert.equal(await js(`document.getElementById('digestBanner').classList.contains('digest-collapsed')`),true,'a busy click must not navigate before completion');
+  assert.equal(await js(`document.querySelector('#ccTaskBubble [data-ai-task-details]')`),null,'running task bubbles have no result-navigation entry');
+  assert.equal(await js(`document.getElementById('aiTaskModal')`),null,'task navigation does not open a transcript modal');
   assert.equal(await js('_ccActivity.getState()'),'coding','clicking a working cat must not replace the task animation');
-  await js(`document.getElementById('aiTaskClose').click()`);
   await expectState('happy');
   await delay(20);
   const firstRun=await js(`(()=>{
@@ -154,7 +158,7 @@ async function run() {
   fs.mkdirSync(path.dirname(screenshotPath),{recursive:true});
   fs.writeFileSync(screenshotPath,(await window.webContents.capturePage()).toPNG());
   passed('real daily-summary click and SSE produce thinking, coding, then happy');
-  passed('busy click opens task details without interrupting work');
+  passed('busy clicks preserve progress without navigating or interrupting work');
 
   // Delay only the fake CLI, ensuring the old success timer expires during new work.
   writeWrapper(1);fs.writeFileSync(mode,'slow');
@@ -244,11 +248,15 @@ async function run() {
   window.setContentSize(1100,900);await delay(200);
   await js(`if(filterExpanded)document.querySelector('#filterTags .filter-expand').click()`);await delay(200);
   await until(`_ccCtrl.getIdlePlan().active && _ccCtrl.getIdlePlan().bounds.canRoam`);
+  await js(`_ccCtrl.stop();_ccCtrl.resume()`);
   const idleMarker=await js('Date.now()');let idleEpoch=await js('_ccCtrl.getIdlePlan().epoch');
   // Normal polling re-renders the tags. Identical geometry must not restart the
   // initial rest, otherwise a seemingly valid schedule can never start moving.
   for(let i=0;i<3;i++) { await delay(1000);await js('renderFilterTags()'); }
   assert.equal(await js('_ccCtrl.getIdlePlan().epoch'),idleEpoch,'same-size tag refreshes preserve continuous idle time');
+  // Finish the first 900ms blink before hiding, so this run also verifies the
+  // extra real time required to accumulate five seconds of gesture-free wait.
+  await until(`!_ccCtrl.getIdlePlan().action`);
   // Electron's offscreen fixture does not expose native tab visibility. Drive
   // the browser event explicitly, while retaining the real scheduler clock.
   const waiting=await js(`(()=>{window.__catHidden=true;Object.defineProperty(document,'hidden',{configurable:true,get:()=>window.__catHidden});document.dispatchEvent(new Event('visibilitychange'));return {at:performance.now(),plan:_ccCtrl.getIdlePlan()};})()`);
@@ -257,20 +265,23 @@ async function run() {
   const waitingResumed=await js(`(()=>{window.__catHidden=false;document.dispatchEvent(new Event('visibilitychange'));return {at:performance.now(),plan:_ccCtrl.getIdlePlan()};})()`);
   assert.equal(waitingResumed.plan.active,true);assert.equal(waitingResumed.plan.suspended,false);
   assert.equal(waitingResumed.plan.position,waiting.plan.position);
+  assert.equal(waitingResumed.plan.elapsed,waiting.plan.elapsed);
   assert.ok(Math.abs((waitingResumed.at-waitingResumed.plan.segmentAt)-(waiting.at-waiting.plan.segmentAt))<100,'returning to the page retains the rest already elapsed');
   assert.ok(waitingResumed.plan.epoch-idleEpoch>=1450,'only time spent hidden is excluded from idle timing');
   idleEpoch=waitingResumed.plan.epoch;
   passed('page visibility preserves the elapsed five-second initial wait',{waiting,waitingResumed});
   await until(`CCPixelCat.mount(document.getElementById('ccScene')).state==='walk'`,6500);
   const first=await js(`({at:performance.now(),plan:_ccCtrl.getIdlePlan(),left:document.getElementById('ccScene').getBoundingClientRect().left})`);
-  assert.ok(first.at-idleEpoch>=5000 && first.at-idleEpoch<5500,'the real first walk starts at five seconds');
+  assert.ok(first.plan.elapsed>=5000 && first.plan.elapsed<5200,'the first walk starts after five accumulated seconds');
+  assert.equal(first.plan.action,null);
+  assert.ok(first.at-idleEpoch>=5900 && first.at-idleEpoch<6500,'the first blink adds 900ms before five accumulated seconds finish');
   await delay(900);
   const later=await js(`({plan:_ccCtrl.getIdlePlan(),left:document.getElementById('ccScene').getBoundingClientRect().left})`);
   assert.ok(Math.abs(later.left-first.left)>1,'the resumed slow walk makes visible continuous progress');
   assert.equal(Math.sign(later.left-first.left),first.plan.direction,'the resumed walk follows its selected route direction');
   const safety=await compactGeometry();assertCompactGeometry(safety);
-  assert.equal(await js(`__catSmoke.states.some(s=>s.at>=${idleMarker} && !['idle','walk'].includes(s.scene))`),false);
-  passed('real idle time waits five seconds then starts a bounded eight-second slow walk',{first,later,safety});
+  assert.equal(await js(`__catSmoke.states.some(s=>s.at>=${idleMarker} && (s.model!=='idle' || !['idle','walk','yarn','belly','stretch'].includes(s.scene)))`),false);
+  passed('real idle time pauses for the first blink before starting its accumulated eight-second walk',{first,later,safety});
 
   const walkingPaused=await js(`(()=>{window.__catHidden=true;document.dispatchEvent(new Event('visibilitychange'));return _ccCtrl.getIdlePlan();})()`);
   assert.equal(walkingPaused.active,false);assert.equal(walkingPaused.suspended,true);
@@ -279,8 +290,7 @@ async function run() {
   const walkingResumed=await js(`(()=>{window.__catHidden=false;document.dispatchEvent(new Event('visibilitychange'));return _ccCtrl.getIdlePlan();})()`);
   assert.equal(walkingResumed.phase,'walk','returning during a walk continues immediately');
   assert.ok(Math.abs(walkingResumed.position-walkingPaused.position)<.1,'returning never teleports the cat');
-  await delay(700);
-  assert.ok(Math.abs(await js('_ccCtrl.getPos()')-walkingResumed.position)>1,'the continued walk advances without another rest');
+  await until(`Math.abs(_ccCtrl.getPos()-${walkingResumed.position})>1`,2500);
   await js(`delete document.hidden;delete window.__catHidden;document.dispatchEvent(new Event('visibilitychange'))`);
   passed('page visibility freezes and continues an existing slow walk',{walkingPaused,walkingResumed});
 

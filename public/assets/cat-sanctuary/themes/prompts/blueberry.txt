@@ -1,0 +1,29 @@
+Use case: precise-object-edit.
+Asset type: one finished square STATIC pixel-art cat sanctuary background.
+INPUT IMAGE 1 is the APPROVED BLUEBERRY-YOGURT v2 ROOM and the ONLY edit target. Make one narrow targeted color edit of this approved image: REMOVE THE OVERABUNDANCE OF GREEN by recoloring all greenery and remaining green props into a nuanced blueberry / lavender / blush palette. Keep everything else in this already approved image unchanged as closely as possible.
+
+CRITICAL: the client explicitly permits fantasy-colored leaves. Plants DO NOT need natural green. Do NOT preserve the bright lime, olive, grass or sage green from the input. There should be no visually prominent green patch left in the completed blueberry room. This instruction overrides any usual preference for natural foliage.
+
+PALETTE RGB/hex art direction:
+blueberry primary RGB(118,133,197) #7685C5;
+blueberry accent RGB(88,104,184) #5868B8;
+soft violet leaf midtone RGB(155,161,210) #9BA1D2;
+pale lavender leaf highlight RGB(217,221,244) #D9DDF4;
+blush pink secondary RGB(251,215,222) #FBD7DE;
+blue-gray RGB(200,218,243) #C8DAF3;
+milk white RGB(255,255,255) #FFFFFF;
+deep indigo leaf/branch shadows RGB(48,56,112) #303870.
+Keep the existing warm golden lamps and tiny yellow/coral highlights for balanced color variety.
+
+RECOLOR THESE EXISTING PARTS ONLY, preserving all silhouettes, individual leaves, branch arrangements, plant sizes, placements and textures:
+1. Top-center large potted hanging plant: cool blueberry/lavender leaves with pale lilac highlights and indigo shadows. Mix occasional soft blush leaves into its existing leaves, without adding or removing leaves.
+2. Long vine down the left castle and its upper planter: dusted lavender-blue leaves, visually a little darker than the pale blue-gray furniture, with differentiated light and dark leaf faces.
+3. All three grasslike plants on the left shelves: periwinkle/lilac grass blades, milk-lavender highlights and muted blueberry shadows.
+4. Vine around the right wall cat box and the cascading plant on the care cabinet at far right: alternate lavender-blue and restrained blush-lilac leaf tones for a soft multicolor rhythm. Keep their plant and leaf forms readable rather than changing them into flowers.
+5. ALL greenery visible through the arched window: recolor the current lime/green treetops/leaves to a soft blue-gray, periwinkle and blush distant garden. Keep the existing window geometry and scene silhouettes.
+6. Mushroom cat-tree felt roof and green leaf-shaped side platform: muted BLUEBERRY / LAVENDER felt with existing fuzzy pixel texture and light/dark modeling. The ladder and little dangling green ball become blue-gray plus blush accents. Preserve the felt, ladder and ball shapes exactly.
+7. The small green yarn ball on the floor and any remaining lime-green leaves, stems, toy pieces or basket contents: coordinated dusty lilac-blue, pale blush or milk-white. Existing warm pink/yellow toys can remain. Avoid introducing turquoise, teal, olive or mint that still reads green.
+The plants should remain visually distinct from furniture through deeper indigo/lavender foliage shadows, paler lilac/blush highlights and their detailed leaf texture. Do NOT give the whole image a uniform purple/blue filter; the approved blue-gray wood, pale pink floor, white rope, pink/white nests, blueberry paw rug and existing multicolor small props already give the intended varied palette.
+
+LOCK THE REST OF THE APPROVED INPUT: preserve the complete isometric room composition, same camera, floor footprint, two walls, every furniture silhouette and position, all stairs and bridge/net geometry, original pixel-art detail, existing blue-gray wooden castle/cabinet/window/roof trim, pale blush floorboards, icy walls and outside background, all blue/pink/white cushions, moon nest, pink cat-ear nest, blueberry/white/blush paw rug, curtains, tunnel, wall pictures, rope columns, warm golden roof bulbs and warm wall lantern. Do not redesign, move, add or remove any object. Maintain the same crisp 16-bit pixel-art appearance, square pixel clusters, stepped outlines and readable wood/fabric/felt textures. No painterly or smooth 3D style, no new blur.
+No actual cat or any living animal, no faces peeking out of cat-shaped holes. Existing toy mice, fish plush and paw motifs remain inanimate. No labels, text, UI, swatches, watermarks, comparison collage or border. Output a single finished full uncropped square scene.

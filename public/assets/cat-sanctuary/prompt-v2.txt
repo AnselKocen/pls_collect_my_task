@@ -1,0 +1,27 @@
+Use case: precise-object-edit
+Edit target: the attached pixel-art isometric cat sanctuary room image.
+Primary request: Revise this SAME finished scene in exactly three ways: remove all cats; enlarge the actual room so the existing objects have more breathing space; harmonize the color palette with the application's default warm-gold/cream paper theme.
+
+1. NO CATS / NO ANIMALS: remove all four physical cat characters completely: the orange cat on the upper cushion, the cat peeking out of the high cat-head wooden house, the blue-gray cat inside the striped bolster bed, and the ivory/green-marked cat on the floor near the yarn. Reconstruct the revealed cushions, bed interiors, doorways and floor naturally. Do not leave detached eyes, ears, paws, tails, animal silhouettes, or any new living animal. Replace the small framed cat portrait on the left wall with a simple paw-print decoration so there are no depicted cat characters either. Keep the CAT-THEMED furniture: cat-ear openings, paw-print motifs, cat-ear dome bed, fish plush, felt mouse toys, all are furniture/toys and should remain.
+
+2. LARGER ROOM / LESS CRAMPED, SAME RICH INVENTORY: expand the room's physical floor footprint AND the span of both walls by roughly 30–35%. This is an architecture and placement revision, not just a larger pixel count or adding blank borders. Keep approximately the same absolute scale and full detailed inventory of all furniture and toys, allowing the larger room to give them visibly more space. Allow gentle repositioning within the same recognizable zones, not a wholesale redesign. Keep the wooden castle on the left, green forest/mushroom tree on the right-center, cat wall in the back, care/storage cabinet on the right, and foreground toy area. Lower furniture-to-room size ratio by about 15–20% so the space feels more generous. Introduce narrow continuous walking paths and visible floor separation between the castle, mushroom tree, toy area and feeding cabinet. Leave a little breathing space around wall cubbies, steps, crescent bed and bridge. Retain a visually lush, richly layered maximalist home; do not make a sparse room or an empty central plaza.
+
+Preserve every recognizable object and its craftsmanship:
+- Tall wooden multi-level castle with roofed cat-head house, rooftop railing, sisal posts, ladders, rope hammock, transparent bowl bed, barrel tunnel, hanging pom-poms and padded lower hammock.
+- Suspended rope bridge, elevated cushion perch, moon-shaped wooden lounger, wall cat-head cubby, cloud stepping shelves, stair route and star ornaments.
+- Green mushroom/forest cat tree with rounded plush cap, hollow trunk doorway, sisal posts, low ladder and leaf perch.
+- Navy/cream striped bolster bed (now empty), cream cat-eared dome nest, checkered sage pillows and pads.
+- Left wall cat-grass shelves, hanging trailing plants, framed decorations, warm lantern and string lights, right arched curtained window and fish drawing.
+- Full care cabinet: double ceramic bowls, fountain, treat jars and tins, brush and pump bottle, folded towels and blanket-filled basket.
+- Foreground paw-shaped rug, fabric play tunnel, cardboard cat box, wave-shaped cardboard scratcher, yarn balls and curled yarn, circular ball track, toy-filled wicker basket, feather-wand holder, fish plush, felt mouse toys and little textured ball.
+
+3. EXACT DEFAULT THEME COLOR DIRECTION:
+Outer background and pale paper/plaster walls: warm paper ivory #FBF7E9, not peach, orange, gray or greenish.
+Cream fabrics and highlights: #FEFCF6 / #FAF6EE.
+Large wooden surfaces: pale natural honey oak and kraft beige #E8D8BE / #DCC8A8, with #C8B090 / #B09878 for wood grain and medium shading. Reduce the original orange/red saturation noticeably while retaining warm wooden character.
+Honey details and limited upholstery/light accents: pale honey #F4DFA0 and restrained warm gold #E8B84B / #F1CC74.
+Neutral warm taupe #9F8F82, outline/shadow #8A7A68 and #6A5A48, deepest tiny lines #4A3A28. Do not tint the full room orange.
+Retain green plants and green mushroom identity but use muted natural olive/sage, not bright lime. Keep navy bed stripes and small dusty-pink toys as small subdued accents. They must not dominate the gold/cream theme.
+Neutral cozy daylight rather than an orange sunset filter; subtle coherent pixel shadows. Keep the creamy texture but reduce excessive yellow/orange cast.
+
+INVARIANTS: Preserve the source's charming, crisp, detailed 2D PIXEL ART, clear square pixels, stairstep isometric outlines, furniture identities and handmade woven/sisal/wood textures. Keep the same isometric open-front two-wall dollhouse concept and complete visible diamond-shaped wooden base. Finished full scene, no crop. Square canvas, the full enlarged room occupies about 90–94% of the canvas with a narrow ivory margin. No smooth digital painting, no 3D render, no blur, no text, no labels, no UI, no watermark. Do not include a cat anywhere. Output one finished image.

@@ -191,23 +191,26 @@ function _showCCBubble(text, isDone) {
   if (!bubble) return;
   bubble.title = text;
   if (isDone) {
-    bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>查看过程</button><button class="cc-task-bubble-close" id="ccBubbleClose">✕</button>`;
+    bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>前往查看</button><button class="cc-task-bubble-close" id="ccBubbleClose">✕</button>`;
     document.getElementById('ccBubbleClose').addEventListener('click', () => {
       bubble.classList.add('hidden');
       cancelAnimationFrame(_ccBubbleRaf);
       _scheduleCCIdle();
     });
   } else {
-    bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>查看过程</button>`;
+    bubble.innerHTML = `<span>${escapeHtml(text)}</span>`;
   }
   bubble.classList.remove('hidden');
+  window.updateAITaskNavigation?.();
   cancelAnimationFrame(_ccBubbleRaf);
   _ccBubbleRaf = requestAnimationFrame(_updateBubblePos);
 }
 
 function receiveCCTask(task) {
   const previous = _ccRemoteTask;
-  _ccRemoteTask = task ? { id:task.id, status:task.status, stage:task.stage, name:task.name } : null;
+  _ccRemoteTask = task ? { id:task.id, status:task.status, stage:task.stage, name:task.name, target:task.target } : null;
+  syncHabitMaterialTaskState(task);
+  syncAITaskDestinationStatus(task);
   if (task?.status === 'running') {
     const state = window.CCPixelCatController.stateForTask(task);
     for (const [name,token] of _ccTaskTokens) window._ccActivity.update('request:'+name,state,token);
@@ -262,9 +265,11 @@ function _scheduleCCIdle() {
 const _ccTaskSet = new Set();
 const _ccTaskTokens = new Map();
 
-function showCCTask(taskName) {
+function showCCTask(taskName,target) {
   if (_ccTaskSet.has(taskName)) return;
   _ccTaskSet.add(taskName);
+  document.querySelectorAll('.ai-destination-note').forEach(note=>{note.textContent='';note.classList.add('hidden');});
+  window.markAITaskPending?.(target,taskName);
   renderAgentControl();
   clearTimeout(_ccIdleTimer);
   clearTimeout(_ccIdleHideTimer);
@@ -276,6 +281,7 @@ function showCCTask(taskName) {
 function hideCCTask(taskName,success=true) {
   if (!_ccTaskSet.has(taskName)) return;
   _ccTaskSet.delete(taskName);
+  window.finishAITaskPending?.(taskName,success);
   window._ccActivity.end('request:'+taskName,_ccTaskTokens.get(taskName),{success});
   _ccTaskTokens.delete(taskName);
   renderAgentControl();
@@ -989,6 +995,7 @@ function localDateKey(date = new Date()) {
 }
 
 // === Daily Digest ===
+let currentDailyDigest = null;
 document.getElementById('digestToggle').addEventListener('click', () => { document.getElementById('digestBanner').classList.toggle('digest-collapsed'); });
 
 document.getElementById('digestRegenBtn').addEventListener('click', async () => {
@@ -996,9 +1003,10 @@ document.getElementById('digestRegenBtn').addEventListener('click', async () => 
   if (await checkCCBusy()) return;
   const btn = document.getElementById('digestRegenBtn');
   btn.disabled = true; btn.textContent = '生成中...';
-  showCCTask('生成今日摘要');
+  showCCTask('生成今日摘要',{type:'daily-digest'});
   try {
     const res = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'daily-digest' }) });
+    window.setAITaskNavigationResult?.('生成今日摘要',{type:'daily-digest',generatedAt:res.digest?.generatedAt});
     hideCCTask('生成今日摘要'); btn.disabled = false; btn.textContent = '重新生成';
     showDigest(res.digest);
   } catch (err) { hideCCTask('生成今日摘要',false); btn.disabled = false; btn.textContent = '重新生成'; console.error(err); if(!err.ccBusy)showToast(err.message); }
@@ -1012,6 +1020,7 @@ function toggleSummary(btn) {
 
 function showDigest(digest, legacyScope = false) {
   if (!digest) return;
+  currentDailyDigest = digest;
   const banner = document.getElementById('digestBanner');
   document.getElementById('digestTitle').textContent = `${digest.date || '今日'} 摘要${legacyScope ? ' · 之前的摘要' : ''}`;
   if(legacyScope)console.info('[Digest] Legacy digest has no local date range',{date:digest.date});
@@ -1040,9 +1049,10 @@ document.getElementById('tagSuggestGenBtn').addEventListener('click', async () =
   if (await checkCCBusy()) return;
   const btn = document.getElementById('tagSuggestGenBtn');
   btn.disabled = true; btn.textContent = '生成中...';
-  showCCTask('生成标签建议');
+  showCCTask('生成标签建议',{type:'tag-suggestions'});
   try {
-    await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'tag-suggestions' }) });
+    const result = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'tag-suggestions' }) });
+    window.setAITaskNavigationResult?.('生成标签建议',{type:'tag-suggestions',generatedAt:result.generatedAt});
     hideCCTask('生成标签建议'); btn.disabled = false; btn.textContent = '生成建议';
     const data = await api('/api/cc/suggestions');
     tagSuggestHistory = data.tagSuggestionHistory || [];
@@ -1074,6 +1084,7 @@ function renderTagSuggestHistory() {
         <div class="tag-summary-item-content collapsed-content">${escapeHtml(content)}</div>
       </div>`;
   }).join('');
+  container.querySelectorAll('.tag-summary-item').forEach((row,index)=>{row.dataset.generatedAt=tagSuggestHistory[index].generatedAt || '';});
 }
 
 async function deleteTagSuggest(idx) {
@@ -1363,7 +1374,7 @@ async function generateGraph() {
   if (await checkCCBusy()) return;
   const btn = document.getElementById('graphRegenBtn');
   btn.disabled = true; btn.textContent = '生成中...';
-  showCCTask('生成关联图谱');
+  showCCTask('生成关联图谱',{type:'graph'});
   try {
     const graphParams = {tags:graphSelectedTags};
     const from=document.getElementById('graphFrom').value,to=document.getElementById('graphTo').value;
@@ -1371,6 +1382,7 @@ async function generateGraph() {
     if(to)graphParams.to=to;
     if(from && to && from>to)throw requestError('开始日期不能晚于结束日期','graph date range',400);
     const res = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'graph', params: graphParams }) });
+    if(res.graph)window.setAITaskNavigationResult?.('生成关联图谱',{type:'graph',id:res.graph.id,generatedAt:res.graph.generatedAt});
     hideCCTask('生成关联图谱');
     if (res && res.graph) {
       if (!res.graph.nodes || res.graph.nodes.length === 0) {
@@ -1490,10 +1502,11 @@ document.getElementById('weeklyGenBtn').addEventListener('click', async () => {
   if (await checkCCBusy()) return;
   const btn = document.getElementById('weeklyGenBtn');
   btn.disabled = true; btn.textContent = '生成中...';
-  showCCTask('生成本周总结');
+  showCCTask('生成本周总结',{type:'weekly-digest'});
   try {
     const params = weeklySelectedTags.length > 0 ? { tags: weeklySelectedTags } : {};
-    await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'weekly-digest', params }) });
+    const result = await api('/api/cc/ask', { method: 'POST', body: JSON.stringify({ action: 'weekly-digest', params }) });
+    window.setAITaskNavigationResult?.('生成本周总结',{type:'weekly-digest',generatedAt:result.digest?.generatedAt});
     hideCCTask('生成本周总结'); btn.disabled = false; btn.textContent = '生成本周总结';
     const data = await api('/api/cc/suggestions'); weeklyHistory = data.weeklyDigests || [];
     renderWeeklyHistory();
@@ -1516,6 +1529,7 @@ function renderWeeklyHistory() {
       <div class="tag-summary-item-content collapsed-content">${escapeHtml(window.memoMessages.digestText(item,{weekly:true}))}</div>
     </div>
   `).join('');
+  container.querySelectorAll('.tag-summary-item').forEach((row,index)=>{row.dataset.generatedAt=weeklyHistory[index].generatedAt || '';});
 }
 
 async function deleteWeeklyDigest(idx) {
@@ -1666,11 +1680,15 @@ let habitDetailPoolId = null;
 function showHabitPoolDetail(poolId) {
   const pool = habitPools.find(p => p.id === poolId);
   if (!pool) return;
+  window.habitWishDialog?.close();
   habitDetailPoolId = poolId;
   document.getElementById('habitPoolDetailTitle').textContent = `📚 ${pool.name}`;
   document.getElementById('habitPoolDetailNameInput').value = pool.name;
   renderPoolDetailList(pool);
   document.getElementById('habitPoolDetailModal').classList.remove('hidden');
+  document.getElementById('habitPoolDetailClose').focus();
+  window.habitWishDialog?.markViewed(pool.id);
+  return true;
 }
 
 function renderPoolDetailList(pool) {
@@ -1827,7 +1845,7 @@ async function generateHabitMaterial() {
     habitGenerating = true;
     progress.classList.remove('hidden');habitUploadArea.classList.add('hidden');
     progress.querySelector('.habit-progress-text').textContent = '正在生成习惯卡池…';
-    showCCTask('生成习惯卡池');started = true;
+    showCCTask('生成习惯卡池',{type:'habit-pool',source:'material'});started = true;
     const options = { method: 'POST' };
     if (file) { const body = new FormData();body.append('materialFile', file);options.body = body; }
     else { options.headers = { 'Content-Type': 'application/json' };options.body = JSON.stringify({ text, sourceName: '粘贴文字' }); }
@@ -1838,6 +1856,7 @@ async function generateHabitMaterial() {
       habitMaterialError([400, 413].includes(res.status) ? data.error || '这份素材暂时无法读取，请换一份试试' : window.memoMessages.errorMessage(data.error, settings.agent));return;
     }
     if (!data.pool) throw new Error('Missing generated pool');
+    window.setAITaskNavigationResult?.('生成习惯卡池',{type:'habit-pool',source:'material',id:data.pool.id,generatedAt:data.pool.createdAt});
     success = true;
     if (file) { habitMaterialFile = null;habitMaterialMode = 'text'; }
     else habitMaterialText.value = '';
@@ -2076,6 +2095,11 @@ const btnCcLabels = ['整理标签', '任务图谱', '本周总结', '习惯养�
 const modalTitleIds = ['tagSuggestTitle', 'graphTitle', 'weeklyTitle', 'tagSummaryTitle', 'blindboxTitle'];
 const modalTitleLabels = ['标签整理建议', '关联图谱', '本周总结', '习惯养成', '选择盲盒范围'];
 
+let receivingSharedTheme = false;
+function publishThemeSelection(theme, customColors) {
+  if (!receivingSharedTheme) window.MemoThemeSync?.publish({theme, ...(customColors ? {customColors} : {})});
+}
+
 function applyTheme(theme) {
   clearCustomThemeVars(); // clear any custom inline styles first
   document.documentElement.setAttribute('data-theme', theme === 'gold' ? '' : theme);
@@ -2088,7 +2112,21 @@ function applyTheme(theme) {
     const el = document.getElementById(id);
     if (el) el.textContent = emojis[i] + ' ' + modalTitleLabels[i];
   });
+  publishThemeSelection(theme);
 }
+
+window.MemoThemeSync?.subscribe(selection => {
+  const theme = selection.theme === 'pink' ? 'berry' : selection.theme;
+  const selector = document.getElementById('themeSelect');
+  if (![...selector.options].some(option => option.value === theme)) return;
+  settings = {...settings, theme, ...(selection.customColors ? {customColors:selection.customColors} : {})};
+  selector.value = theme;
+  receivingSharedTheme = true;
+  try {
+    if (theme === 'custom') applyCustomTheme(settings.customColors || null);
+    else applyTheme(theme);
+  } finally { receivingSharedTheme = false; }
+});
 
 function loadSettings() {
   renderAgentControl();
@@ -2265,6 +2303,7 @@ function applyCustomTheme(colors) {
 
   // Generate dynamic tape overrides
   injectCustomTapeCSS(colors);
+  publishThemeSelection('custom', colors);
 }
 
 function injectCustomTapeCSS(c) {
@@ -2598,6 +2637,124 @@ async function loadSuggestions() {
   } catch {}
 }
 
+// === Go to the exact result belonging to a live task ===
+let aiDestinationSequence = 0;
+let aiDestinationTaskId = null;
+function closeAITaskOverlays(keep) {
+  window.habitWishDialog?.close(false);
+  document.querySelectorAll('.modal').forEach(modal=>{if(modal.id!==keep)modal.classList.add('hidden');});
+}
+function destinationNote(container,text='') {
+  let note=container.querySelector(':scope > .ai-destination-note');
+  if(!note){note=document.createElement('p');note.className='ai-destination-note';note.setAttribute('role','status');container.prepend(note);}
+  note.dataset.taskId=aiDestinationTaskId || '';
+  note.textContent=text;note.classList.toggle('hidden',!text);
+}
+function scrollToTaskResult(element) {
+  if(!element)return;
+  element.scrollIntoView({block:'center',behavior:'auto'});
+}
+function taskDestinationStatus(task) {
+  if(task.status==='running')return '本次任务正在进行，完成后可在这里查看结果。';
+  if(task.status==='failed')return window.memoMessages.errorMessage(task.error || '这次任务未能完成，请在这里重试。',task.agent || settings.agent);
+  return '';
+}
+function syncAITaskDestinationStatus(task) {
+  if(!task?.id)return;
+  document.querySelectorAll('.ai-destination-note').forEach(note=>{
+    if(note.dataset.taskId!==task.id)return;
+    const text=taskDestinationStatus(task);note.textContent=text;note.classList.toggle('hidden',!text);
+  });
+}
+function syncHabitMaterialTaskState(task) {
+  if(task?.target?.type!=='habit-pool' || task.target.source!=='material')return;
+  const progress=document.getElementById('habitUploadProgress'),input=document.getElementById('habitUploadArea');
+  if(!progress || !input)return;
+  const running=task.status==='running';
+  if(running){progress.classList.remove('hidden');input.classList.add('hidden');progress.querySelector('.habit-progress-text').textContent='正在生成习惯卡池…';}
+  else if(!habitMaterialSubmitting){progress.classList.add('hidden');input.classList.remove('hidden');}
+}
+window.navigateToAITaskResult=async function(task) {
+  const target=task?.target;if(!target?.type)return false;
+  const sequence=++aiDestinationSequence,current=()=>sequence===aiDestinationSequence;
+  aiDestinationTaskId=task.id || null;
+  const status=taskDestinationStatus(task),done=task.status==='completed';
+  const missing='这份结果已不存在，或缺少定位信息。可以在这里重新生成。';
+  const unavailable='暂时无法读取这份结果，请稍后再试。';
+  try {
+    if(target.type==='daily-digest'){
+      closeAITaskOverlays();const banner=document.getElementById('digestBanner');
+      banner.classList.remove('hidden','digest-collapsed');destinationNote(banner.querySelector('.digest-body'),status);scrollToTaskResult(banner);
+      let digest=currentDailyDigest;
+      if(!target.generatedAt || digest?.generatedAt!==target.generatedAt){const data=await api('/api/cc/suggestions');if(!current())return false;digest=data.dailyDigest;}
+      if(done){
+        if(!target.generatedAt || digest?.generatedAt!==target.generatedAt){destinationNote(banner.querySelector('.digest-body'),missing);showToast(missing);return false;}
+        showDigest(digest,!digest.from);destinationNote(banner.querySelector('.digest-body'));scrollToTaskResult(banner);
+      }
+      return true;
+    }
+    if(['weekly-digest','tag-suggestions'].includes(target.type)){
+      const weekly=target.type==='weekly-digest',modal=document.getElementById(weekly?'weeklyModal':'tagSuggestModal');
+      closeAITaskOverlays(modal.id);modal.classList.remove('hidden');
+      destinationNote(modal.querySelector('.modal-content'),status);
+      if(weekly){weeklySelectedTags=[];renderWeeklyTagPicker();renderWeeklyHistory();}else renderTagSuggestHistory();
+      const data=await api('/api/cc/suggestions');if(!current())return false;
+      const history=weekly ? data.weeklyDigests || [] : data.tagSuggestionHistory || [];
+      if(weekly){weeklyHistory=history;renderWeeklyHistory();}else{tagSuggestHistory=history;renderTagSuggestHistory();}
+      if(done){
+        const index=target.generatedAt ? history.findIndex(item=>item.generatedAt===target.generatedAt) : -1;
+        if(index<0){destinationNote(modal.querySelector('.modal-content'),missing);showToast(missing);return false;}
+        const row=document.getElementById(weekly?'weeklyHistory':'tagSuggestHistory').querySelectorAll('.tag-summary-item')[index];
+        row.querySelector('.tag-summary-item-content').classList.remove('collapsed-content');row.querySelector('.summary-item-actions button').textContent='▾';
+        destinationNote(modal.querySelector('.modal-content'));scrollToTaskResult(row);
+      }else document.getElementById(weekly?'weeklyGenBtn':'tagSuggestGenBtn').focus();
+      return true;
+    }
+    if(target.type==='graph'){
+      const modal=document.getElementById('graphModal');closeAITaskOverlays(modal.id);modal.classList.remove('hidden');renderGraphTagPicker();
+      destinationNote(modal.querySelector('.modal-content'),status);
+      graphSimulation?.stop();graphResizeObserver?.disconnect();
+      const container=document.getElementById('graphContainer');container.textContent=done?'正在读取本次图谱…':status;
+      document.getElementById('graphNav').style.display='none';
+      document.getElementById('graphInsights').style.display='none';
+      document.getElementById('graphInsightsContent').replaceChildren();
+      document.getElementById('graphSummaryPanel').replaceChildren();
+      document.getElementById('graphCoverage').textContent='';
+      document.getElementById('graphDate').textContent='';
+      document.getElementById('graphCollapseAll').disabled=true;
+      const data=await api('/api/cc/suggestions');if(!current())return false;
+      graphHistory=data.graphHistory || [];
+      if(done){
+        const index=target.id ? graphHistory.findIndex(graph=>graph.id===target.id) : -1;
+        if(index<0){container.textContent=missing;document.getElementById('graphNav').style.display='none';showToast(missing);return false;}
+        graphIndex=index;graphEntryId=null;renderCurrentGraph();destinationNote(modal.querySelector('.modal-content'));scrollToTaskResult(container);
+      }
+      return true;
+    }
+    if(['habit-wish','habit-pool'].includes(target.type)){
+      closeAITaskOverlays('tagSummaryModal');switchHabitTab('pools');document.getElementById('tagSummaryModal').classList.remove('hidden');
+      if(target.type==='habit-wish'){
+        window.habitWishDialog?.open();return true;
+      }
+      syncHabitMaterialTaskState(task);
+      destinationNote(document.getElementById('habitPanelPools'),status);
+      if(!done){
+        if(target.source==='wish'){
+          if(task.status==='failed')window.habitWishDialog?.open();
+          else scrollToTaskResult(document.getElementById('habitWishProgress').classList.contains('hidden') ? document.getElementById('habitPanelPools') : document.getElementById('habitWishProgress'));
+        }else{await loadHabitPools();if(!current())return false;document.getElementById('habitUploadProgress').scrollIntoView({block:'nearest'});}
+        return true;
+      }
+      await loadHabitPools();if(!current())return false;
+      if(!target.id || !habitPools.some(pool=>pool.id===target.id)){destinationNote(document.getElementById('habitPanelPools'),missing);showToast(missing);return false;}
+      destinationNote(document.getElementById('habitPanelPools'));return Boolean(showHabitPoolDetail(target.id));
+    }
+    showToast('暂时找不到这项任务的入口，请从侧栏打开对应功能。');return false;
+  }catch(error){
+    if(current())showToast(unavailable);console.error('[Task destination]',error);return false;
+  }
+};
+
 // === Close modals on backdrop ===
 document.querySelectorAll('.modal').forEach(modal => {
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
@@ -2611,16 +2768,35 @@ function initCCScene() {
   const strip = cc.parentElement;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const labels = { idle:'休息中', thinking:'思考中', coding:'工作中', looking:'查找中', sweeping:'整理中', error:'遇到问题', happy:'开心' };
-  let walkPos = 0, paused = false, bounds, geometryKey = '';
+  let walkPos = 0, paused = false, bounds, geometryKey = '', playingAction = null;
+  // The yarn ball extends forty unscaled pixels beyond the normal hit area.
+  // Face it into the existing safe lane, and skip it if neither side has room.
+  const yarnMargin = () => 40*cc.getBoundingClientRect().width/cc.offsetWidth;
+  const yarnFits = (plan, flipped) => (flipped ? plan.bounds.max-plan.position : plan.position-plan.bounds.min) >= yarnMargin();
   const idlePlan = window.CCPixelCatIdle.create({
     now:() => performance.now(),
+    animations:window.CCPixelCat.ANIMATIONS,
+    canPlayAction(action,plan) { return action.state !== 'yarn' || yarnFits(plan,false) || yarnFits(plan,true); },
     onUpdate(plan) {
       walkPos = plan.position;cc.style.left = walkPos+'px';
       const record = window.CCPixelCat.mount(cc);
-      if (plan.phase === 'walk') {
+      // An idle action can interrupt a walk. Render the action while its saved
+      // route position is frozen, then continue the remaining walk afterwards.
+      if (plan.action?.state) {
+        const action = plan.action;
+        if (!playingAction || playingAction.name !== action.name || playingAction.startedAt !== action.startedAt) {
+          if (action.state === 'yarn' && !yarnFits(plan,cc.classList.contains('flip'))) cc.classList.toggle('flip');
+          window.CCPixelCat.setState(cc,action.state);
+          window.CCPixelCat.setProgress(cc,(performance.now()-action.startedAt)/action.duration);
+          window.CCPixelCat.play(cc);
+          playingAction = action;
+        }
+      } else if (plan.phase === 'walk' && !plan.action) {
+        playingAction = null;
         cc.classList.toggle('flip',plan.direction > 0);
         if (record.state !== 'walk') window.CCPixelCat.setState(cc,'walk');
       } else {
+        playingAction = null;
         if (record.state !== 'idle') window.CCPixelCat.setState(cc,'idle');
         window.CCPixelCat.setIdleAction(cc,plan.action?.name || 'rest',plan.action?.startedAt);
       }
@@ -2630,6 +2806,7 @@ function initCCScene() {
   function stopIdle() {
     // Tasks, manual stops and geometry changes invalidate a suspended route too.
     const plan = idlePlan.snapshot(), position = idlePlan.pause();
+    playingAction = null;
     if (plan.active || plan.suspended) walkPos = position;
     cc.style.left = walkPos+'px';
   }
@@ -2673,6 +2850,7 @@ function initCCScene() {
       if (document.hidden) {
         // Returning to this page must continue the wait/walk already in progress.
         const plan = idlePlan.snapshot(), position = idlePlan.suspend();
+        playingAction = null;
         if (plan.active || plan.suspended) walkPos = position;
         cc.style.left = walkPos+'px';
         window.CCPixelCat.setState(cc,'idle');
@@ -2685,7 +2863,7 @@ function initCCScene() {
       stopIdle();window.CCPixelCat.setState(cc,state);
       if (state === 'idle') window.CCPixelCat.setIdleAction(cc,'rest');
     }
-    cc.setAttribute('aria-label','像素小猫，'+labels[state]+'；任务进行中点击查看过程，空闲时点击互动');
+    cc.setAttribute('aria-label','像素小猫，'+labels[state]+'；空闲时点击互动');
   }
   function reflow() {
     const next = walkBounds(), key = [next.min,next.max,next.canRoam].join(':');
@@ -2697,7 +2875,7 @@ function initCCScene() {
 
   cc.addEventListener('click', () => {
     if (_ccTaskSet.size || aiState.busy || _ccRemoteTask?.status === 'running') {
-      window.openAITaskDetails?.();return;
+      window.openAITaskDestination?.();return;
     }
     if (window._ccActivity.isBusy() || window._ccActivity.getState() !== 'idle') return;
     const token = window._ccActivity.begin('cat-greeting','happy',1);

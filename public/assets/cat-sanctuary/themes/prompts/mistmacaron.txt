@@ -1,0 +1,40 @@
+Use case: precise-object-edit.
+Asset type: one finished square STATIC pixel-art cat-sanctuary room background.
+
+INPUT IMAGE 1 is the sole authoritative geometry and composition reference. Make a highly faithful new THEME COLORWAY of this exact room. Preserve the complete image composition, elevated isometric perspective, camera, framing, full diamond floor footprint and narrow outer margin, the two wall silhouettes, and every object's position, shape, proportions and relative scale. Recolor existing surfaces and existing patterns; no redesign, rearrangement, added or deleted objects. Spatial registration matters because an independently animated cat will be placed at the original image coordinates.
+
+LOCK THE CONTENT AND POSITIONS: multilevel left cat castle with two ladders, rope-wrapped columns, barrel bedroom and striped bolster bed; cat-ear floor nest and small floor cat box; woven hammock and hanging balls; wall cat steps, wall cat box and curved rope bridge; high cushion and moon lounger; arched curtained window and its garden silhouettes; mushroom cat tree; right care cabinet with drawers, towels, jars, food bowl and fountain; all floor props including wave scratcher, paw-print tunnel, yarn balls, ball-track, paw-shaped rug, toy basket, fish plush and toy mice. Keep all plants, individual leaf arrangements, shelves, wall pictures, stars and warm lamps. Do not move or alter these shapes. Keep the room EMPTY of actual cats or other living animals: cat-shaped holes, paw motifs and toy mice are inanimate decorations, with no eyes/faces peeking out.
+
+STYLE LOCK: match the original cozy crisp 16-bit pixel illustration, visible consistent square pixel clusters, stepped silhouettes, layered short pixel highlights and shadows, readable wood-grain/fabric/rope/felt textures, same outline weight. No painterly, vector, smooth 3D, photoreal or blurry rendering.
+
+COLOR DESIGN REQUIREMENTS FROM THE CLIENT:
+- ALL MATERIALS participate in the theme. Substantially change the large WOODEN castle, ladders, platforms, barrel, wall shelves, window/roof frames, cabinet body/top, floorboards, small wooden floor props, not merely a few cushions. Preserve their wood-grain texture under new stained/painted color finishes.
+- ALL NESTS change palette: cat-ear nest outer shell, lining and cushion, moon nest shell and pillows, barrel nest, striped bed, high cushion, mushroom nest and fabric tunnel.
+- The LARGE PAW RUG must have a coordinated new base, toe pads, central paw pad and border. Keep the same motif shapes.
+- LEAVES, hanging vines, grass pots, window garden, mushroom felt roof/side perch and little plant-colored toys MAY AND SHOULD be recolored to the theme. The client does not require natural green. For a non-green palette do not leave large original lime/olive/green patches: use coordinated theme-specific botanical hues with distinct light/dark leaf faces. Keep leaf silhouettes and positions, not flowers or a redesigned plant.
+- Art-direct MAIN, SECONDARY, LIGHT NEUTRAL and DEEP DETAIL colors across different surfaces. Furniture, floor, walls, soft furnishings, foliage and accents must have distinguishable tonal/color roles. A theme can use several complementary pastel colors; maintain a rich, coherent multicolor interior. Do not apply one flat hue/filter over every object.
+- The original honey/orange oak furniture and floor should not remain nearly unchanged unless that hue is explicitly part of this theme's design. Likewise do not mechanically preserve natural green plants in a non-green theme.
+- Preserve material identity, pattern layout, small pixel texture and local shadow/highlight modeling. Lamp/string bulbs can remain a small warm golden-yellow accent for contrast.
+- No text, UI, labels, pins, paths, measurements, palette swatches, comparison collage, new borders or watermarks. One complete full uncropped square scene.
+
+Use the exact theme RGB/hex colors below as coordinated ART-DIRECTION ANCHORS, with nuanced lighter and darker shades for modeling. Colors are assigned to materials; the result must not look like a uniform full-image color overlay.
+
+
+THEME: 青橙马卡龙 / mistmacaron.
+EXACT THEME RGB/HEX ANCHORS:
+--t-primary: RGB(255,224,179) #FFE0B3
+--t-secondary: RGB(215,252,205) #D7FCCD
+--t-neutral: RGB(224,216,176) #E0D8B0
+--t-accent: RGB(232,192,128) #E8C080
+--t-accent-dark: RGB(200,160,96) #C8A060
+--t-bg: RGB(255,255,245) #FFFFF5
+--t-card: RGB(255,255,255) #FFFFFF
+--t-text: RGB(74,64,32) #4A4020
+--t-border-light: RGB(255,241,184) #FFF1B8
+--d-tape-accent: RGB(255,248,224) #FFF8E0
+--d-tape-cream: RGB(215,252,205) #D7FCCD
+
+MATERIAL-BY-MATERIAL DESIGN:
+Gentle apricot and pale apple-green macaron: peach wood balanced by a green-milk floor and pastel leafy accents. WOOD: soft pale apricot / peach-cream stained wood with gentle warm-gray grain and pale green selected trims. FLOOR: very pale green-milk / creamy pistachio-white planks. FOLIAGE including window garden and mushroom felt: pale soft green, mint-cream and apricot leaves with muted sage shadows, not vivid neon green. NESTS/BEDS/TUNNEL: apricot, light pistachio and creamy-white fabrics; pale apricot cat-ear shell with light-green piping. FULL PAW RUG: pale green-milk base, apricot paw pads and ivory border. Apply these finishes to the entire corresponding existing material, including wooden cabinet frame, roof/window trim, ladders, barrel shell, wall steps and floor toys; do not leave the original honey wood on non-gold themes.
+
+Final check: the wood, floor, all nests, full paw rug and foliage must each follow the above color design. Keep their original shapes and positions; no cats, no text, no framing changes. One finished square image.

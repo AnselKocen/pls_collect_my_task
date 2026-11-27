@@ -53,6 +53,8 @@
 .cc-cat-art .cat-color-l { background:#435560; }
 .cc-cat-art .cat-color-r { background:var(--cc-broom, #aa805a); }
 .cc-cat-art .cat-color-h { background:var(--cc-broom-head, #dcc48c); }
+/* The chosen standing/stretch face keeps its soft pink blush. */
+.cc-walk-strip .cc-container:is(.st-stand,.st-stretch) .cat-color-b { background:#f0ced8; }
 
 /* Props and touching paws share a frame so their movement stays in sync. */
 .cc-walk-strip .cc-container .cc-laptop,

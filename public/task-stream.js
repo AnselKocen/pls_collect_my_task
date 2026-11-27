@@ -1,135 +1,118 @@
 (function() {
-  const modal=document.getElementById('aiTaskModal'),output=document.getElementById('aiTaskOutput');
-  const close=document.getElementById('aiTaskClose');
-  const titles={cc:'Claude Code',codex:'Codex',codebuddy:'CodeBuddy',trae:'Trae'};
-  let task=null,connected=false,frame=null,previousFocus=null,syncedAt=0,refreshPending=null;
+  let task=null,refreshPending=null,frame=null,pending=null,localResult=null;
   let streamId=null,revision=-1,updatesReceived=0;
   const retiredStreams=new Set();
-  const cards=new Map();
-  function formatDuration(ms) {
-    const seconds=Math.max(0,Math.floor(ms/1000));
-    return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
-  }
+  const viewedPoolIds=new Set();
+  const resultTypes=new Set(['weekly-digest','tag-suggestions','graph','habit-wish','habit-pool']);
+  const sameKind=(a,b)=>a?.type===b?.type && (!a?.source || !b?.source || a.source===b.source)
+    && (a?.type!=='habit-wish' || !a.step || !b.step || a.step===b.step);
+  const destinationTask=()=>pending ? pending.result : localResult || task;
+  const canView=current=>current?.status==='completed' && resultTypes.has(current.target?.type)
+    && !(current.target.type==='habit-pool' && viewedPoolIds.has(current.target.id));
   function render() {
     frame=null;
-    document.querySelectorAll('[data-ai-task-details]').forEach(button => {button.hidden=!task;});
-    if(modal.classList.contains('hidden') || !task)return;
-    document.getElementById('aiTaskTitle').textContent=task.name;
-    const status=document.getElementById('aiTaskStatus');status.dataset.status=task.status;
-    status.textContent={running:'进行中',completed:'已完成',failed:'未完成'}[task.status] || '等待任务';
-    const duration=formatDuration((task.finishedAt || Date.now())-task.startedAt);
-    document.getElementById('aiTaskMeta').textContent=(titles[task.agent] || task.agent)+' · 已用 '+duration;
-    document.getElementById('aiTaskStage').textContent=task.error || task.stage;
-    document.getElementById('aiTaskConnection').textContent=task.status==='running' && !connected
-      ? Date.now()-syncedAt<10000 ? '实时连接暂时断开，正在定时同步回答。' : '连接暂时断开，正在重连；后台任务继续运行。'
-      : task.truncated ? '较早的输出已省略，当前显示最近的回答。' : '';
-    const atEnd=output.scrollHeight-output.scrollTop-output.clientHeight<50;
-    const ids=new Set(task.messages.map(message => message.id));
-    for(const [id,card] of cards)if(!ids.has(id)){card.remove();cards.delete(id);}
-    output.querySelector('.ai-task-empty')?.remove();
-    if(!task.messages.length) {
-      const empty=document.createElement('p');empty.className='ai-task-empty';
-      empty.textContent=task.status==='running' ? '正在等待回答，收到文字后会实时显示在这里。' : task.status==='completed' ? '本次任务已完成，没有产生模型文字输出。' : '本次没有收到回答，请查看上方提示。';
-      output.append(empty);
+    const current=destinationTask();
+    const viewedPool=current?.status==='completed' && current.target?.type==='habit-pool' && viewedPoolIds.has(current.target.id);
+    document.querySelectorAll('[data-ai-task-details]').forEach(button=>{
+      const target=pending?.target || current?.target;
+      button.textContent='前往查看';button.hidden=!canView(current)
+        || Boolean(button.dataset.aiTaskType && button.dataset.aiTaskType!==target?.type);
+      button.disabled=button.hidden;
+      button.title='前往本次任务所在位置';
+    });
+    if(viewedPool){
+      const bubble=document.getElementById('ccTaskBubble');
+      if(bubble && !bubble.classList.contains('hidden'))bubble.querySelector('#ccBubbleClose')?.click();
     }
-    for(const message of task.messages) {
-      let card=cards.get(message.id);
-      if(!card) {
-        card=document.createElement('section');card.className='ai-task-message';
-        card.append(document.createElement('div'),document.createElement('pre'));cards.set(message.id,card);output.append(card);
-      }
-      card.firstChild.textContent=(message.phase==='commentary' ? '任务说明' : '回答')+' · '+message.stage;
-      card.lastChild.textContent=message.text;
-    }
-    if(atEnd)output.scrollTop=output.scrollHeight;
   }
-  function schedule() {if(frame===null)frame=requestAnimationFrame(render);}
-  window.openAITaskDetails=function() {
-    void refresh();
-    if(!task)return;
-    previousFocus=document.activeElement;modal.classList.remove('hidden');render();close.focus();
+  function schedule(){if(frame===null)frame=requestAnimationFrame(render);}
+  window.updateAITaskNavigation=render;
+  window.markAITaskDestinationViewed=poolId=>{
+    if(typeof poolId==='string' && poolId){viewedPoolIds.add(poolId);render();}
   };
-  function hide() {modal.classList.add('hidden');previousFocus?.focus();}
-  close.addEventListener('click',hide);
-  modal.addEventListener('click',event => {if(event.target===modal)hide();});
-  modal.addEventListener('keydown',event => {
-    if(event.key==='Escape'){event.stopPropagation();hide();}
-    if(event.key==='Tab') {
-      const first=close,last=output;
-      if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
-      else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
-    }
+  window.getCurrentAITask=()=>task;
+  window.markAITaskPending=(target,key)=>{
+    pending={target,key,previousId:task?.id,result:null};localResult=null;render();
+  };
+  window.setAITaskNavigationResult=(key,target)=>{
+    const result={id:task?.id,name:key,status:'completed',target};
+    if(pending?.key===key)pending.result=result;
+    else if(!pending && sameKind(task?.target,target))localResult=result;
+    render();
+  };
+  window.finishAITaskPending=(key,success)=>{
+    if(pending?.key===key && !pending.result)pending.result={name:key,status:success?'completed':'failed',target:pending.target};
+    render();void refresh();
+  };
+  window.openAITaskDestination=function(explicitTask){
+    // A recheck must never delay a click behind a stalled network request.
+    const current=explicitTask?.target ? explicitTask : destinationTask();
+    void refresh();
+    if(!canView(current))return Promise.resolve(false);
+    return Promise.resolve(window.navigateToAITaskResult?.(current));
+  };
+  window.openAITaskDetails=window.openAITaskDestination;
+  document.getElementById('ccTaskBubble')?.addEventListener('click',event=>{
+    if(event.target.closest('[data-ai-task-details]')){event.stopPropagation();void window.openAITaskDestination();}
   });
-  document.getElementById('ccTaskBubble').addEventListener('click',event => {
-    if(event.target.closest('[data-ai-task-details]')){event.stopPropagation();window.openAITaskDetails();}
-  });
-  // Keep a reachable entry inside feature dialogs while their backdrops cover the mascot.
-  for(const id of ['digestRegenBtn','tagSuggestGenBtn','graphRegenBtn','weeklyGenBtn','habitUploadProgress']) {
+  const entries={tagSuggestGenBtn:'tag-suggestions',graphRegenBtn:'graph',weeklyGenBtn:'weekly-digest',habitUploadProgress:'habit-pool'};
+  for(const [id,type] of Object.entries(entries)){
     const anchor=document.getElementById(id);if(!anchor)continue;
     const button=document.createElement('button');button.type='button';button.className='btn-small ai-task-inline';
-    button.dataset.aiTaskDetails='';button.textContent='查看任务详情';button.hidden=true;
-    button.addEventListener('click',window.openAITaskDetails);anchor.after(button);
+    button.dataset.aiTaskDetails='';button.dataset.aiTaskType=type;button.textContent='前往查看';button.hidden=true;
+    button.addEventListener('click',()=>{void window.openAITaskDestination();});anchor.after(button);
   }
-  function applyUpdate(update) {
+  function applyUpdate(update){
     if(!['snapshot','delta'].includes(update.type))return;
     if(update.type==='delta' && task?.id!==update.taskId){void refresh();return;}
-    // Poll responses and buffered stream events can arrive out of order.
-    if(typeof update.streamId==='string' && Number.isSafeInteger(update.revision)) {
+    if(typeof update.streamId==='string' && Number.isSafeInteger(update.revision)){
       if(retiredStreams.has(update.streamId))return;
       if(streamId===update.streamId && update.revision<=revision)return;
-      if(update.type==='delta' && (streamId!==update.streamId || update.revision!==revision+1)) {
-        void refresh();return;
-      }
-      if(streamId!==update.streamId) {
-        if(streamId)retiredStreams.add(streamId);
-        streamId=update.streamId;
-      }
+      if(update.type==='delta' && (streamId!==update.streamId || update.revision!==revision+1)){void refresh();return;}
+      if(streamId!==update.streamId){if(streamId)retiredStreams.add(streamId);streamId=update.streamId;}
       revision=update.revision;
     }
-    if(update.type==='snapshot') {
+    if(update.type==='snapshot'){
       task=update.task;
-      if(!task && !modal.classList.contains('hidden'))hide();
-    } else if(update.type==='delta' && task?.id===update.taskId) {
-      let message=task.messages.find(item => item.id===update.message.id);
-      if(!message){message={...update.message,text:''};task.messages.push(message);}
+      if(pending && task?.id!==pending.previousId && (pending.target ? sameKind(task?.target,pending.target) : Boolean(task?.target)))pending=null;
+      if(localResult && (!task || task.id!==localResult.id || task.status!=='running'))localResult=null;
+    }else if(update.type==='delta' && task?.id===update.taskId){
+      const messages=task.messages || (task.messages=[]);
+      let message=messages.find(item=>item.id===update.message.id);
+      if(!message){message={...update.message,text:''};messages.push(message);}
       message.text+=update.text;
     }
     ++updatesReceived;
-    // Keep the mascot in sync even while task details are closed, and retain
-    // the latest accepted task for a scene that has not finished mounting yet.
+    // Preserve the authoritative task and mascot sync without another viewer.
     window._ccLatestTask=task;
     window.dispatchEvent(new CustomEvent('cc-task-update',{detail:{task}}));
     schedule();
   }
-  function refresh() {
+  function refresh(){
     if(refreshPending)return refreshPending;
     const version=updatesReceived,controller=new AbortController();
-    const timeout=setTimeout(() => controller.abort(),6000);
-    refreshPending=(async () => {
-      try {
+    const timeout=setTimeout(()=>controller.abort(),6000);
+    refreshPending=(async()=>{
+      try{
         const response=await fetch('/api/ai/task',{cache:'no-store',signal:controller.signal});
         if(!response.ok)throw new Error('Task status unavailable');
         const update=await response.json();
-        // Compatibility with a server still running the previous protocol.
         if(!Number.isSafeInteger(update.revision) && version!==updatesReceived)return;
-        applyUpdate({...update,type:'snapshot'});syncedAt=Date.now();schedule();
-      } catch { schedule(); }
-      finally {clearTimeout(timeout);refreshPending=null;}
+        applyUpdate({...update,type:'snapshot'});
+      }catch{/* Keep the known task reachable while reconnecting. */}
+      finally{clearTimeout(timeout);refreshPending=null;schedule();}
+      return task;
     })();
     return refreshPending;
   }
-  try {
+  window.refreshCurrentAITask=refresh;
+  try{
     const source=new EventSource('/api/ai/events');
-    source.onopen=() => {connected=true;void refresh();schedule();};
-    source.onerror=() => {connected=false;void refresh();schedule();};
-    source.addEventListener('task',event => {
-      let update;try{update=JSON.parse(event.data);}catch{return;}
-      applyUpdate(update);
-    });
-  } catch { /* Snapshot polling also works when streaming is unavailable. */ }
+    source.onopen=()=>{void refresh();};source.onerror=()=>{void refresh();};
+    source.addEventListener('task',event=>{let update;try{update=JSON.parse(event.data);}catch{return;}applyUpdate(update);});
+  }catch{/* Snapshot polling also works without EventSource. */}
   void refresh();
-  setInterval(() => {if(!document.hidden)void refresh();},2000);
-  window.addEventListener('focus',() => {void refresh();});
-  document.addEventListener('visibilitychange',() => {if(!document.hidden)void refresh();});
-  setInterval(() => {if(!modal.classList.contains('hidden'))schedule();},1000);
+  setInterval(()=>{if(!document.hidden)void refresh();},2000);
+  window.addEventListener('focus',()=>{void refresh();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh();});
 })();

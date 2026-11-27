@@ -41,6 +41,7 @@ test('wish flow streams across agents, preserves context and saves only complete
     child.once('exit', code => { clearTimeout(timer);reject(new Error('Startup ' + code + ': ' + logs)); });
   });
   const calls = () => fs.existsSync(f.capture) ? fs.readFileSync(f.capture, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+  const logged = () => JSON.parse(fs.readFileSync(path.join(dataDir,'latest-ai-task.json'),'utf8')).task;
   async function request(route, body, method = body ? 'POST' : 'GET') {
     return fetch(base + route, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   }
@@ -80,12 +81,25 @@ test('wish flow streams across agents, preserves context and saves only complete
       });
       assert.equal(purpose.result.options.length, 3);assert.match(purpose.result.question, new RegExp(wish));
       assert.ok(new Set(purpose.previews.map(text => text.length)).size >= 3, 'question must visibly grow before the result');
+      let latest=(await (await request('/api/ai/task')).json()).task;
+      assert.deepEqual(latest.target,{type:'habit-wish',step:'purpose',source:'wish'});
+      assert.equal(latest.messages.length,1,'raw deltas and final text share one message; the friendly preview is not duplicated');
+      assert.equal(JSON.parse(latest.messages[0].text).question,purpose.result.question);
+      assert.deepEqual(JSON.parse(latest.messages[0].text).options,purpose.result.options);
+      assert.deepEqual(logged().messages,latest.messages);
       assert.equal((await (await request('/api/habit/pools')).json()).pools.length, ['cc', 'codex', 'codebuddy'].indexOf(agent));
       const customPurpose = '其他：想和朋友一起享受这件事';
       const effort = await turn({ stage: 'effort', wish, purpose: customPurpose });
       assert.match(effort.result.question, /和朋友/);
       const body = { stage: 'generate', wish, purpose: customPurpose, effort: '每天十分钟', requestId: randomUUID() };
       const generated = await turn(body);assert.equal(generated.result.pool.habits.length, 30);
+      latest=(await (await request('/api/ai/task')).json()).task;
+      assert.equal(latest.status,'completed');assert.equal(latest.messages.length,1);
+      assert.deepEqual(JSON.parse(latest.messages[0].text).habits,generated.result.pool.habits);
+      assert.deepEqual(latest.target,{type:'habit-pool',step:'generate',source:'wish',id:generated.result.pool.id,generatedAt:generated.result.pool.createdAt});
+      assert.ok(latest.stages.some(item=>item.stage==='正在校验习惯卡池'));
+      assert.ok(latest.stages.some(item=>item.stage==='正在保存习惯卡池'));
+      assert.equal(logged().id,latest.id);assert.deepEqual(logged().target,latest.target);
       assert.deepEqual(generated.result.pool.wishContext, { wish, purpose: customPurpose, effort: '每天十分钟' });
       assert.equal(calls().at(-1).agent, agent);assert.equal(calls().at(-1).input.effort, body.effort);
       const before = calls().length;
@@ -95,6 +109,20 @@ test('wish flow streams across agents, preserves context and saves only complete
       const draw = await request('/api/habit/draw', { poolId: generated.result.pool.id });assert.equal(draw.status, 200);
     });
   }
+  await t.test('valid options-first JSON remains in the task log even without a streamable question preview',async()=>{
+    const preload=path.join(f.dir,'reorder-question.cjs');
+    fs.writeFileSync(preload,`const model=require(${JSON.stringify(path.join(__dirname,'fake-model.js'))});const original=model.respond;model.respond=(task,input)=>{const value=original(task,input);return task==='habit-wish-question'?{options:value.options,question:value.question}:value;};`);
+    const original=fs.readFileSync(f.env.CODEX_CLI,'utf8'),quote=value=>"'"+value.replace(/'/g,"'\\''")+"'";
+    fs.writeFileSync(f.env.CODEX_CLI,`#!/bin/sh\nexport MEMO_FAKE_AGENT=codex\nexec ${quote(process.execPath)} --require ${quote(preload)} ${quote(path.join(__dirname,'fake-model-cli.js'))} "$@"\n`,{mode:0o755});
+    try {
+      await request('/api/settings',{agent:'codex'},'PUT');
+      const turnResult=await turn({stage:'purpose',wish:'观察植物'});
+      assert.equal(turnResult.previews.length,0);assert.match(turnResult.result.question,/观察植物/);
+      const task=(await (await request('/api/ai/task')).json()).task;
+      assert.equal(JSON.parse(task.messages[0].text).question,turnResult.result.question);
+      assert.equal(task.target.step,'purpose');assert.equal(logged().messages[0].text,task.messages[0].text);
+    } finally {fs.writeFileSync(f.env.CODEX_CLI,original,{mode:0o755});}
+  });
   await t.test('model errors and invalid results leave pools untouched and release the lock', async () => {
     const before = (await (await request('/api/habit/pools')).json()).pools;
     const input = { stage: 'generate', wish: '写作', purpose: '记录日常', effort: '每天五分钟', requestId: randomUUID() };

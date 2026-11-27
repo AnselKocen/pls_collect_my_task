@@ -67,7 +67,7 @@
       <!-- CC Walk Strip -->
       <div class="cc-walk-strip">
         <div id="ccTaskBubble" class="cc-task-bubble hidden"></div>
-        <div class="cc-container st-idle" id="ccScene" role="button" tabindex="0" aria-label="像素小猫，点击互动；任务进行中可查看过程">
+        <div class="cc-container st-idle" id="ccScene" role="button" tabindex="0" aria-label="像素小猫，空闲时点击互动">
           <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
           <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
           <div class="spk"><svg viewBox="0 0 16 16"><polygon points="8,0 10,6 16,8 10,10 8,16 6,10 0,8 6,6" fill="#f0d868"/></svg></div>
@@ -683,21 +683,6 @@
       </div>
     </div>
 
-    <div id="aiTaskModal" class="modal hidden ai-task-modal" role="dialog" aria-modal="true" aria-labelledby="aiTaskTitle">
-      <div class="modal-content ai-task-dialog">
-        <button id="aiTaskClose" class="modal-close" type="button" aria-label="关闭任务详情">&times;</button>
-        <div class="ai-task-header">
-          <h3 id="aiTaskTitle">任务详情</h3>
-          <span id="aiTaskStatus" class="ai-task-status">等待任务</span>
-        </div>
-        <p id="aiTaskMeta" class="ai-task-meta"></p>
-        <div id="aiTaskStage" class="ai-task-stage" role="status" aria-live="polite"></div>
-        <p id="aiTaskConnection" class="ai-task-connection" role="status"></p>
-        <div id="aiTaskOutput" class="ai-task-output" tabindex="0" aria-label="实时回答"></div>
-        <p class="ai-task-footnote">关闭窗口后任务继续运行。回答通过校验后才会保存。</p>
-      </div>
-    </div>
-
     <!-- Custom Confirm Dialog -->
     <div id="confirmModal" class="modal hidden" style="z-index:300">
       <div class="modal-content confirm-dialog">
@@ -739,6 +724,7 @@
   <script src="cc-cat.js"></script>
   <script src="cc-cat-controller.js"></script>
   <script src="cc-cat-idle.js"></script>
+  <script src="theme-sync.js?v=1"></script>
   <script src="app.js"></script>
   <script src="habit-wish.js"></script>
   <script src="task-stream.js"></script>

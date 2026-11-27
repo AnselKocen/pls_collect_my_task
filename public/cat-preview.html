@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>像素小猫 · 主题与动作</title>
+<title>像素小猫 · 伸展与好梦</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="cc-cat-themes.css">
 <link rel="stylesheet" href="cc-cat.css">
@@ -32,6 +32,12 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
 .cat-review .cat-review-small-stage { position:relative; width:110px; height:100px; margin:0; overflow:visible; }
 .cat-review .cat-review-small-stage .cc-container { left:calc(50% - 75px); top:20px; bottom:auto; width:150px; height:160px; scale:.4; transform-origin:center top; cursor:default; transition:none; }
 .cat-review .cat-review-small-stage .cc-container.flip { scale:-.4 .4; }
+.cat-review-playback { display:flex; align-items:center; gap:10px; width:min(100%,460px); margin:4px auto 18px; }
+.cat-review-playback button { flex:0 0 auto; min-width:64px; padding:8px 12px; border:1px solid var(--t-border-light); border-radius:6px; background:var(--t-card); color:var(--t-text); font:inherit; font-size:13px; cursor:pointer; }
+.cat-review-playback button:hover { background:var(--t-secondary); }
+.cat-review-playback label { flex:0 0 auto; color:var(--t-text-light); font-size:12px; }
+.cat-review-playback input { flex:1; min-width:0; margin:0; accent-color:var(--t-accent); cursor:pointer; }
+.cat-review-playback output { flex:0 0 34px; color:var(--t-text-light); font-size:12px; text-align:right; font-variant-numeric:tabular-nums; }
 .cat-review-states { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:10px; }
 .cat-review-states button { min-width:64px; padding:9px 15px; border:1px solid var(--t-border-light); border-radius:6px; background:var(--t-card); color:var(--t-text); font:inherit; font-size:13px; cursor:pointer; }
 .cat-review-states button[aria-pressed="true"] { background:var(--t-secondary); border-color:var(--t-accent); }
@@ -53,7 +59,7 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
 .cat-review-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:12px; }
 .cat-review-theme { display:flex; flex-direction:column; align-items:stretch; min-width:0; padding:10px 6px 12px; border:1px solid var(--t-border-light); border-radius:8px; background:var(--t-card); color:var(--t-text); font:inherit; cursor:pointer; text-align:center; }
 .cat-review-theme[aria-pressed="true"] { outline:2px solid var(--t-accent); outline-offset:2px; }
-.cat-review-theme:focus-visible,.cat-review-states button:focus-visible,.cat-review select:focus-visible { outline:2px solid var(--t-accent-dark); outline-offset:3px; }
+.cat-review-theme:focus-visible,.cat-review-states button:focus-visible,.cat-review-playback :is(button,input):focus-visible,.cat-review select:focus-visible { outline:2px solid var(--t-accent-dark); outline-offset:3px; }
 .cat-review .cat-review-gallery-stage { position:relative; display:block; width:100%; height:86px; margin:0; pointer-events:none; }
 .cat-review .cat-review-gallery-stage .cc-container { left:calc(50% - 75px); top:4px; bottom:auto; width:150px; height:160px; scale:.5; transform-origin:center top; cursor:inherit; transition:none; }
 .cat-review .cat-review-gallery-stage :is(.cc-inner,.cc-sprite) { display:block; }
@@ -80,7 +86,7 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
   .cat-review-states button { flex:0 0 calc(25% - 5px); min-width:0; padding:10px 4px; white-space:nowrap; }
   .cat-review-gallery { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 }
-@media (pointer:coarse) { .cat-review-states button,.cat-review select { min-height:44px; } }
+@media (pointer:coarse) { .cat-review-states button,.cat-review-playback :is(button,input),.cat-review select { min-height:44px; } }
 </style>
 </head>
 <body class="cat-review-page">
@@ -88,7 +94,7 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
   <header class="cat-review-header">
     <div>
       <h1>像素小猫</h1>
-      <p class="cat-review-intro">趴成一小团，收好短短的爪子，尾巴搭在身后。</p>
+      <p class="cat-review-intro">伸个懒腰，抱个好梦，开心时身边闪起小星星。</p>
     </div>
     <div class="cat-review-theme-control">
       <label for="catReviewTheme">主题</label>
@@ -118,9 +124,19 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
       <span class="cat-review-actual-label">实际大小</span>
       <div class="cc-walk-strip cat-review-small-stage" id="catReviewActual"></div>
     </div>
+    <div class="cat-review-playback" role="group" aria-label="动作播放">
+      <button type="button" id="catReviewPlayback" aria-controls="catReviewHero catReviewActual" aria-pressed="false">暂停</button>
+      <label for="catReviewProgress">动作进度</label>
+      <input type="range" id="catReviewProgress" min="0" max="100" step="1" value="0" aria-controls="catReviewHero catReviewActual" aria-valuetext="0%">
+      <output id="catReviewProgressValue" for="catReviewProgress" aria-live="off">0%</output>
+    </div>
     <div class="cat-review-states" role="group" aria-label="小猫动作">
       <button type="button" data-state="idle" aria-pressed="true">待机</button>
+      <button type="button" data-state="stand" aria-pressed="false">站姿参考</button>
       <button type="button" data-state="walk" aria-pressed="false">走路</button>
+      <button type="button" data-state="stretch" aria-pressed="false">伸懒腰</button>
+      <button type="button" data-state="yarn" aria-pressed="false">玩毛线球</button>
+      <button type="button" data-state="belly" aria-pressed="false">睡觉</button>
       <button type="button" data-state="thinking" aria-pressed="false">思考</button>
       <button type="button" data-state="coding" aria-pressed="false">工作</button>
       <button type="button" data-state="looking" aria-pressed="false">查找</button>
@@ -132,7 +148,7 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
   </section>
 
   <details class="cat-review-actions" open>
-    <summary>同时看看 8 个动作</summary>
+    <summary>同时看看 12 个动作</summary>
     <div class="cat-review-action-grid" id="catReviewActions"></div>
   </details>
 
@@ -190,19 +206,27 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
   const status = document.getElementById('catReviewStatus');
   const description = document.getElementById('catReviewDescription');
   const actions = document.getElementById('catReviewActions');
+  const playback = document.getElementById('catReviewPlayback');
+  const progress = document.getElementById('catReviewProgress');
+  const progressValue = document.getElementById('catReviewProgressValue');
   const template = document.getElementById('catReviewSceneTemplate');
   const stateButtons = [...root.querySelectorAll('.cat-review-states button')];
   const descriptions = {
+    stand: '短短的小腿，低低的背，前爪收在胸前，站成紧凑的小小一团。',
     idle: '安静趴坐，眨眨眼，尾巴尖偶尔动一下。',
     walk: '两只短短的前爪，轮流伸出、收回，轻轻迈步。',
+    stretch: '先收成不露脚的小团，再撑高身体多伸一会儿，旁边的小波纹轻轻抖一下。',
+    yarn: '趴着看毛线球滚近，小脑袋和目光跟着球轻轻转。',
+    belly: '闭上眼睛睡一觉，旁边的小小 zzz 轻轻飘起来。',
     thinking: '眨眨眼，动动耳朵，旁边的小像素圈转呀转。',
     coding: '低头专心，小爪子轮流轻点键盘。',
     looking: '探头看看周围，旁边亮起小小的像素放大镜。',
     sweeping: '伸出一只爪子，慢慢把身边整理好。',
     error: '耳朵轻轻一耷，小像素问号冒出来，再试一下。',
-    happy: '眯起眼睛，抬抬小爪，像素音符跟着轻轻跳。'
+    happy: '眯起眼睛，抬抬小爪，右边音符轻轻跳。'
   };
   let selectedState = 'idle';
+  let paused = false;
   const scene = () => template.content.firstElementChild.cloneNode(true);
   const hero = scene();
   const actual = scene();
@@ -293,7 +317,13 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
 
   function applyState(state) {
     selectedState = state;
-    mainCats.forEach(cat => window.CCPixelCat.setState(cat, state));
+    mainCats.forEach(cat => {
+      window.CCPixelCat.setState(cat, state);
+      window.CCPixelCat.setProgress(cat, 0);
+      window.CCPixelCat.play(cat);
+    });
+    setPaused(false);
+    renderProgress(window.CCPixelCat.getProgress(hero));
     stateButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === state)));
     actions.querySelectorAll('.cat-review-action').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === state)));
     const selected = stateButtons.find(button => button.dataset.state === state);
@@ -301,6 +331,44 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
     hero.setAttribute('aria-label', name.textContent + '，' + selected.textContent + '，放大预览');
     actual.setAttribute('aria-label', name.textContent + '，' + selected.textContent + '，实际大小');
     status.textContent = name.textContent + '，' + selected.textContent + '。' + descriptions[state];
+  }
+
+  function setPaused(value) {
+    paused = value;
+    playback.textContent = paused ? '继续' : '暂停';
+    playback.setAttribute('aria-pressed', String(paused));
+  }
+
+  function renderProgress(value) {
+    const percent = String(Math.round(Math.max(0, Math.min(1, value)) * 100));
+    if (progress.value !== percent) progress.value = percent;
+    if (progressValue.textContent !== percent + '%') {
+      progressValue.textContent = percent + '%';
+      progress.setAttribute('aria-valuetext', percent + '%');
+    }
+  }
+
+  playback.addEventListener('click', () => {
+    if (paused) {
+      mainCats.forEach(cat => window.CCPixelCat.play(cat));
+      setPaused(false);
+    } else {
+      const value = window.CCPixelCat.getProgress(hero);
+      mainCats.forEach(cat => window.CCPixelCat.setProgress(cat, value));
+      setPaused(true);
+      renderProgress(value);
+    }
+  });
+  progress.addEventListener('input', () => {
+    const value = Number(progress.value) / 100;
+    mainCats.forEach(cat => window.CCPixelCat.setProgress(cat, value));
+    setPaused(true);
+    renderProgress(value);
+  });
+
+  function syncProgress() {
+    if (!paused) renderProgress(window.CCPixelCat.getProgress(hero));
+    window.requestAnimationFrame(syncProgress);
   }
 
   function saveState() {
@@ -321,6 +389,7 @@ body.cat-review-page { margin:0; padding:28px 20px 48px; background:var(--t-bg);
     if (event.detail?.globals?.widgetState) restore(event.detail.globals.widgetState);
   });
   restore(window.openai?.widgetState);
+  window.requestAnimationFrame(syncProgress);
 })();
 </script>
 </body>

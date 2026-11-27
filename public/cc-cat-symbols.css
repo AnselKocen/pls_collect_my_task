@@ -1,6 +1,6 @@
 /* Fixed square pixels keep the cat's side symbols as crisp as its sprite. */
 .cc-walk-strip .cc-container .cat-state-symbols {
-  position:absolute; left:110px; top:12px; width:28px; height:28px;
+  position:absolute; left:98px; top:12px; width:28px; height:28px;
   z-index:7; pointer-events:none; color:var(--cat-outline, #594735);
 }
 .cc-walk-strip .cc-container.flip .cat-state-symbols { transform:scaleX(-1); }
@@ -8,6 +8,26 @@
 .cat-state-symbols svg { display:block; fill:currentColor; shape-rendering:crispEdges; }
 .cat-state-symbols .cat-symbol-thinking { left:1px; top:2px; }
 .cat-state-symbols .cat-symbol-error { left:5px; top:1px; }
+.cat-state-symbols .cat-symbol-sleep { left:-7px; top:0; width:44px; height:30px; }
+.cat-sleep-z { position:absolute; }
+.cat-sleep-z-0 { left:0; top:16px; }
+.cat-sleep-z-1 { left:12px; top:8px; }
+.cat-sleep-z-2 { left:28px; top:0; }
+.cc-walk-strip .cc-container.st-belly .cat-symbol-sleep { display:block; }
+/* A paused CSS animation samples the renderer's clock so seeking and pausing
+   freeze the side marks at the same moment as the cat's pose. */
+.cc-walk-strip .cc-container.st-belly .cat-sleep-z {
+  animation:ccCatSleepZ 2.8s steps(1,end) infinite both;
+  animation-play-state:paused;
+  animation-delay:calc(-1 * var(--cat-symbol-time, 0s) - var(--z-phase, 0s));
+}
+/* The pose renderer moves these little fur ripples one pixel beat at a time.
+   Keeping the mark still between beats also freezes it while paused or seeking. */
+.cat-state-symbols .cat-symbol-shake {
+  left:-127px; top:25px;
+  transform:translateX(var(--cat-shake-offset, 0px)); animation:none;
+}
+.cc-walk-strip .cc-container[data-cat-phase="shake"] .cat-symbol-shake { display:block; }
 .cc-walk-strip .cc-container.st-thinking .cat-symbol-thinking,
 .cc-walk-strip .cc-container.st-looking .cat-symbol-looking,
 .cc-walk-strip .cc-container.st-error .cat-symbol-error,
@@ -17,10 +37,13 @@
 .cat-symbol-thinking rect {
   opacity:.2;
   animation:ccCatSpinnerDot 1.6s steps(1,end) infinite;
-  animation-delay:calc(var(--dot-index) * -.2s);
+  animation-play-state:paused;
+  animation-delay:calc(-1 * var(--cat-symbol-time, 0s) - var(--dot-index) * .2s);
 }
 .cc-walk-strip .cc-container.st-happy .cat-symbol-happy {
   animation:ccCatMusicNote 2.8s steps(2,end) infinite;
+  animation-play-state:paused;
+  animation-delay:calc(-1 * var(--cat-symbol-time, 0s));
 }
 /* Replace the old thought bubble, question, status label and happy sparkle. */
 .cc-walk-strip .cc-container .cc-think,
@@ -45,6 +68,11 @@
 @keyframes ccCatMusicNote {
   0%,20%,80%,100% { opacity:.7; transform:translateY(0); }
   40%,60% { opacity:1; transform:translateY(-2px); }
+}
+@keyframes ccCatSleepZ {
+  0%,20%,100% { opacity:.65; transform:translate(0,1px); }
+  30%,45%,80%,95% { opacity:.85; transform:translate(1px,-1px); }
+  55%,70% { opacity:1; transform:translate(2px,-3px); }
 }
 @media(prefers-reduced-motion:reduce) {
   .cat-state-symbols, .cat-state-symbols * { animation:none !important; }

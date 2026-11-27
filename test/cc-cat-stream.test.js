@@ -8,8 +8,8 @@ const source=fs.readFileSync(path.join(__dirname,'..','public','task-stream.js')
 
 function streamHarness() {
   const nodes=new Map();
-  for(const id of ['aiTaskModal','aiTaskOutput','aiTaskClose','ccTaskBubble']) {
-    const classes=new Set(id==='aiTaskModal' ? ['hidden'] : []);
+  for(const id of ['ccTaskBubble']) {
+    const classes=new Set();
     nodes.set(id,{
       classList:{contains:name=>classes.has(name),add:name=>classes.add(name),remove:name=>classes.delete(name)},
       addEventListener() {},focus() {}
@@ -54,10 +54,10 @@ function delta(revision,text,{streamId='main',taskId='task-1'}={}) {
   return {type:'delta',streamId,revision,taskId,message:{id:'message-1',stage:'正在接收回答',phase:'answer'},text};
 }
 
-test('accepted live task snapshots and deltas reach the mascot while details are closed',() => {
+test('accepted live task snapshots and deltas reach the mascot without a transcript modal',() => {
   const harness=streamHarness();
   harness.stream.emit(snapshot(1,running()));
-  assert.equal(harness.nodes.get('aiTaskModal').classList.contains('hidden'),true);
+  assert.equal(harness.nodes.has('aiTaskModal'),false);
   assert.equal(harness.window._ccLatestTask.id,'task-1','the scene can recover a task received before mounting');
   assert.equal(harness.events.length,1);
   harness.stream.emit(delta(2,'正在生成摘要'));
@@ -100,4 +100,20 @@ test('a connection interruption preserves the real task status and polling can r
   assert.equal(harness.events.length,2);
   assert.equal(harness.events[1].status,'running');
   assert.equal(harness.events[1].messages[0].text,'已收到部分内容');
+});
+
+test('result navigation is limited to completed tasks outside the homepage',async () => {
+  const harness=streamHarness(),navigated=[];
+  harness.window.navigateToAITaskResult=task=>{navigated.push(task);return true;};
+  for(const status of ['running','failed'])for(const type of ['graph','weekly-digest','habit-pool']){
+    assert.equal(await harness.window.openAITaskDestination({status,target:{type,id:'result'}}),false);
+  }
+  for(const type of ['daily-digest','local-search']){
+    assert.equal(await harness.window.openAITaskDestination({status:'completed',target:{type}}),false);
+  }
+  assert.equal(navigated.length,0);
+  for(const type of ['graph','weekly-digest','tag-suggestions','habit-wish','habit-pool']){
+    assert.equal(await harness.window.openAITaskDestination({status:'completed',target:{type,id:'result'}}),true);
+  }
+  assert.equal(navigated.length,5);
 });

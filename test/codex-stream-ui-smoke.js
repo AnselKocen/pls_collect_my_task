@@ -10,7 +10,7 @@ async function until(expression,timeout=15000) {
   const end=Date.now()+timeout;
   while(Date.now()<end){
     if(await window.webContents.executeJavaScript(expression))return;
-    if(expression.includes('aiTaskOutput') && await window.webContents.executeJavaScript('document.getElementById("aiTaskStatus").dataset.status==="failed"'))throw new Error('AI task failed before text: '+logs);
+    if(expression.includes('_ccLatestTask') && await window.webContents.executeJavaScript('window._ccLatestTask?.status==="failed"'))throw new Error('AI task failed before text: '+logs);
     await delay(50);
   }
   throw new Error('Live UI wait timed out: '+expression);
@@ -38,36 +38,36 @@ async function run() {
   await until('!document.getElementById("tagSuggestModal").classList.contains("hidden")');
   await window.webContents.executeJavaScript(`
     window.streamSamples=[];window.streamStart=performance.now();
-    window.streamObserver=new MutationObserver(()=>{
-      const chars=[...document.querySelectorAll('#aiTaskOutput pre')].reduce((n,node)=>n+node.textContent.length,0);
-      if(document.getElementById('aiTaskStatus').dataset.status==='running' && chars>(window.streamSamples.at(-1)?.chars || 0)) {
+    window.streamListener=event=>{
+      const task=event.detail.task,chars=(task?.messages || []).reduce((n,message)=>n+message.text.length,0);
+      if(task?.status==='running' && chars>(window.streamSamples.at(-1)?.chars || 0)) {
         window.streamSamples.push({ms:Math.round(performance.now()-window.streamStart),chars});
       }
-    });
-    window.streamObserver.observe(document.getElementById('aiTaskOutput'),{childList:true,subtree:true,characterData:true});
+    };
+    window.addEventListener('cc-task-update',window.streamListener);
   `);
   const started=Date.now();
   await window.webContents.executeJavaScript('document.getElementById("tagSuggestGenBtn").click()');
+  await until('window._ccLatestTask?.status==="running" && _ccLatestTask.messages.some(m=>m.text.length>0)',290000);
+  const partial=await window.webContents.executeJavaScript(`(async()=>{
+    const output=_ccLatestTask.messages.map(m=>m.text).join('');
+    const running=_ccLatestTask.status==='running';
+    document.getElementById('tagSuggestClose').click();
+    const locked=document.getElementById('agentSelect').disabled;
+    const blocked=!(await window.openAITaskDestination());
+    return {running,locked,blocked,buttonHidden:document.querySelector('#tagSuggestGenBtn + [data-ai-task-details]').hidden,preserved:_ccLatestTask.messages.map(m=>m.text).join('').startsWith(output),noTranscript:!document.getElementById('aiTaskModal')};
+  })()`);
+  assert.ok(partial.running,'Text must arrive before completion');assert.ok(partial.locked);assert.ok(partial.blocked);assert.ok(partial.buttonHidden);assert.ok(partial.preserved);assert.ok(partial.noTranscript);
+  console.log(JSON.stringify({realCodexTaskNavigation:true,firstReplyMs:Date.now()-started,...partial}));
+  await until('window._ccLatestTask?.status==="completed" && !document.getElementById("tagSuggestGenBtn").disabled',60000);
   await until('!document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").hidden');
   await window.webContents.executeJavaScript('document.querySelector("#tagSuggestGenBtn + [data-ai-task-details]").click()');
-  await until('!document.getElementById("aiTaskModal").classList.contains("hidden")');
-  await until('document.querySelector("#aiTaskOutput pre")?.textContent.length>0',290000);
-  const partial=await window.webContents.executeJavaScript(`(()=>{
-    const output=document.getElementById('aiTaskOutput').textContent;
-    const running=document.getElementById('aiTaskStatus').dataset.status==='running';
-    document.getElementById('aiTaskClose').click();
-    const locked=document.getElementById('agentSelect').disabled;
-    window.openAITaskDetails();
-    return {running,locked,reopened:!document.getElementById('aiTaskModal').classList.contains('hidden'),preserved:document.getElementById('aiTaskOutput').textContent===output};
-  })()`);
-  assert.ok(partial.running,'Text must arrive before completion');assert.ok(partial.locked);assert.ok(partial.reopened);assert.ok(partial.preserved);
-  console.log(JSON.stringify({realCodexPartialUI:true,firstVisibleMs:Date.now()-started,...partial}));
-  await until('document.getElementById("aiTaskStatus").dataset.status==="completed" && !document.getElementById("tagSuggestGenBtn").disabled',60000);
-  const endState=await window.webContents.executeJavaScript('({history:tagSuggestHistory.length,locked:document.getElementById("agentSelect").disabled,output:document.querySelector("#aiTaskOutput pre").textContent})');
+  await until('!document.getElementById("tagSuggestModal").classList.contains("hidden")');
+  const endState=await window.webContents.executeJavaScript('({history:tagSuggestHistory.length,locked:document.getElementById("agentSelect").disabled,output:_ccLatestTask.messages.at(-1).text})');
   assert.equal(endState.history,1);assert.equal(endState.locked,false);assert.ok(Array.isArray(JSON.parse(endState.output)));
   const samples=await window.webContents.executeJavaScript('window.streamSamples');
-  assert.ok(samples.length>=3,'Expected three or more visible text increases before completion, with polling blocked: '+JSON.stringify(samples));
-  console.log(JSON.stringify({realCodexVisibleGrowth:true,snapshotPollingBlocked:true,samples:samples.length,first:samples[0],middle:samples[Math.floor(samples.length/2)],last:samples.at(-1)}));
+  assert.ok(samples.length>=3,'Expected three or more retained text increases before completion, with polling blocked: '+JSON.stringify(samples));
+  console.log(JSON.stringify({realCodexRetainedGrowth:true,snapshotPollingBlocked:true,samples:samples.length,first:samples[0],middle:samples[Math.floor(samples.length/2)],last:samples.at(-1)}));
   const out=process.env.MEMO_UI_SCREENSHOT_DIR;
   if(out){await delay(150);fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'codex-stream-completed.png'),(await window.webContents.capturePage()).toPNG());}
   console.log(JSON.stringify({realCodexStreamUI:true,elapsedMs:Date.now()-started,validatedAndSaved:true}));

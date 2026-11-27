@@ -15,7 +15,7 @@ const { TaskService } = require('./tasks/service');
 const { LiveTask } = require('./tasks/live');
 const { readWishRequest, wishContext, promptForWish, parseWishResult, questionPreview } = require('./tasks/habit-wish');
 const { readMaterial, MaterialError, MAX_FILE_BYTES, MAX_TEXT_CHARS } = require('./tasks/habit-material');
-const liveTask = new LiveTask();
+const liveTask = new LiveTask({logFile:path.join(DATA_DIR,'latest-ai-task.json')});
 const { errorMessage: friendlyError } = require('./public/messages');
 const { localDate, parseLocalDate } = require('./tasks/dates');
 let store;
@@ -266,15 +266,16 @@ let ccCurrentTask = '';
 let aiStartedAt = null;
 app.get('/api/cc/status', (req,res) => res.json(agentStatus()));
 
-async function withAITask(taskName, work) {
+async function withAITask(taskName, work, {target=null,resultTarget=null,completedStage}={}) {
   if (storageMaintenance) throw new Error('正在恢复数据，请稍后再试');
   if (ccBusy) throw new Error(`CC_BUSY:${ccCurrentTask}`);
   const agent = currentAgent();
   ccBusy = true;ccCurrentTask = taskName;aiStartedAt = Date.now();
-  liveTask.start(agent,taskName);
+  liveTask.start(agent,taskName,target);
   try {
     const result = await work(agent);
-    liveTask.finish();
+    if(resultTarget)liveTask.setTarget(resultTarget(result));
+    liveTask.finish(null,completedStage);
     console.log(`[AI:${agent}] ${taskName} completed in ${Date.now()-aiStartedAt}ms`);
     return result;
   } catch(error) {
@@ -288,7 +289,18 @@ function runTask(action, params = {}, now = new Date()) {
   return withAITask(names[action], agent => new TaskService(store, {
     ask:prompt => invokeAgent(agent,prompt,{cwd:DATA_DIR,configDir:CONFIG_DIR,onEvent:event => liveTask.accept(event)}),
     onProgress:label => { ccCurrentTask = label;liveTask.progress(label); }
-  }).run(action,params,now));
+  }).run(action,params,now),{
+    target:{type:action},
+    resultTarget:result => {
+      if(action==='graph')return {id:result.graph.id,generatedAt:result.graph.generatedAt};
+      if(action==='tag-suggestions') {
+        const generatedAt=readData('suggestions').tagSuggestionHistory?.[0]?.generatedAt;
+        result.generatedAt=generatedAt;
+        return {generatedAt};
+      }
+      return {generatedAt:result.digest.generatedAt};
+    }
+  });
 }
 
 app.post('/api/cc/ask', async (req, res) => {
@@ -397,29 +409,37 @@ app.post('/api/habit/wish', async (req, res) => {
       let correction = '';
       for (let attempt = 0; attempt < 2; attempt++) {
         const messages = new Map();
+        liveTask.progress(attempt ? '正在准备重试' : input.stage === 'generate' ? '正在准备习惯卡池' : '正在准备引导问题');
         send('status', { text: attempt ? '正在调整内容，请稍等…' : input.stage === 'generate' ? '正在为你整理30张习惯卡…' : '正在想一个适合你的问题…' });
         const answer = await invokeAgent(agent, promptForWish(input, correction), {
           cwd: DATA_DIR, configDir: CONFIG_DIR,
           onEvent: event => {
-            if (event.type === 'stage') { liveTask.accept(event);return; }
+            // Retain every public reply before deriving the separate, friendly
+            // question preview. Generating a pool must not discard its answer.
+            liveTask.accept(event);
             if (input.stage === 'generate' || !['delta', 'message'].includes(event.type) || event.phase === 'commentary') return;
             const text = event.type === 'delta' ? (messages.get(event.messageId) || '') + event.text : event.text;
             messages.set(event.messageId, text);
             const preview = questionPreview(text);
             if (preview) {
               send('question', { text: preview });
-              liveTask.accept({ type: 'message', messageId: 'wish-question', text: preview, phase: 'answer' });
             }
           }
         });
+        liveTask.progress(input.stage === 'generate' ? '正在校验习惯卡池' : '正在校验引导问题');
         let parsed;
         try { parsed = parseWishResult(answer, input.stage); }
         catch (error) { if (attempt) throw error;correction = error.message;continue; }
         if (input.stage !== 'generate') return { ...parsed, stage: input.stage };
         const pool = { id: uuidv4(), ...parsed, sourceType: 'wish', sourceFile: '我的愿望', generationId: input.requestId, wishContext: wishContext(input), createdAt: new Date().toISOString() };
+        liveTask.progress('正在保存习惯卡池');
         store.update('pools', data => { data.pools.push(pool); });
         return { pool };
       }
+    },{
+      target:{type:input.stage === 'generate' ? 'habit-pool' : 'habit-wish',step:input.stage,source:'wish'},
+      resultTarget:result => result.pool ? {type:'habit-pool',id:result.pool.id,generatedAt:result.pool.createdAt} : {},
+      completedStage:input.stage === 'generate' ? '已完成并保存' : '引导问题已准备好'
     });
     send('result', result);
   } catch (error) {
@@ -466,6 +486,7 @@ END_INPUT_MATERIAL_JSON
 habits 数组必须包含30条习惯。只返回JSON，不要其他内容。`;
 
     const pool = await withAITask('生成习惯卡池',async agent => {
+      liveTask.progress('正在准备习惯卡池');
       const result = await invokeAgent(agent,prompt,{cwd:DATA_DIR,configDir:CONFIG_DIR,onEvent:event => liveTask.accept(event)});
       liveTask.progress('正在校验习惯卡池');
       const jsonMatch = result.match(/\{[\s\S]*\}/);
@@ -486,6 +507,9 @@ habits 数组必须包含30条习惯。只返回JSON，不要其他内容。`;
       liveTask.progress('正在保存习惯卡池');
       store.update('pools', data => { data.pools.push(pool); });
       return pool;
+    },{
+      target:{type:'habit-pool',source:'material'},
+      resultTarget:pool => ({id:pool.id,generatedAt:pool.createdAt})
     });
 
     res.json({ pool });
