@@ -1,0 +1,38 @@
+#roomParticles{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+  user-select:none;
+  contain:strict;
+  --particle-rise:calc(100vh + 80px);
+}
+@supports(height:100svh){#roomParticles{--particle-rise:calc(100svh + 80px)}}
+.room-particles__item{
+  position:absolute;
+  left:var(--particle-x);
+  bottom:-36px;
+  display:block;
+  width:var(--particle-size);
+  height:var(--particle-size);
+  color:var(--sage,#8a7a68);
+  opacity:0;
+  transform-origin:center;
+  animation:roomParticleRise var(--particle-duration) linear var(--particle-delay) infinite;
+}
+.room-particles__item:nth-child(3n){color:var(--line,#c8b8a0)}
+.room-particles__item:nth-child(5n){color:var(--ink,#4a3a28)}
+.room-particles__item svg{display:block;width:100%;height:100%;fill:currentColor;shape-rendering:crispEdges}
+.room-particles__dot{background:currentColor;box-shadow:2px 2px 0 currentColor}
+#roomParticles.is-paused .room-particles__item{animation-play-state:paused}
+@keyframes roomParticleRise{
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(var(--particle-angle))}
+  9%{opacity:var(--particle-opacity)}
+  25%{transform:translate3d(var(--particle-sway),calc(var(--particle-rise) * -.25),0) rotate(var(--particle-turn))}
+  50%{transform:translate3d(var(--particle-drift),calc(var(--particle-rise) * -.5),0) rotate(var(--particle-angle))}
+  75%{transform:translate3d(var(--particle-sway),calc(var(--particle-rise) * -.75),0) rotate(var(--particle-turn))}
+  88%{opacity:var(--particle-opacity)}
+  100%{opacity:0;transform:translate3d(var(--particle-drift),calc(var(--particle-rise) * -1),0) rotate(var(--particle-angle))}
+}
+@media(prefers-reduced-motion:reduce){#roomParticles{display:none}.room-particles__item{animation:none}}

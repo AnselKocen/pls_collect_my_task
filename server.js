@@ -24,6 +24,10 @@ let storageMaintenance = false;
 
 const { getAgent, getSelectableAgent, resolveSelectableAgent, resolveCli, saveCliPath, invokeAgent, stopAgents } = require('./agents');
 const CONFIG_DIR = process.env.MEMO_CONFIG_DIR || process.env.MEMO_DATA_DIR || __dirname;
+const { createAvailability } = require('./agents/availability');
+const agentAvailability = createAvailability({configDir:CONFIG_DIR});
+const SERVICE_ID = uuidv4();
+const APP_VERSION = require(path.join(__dirname.replace('app.asar.unpacked','app.asar'),'package.json')).version;
 // Pasted source text can exceed Express's default 100KB JSON limit.
 const materialJSON = express.json({ limit: '1mb' });
 app.use('/api/habit/pools/generate', (req, res, next) => materialJSON(req, res, error => {
@@ -214,7 +218,7 @@ app.put('/api/tags/:tag', async (req, res) => {
 function currentAgent() { return resolveSelectableAgent(readData('settings').agent || 'cc',{configDir:CONFIG_DIR}); }
 function agentStatus() {
   const agent = currentAgent(), info = getAgent(agent);
-  return {agent,name:info.name,configured:Boolean(resolveCli(agent,{configDir:CONFIG_DIR})),busy:ccBusy,task:ccCurrentTask,startedAt:aiStartedAt,elapsedMs:ccBusy ? Math.max(0,Date.now()-aiStartedAt) : 0,maintenance:storageMaintenance};
+  return {agent,name:info.name,serviceId:SERVICE_ID,configured:Boolean(resolveCli(agent,{configDir:CONFIG_DIR})),busy:ccBusy,task:ccCurrentTask,startedAt:aiStartedAt,elapsedMs:ccBusy ? Math.max(0,Date.now()-aiStartedAt) : 0,maintenance:storageMaintenance};
 }
 app.get('/api/settings', (req, res) => {
   res.json({...readData('settings'),agent:currentAgent()});
@@ -245,6 +249,40 @@ app.put('/api/settings', async (req, res) => {
 });
 
 app.get('/api/ai/status', (req,res) => res.json(agentStatus()));
+function readinessResponse() {
+  return {serviceId:SERVICE_ID,version:APP_VERSION,...agentAvailability.snapshot()};
+}
+function localReadinessRequest(req,res,next) {
+  const host=req.get('host');
+  if(![`localhost:${PORT}`,`127.0.0.1:${PORT}`].includes(host) ||
+      (req.get('origin') && req.get('origin')!==`http://${host}`) || req.get('X-Memo-AI')!=='1') {
+    return res.status(403).json({error:'请在这台电脑的手帐中检测 AI 助手'});
+  }
+  if(ccBusy)return res.status(409).json({error:'有 AI 任务正在处理，请完成后再检测或测试',busy:true});
+  next();
+}
+app.get('/api/ai/readiness', (req,res) => {
+  res.set('Cache-Control','no-store').json(readinessResponse());
+});
+app.post('/api/ai/readiness/refresh',localReadinessRequest,async (req,res) => {
+  await agentAvailability.refresh();
+  res.set('Cache-Control','no-store').json(readinessResponse());
+});
+app.post('/api/ai/readiness/test',localReadinessRequest,async (req,res) => {
+  const id=req.body?.agent;
+  try {getSelectableAgent(id);}
+  catch {return res.status(400).json({error:'请选择受支持的 AI 助手'});}
+  const row=agentAvailability.snapshot().agents.find(agent=>agent.id===id);
+  if(!row?.canTest)return res.status(400).json({error:'请先安装并登录这个助手，再测试连接'});
+  // Share the task lock without replacing a journal task's saved history or results.
+  ccBusy=true;ccCurrentTask=`测试 ${getAgent(id).name} 连接`;aiStartedAt=Date.now();
+  try {
+    await agentAvailability.test(id);
+    res.set('Cache-Control','no-store').json(readinessResponse());
+  } catch(error) {
+    res.status(error.code==='AI_BUSY' || error.code==='AI_CHECKING' ? 409 : 400).json({error:error.message});
+  } finally {ccBusy=false;ccCurrentTask='';aiStartedAt=null;}
+});
 liveTask.mount(app,PORT);
 app.post('/api/ai/path', (req,res) => {
   const host = req.get('host');
@@ -745,6 +783,8 @@ async function start() {
     });
     scheduleCronJobs();
     storageReady = true;
+    // One prompt-free check per service process. Ordinary status polling reads the cache.
+    agentAvailability.refresh().catch(() => {});
     console.log(`Memo server running at http://localhost:${PORT}`);
     console.log(`AI assistant: ${currentAgent()}`);
     if (!process.env.ELECTRON_RUN_AS_NODE && !process.env.MEMO_ELECTRON) {
@@ -759,7 +799,7 @@ async function start() {
     let stopping = false;
     const stop = () => {
       if (stopping) return;
-      stopping = true;storageReady = false;stopAgents();liveTask.close();
+      stopping = true;storageReady = false;stopAgents();agentAvailability.dispose();liveTask.close();
       dailyJob?.stop(); weeklyJob?.stop();
       clearInterval(reminderInterval);
       server.close(() => { store.close(); process.exit(0); });

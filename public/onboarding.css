@@ -1,0 +1,84 @@
+.memo-help-button {
+  margin-left: 16px;
+  margin-right: auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  box-shadow: 0 0 5px rgba(255,255,255,.2);
+  animation: memo-help-float 4s ease-in-out infinite;
+  outline: none;
+  cursor: pointer;
+}
+.memo-help-button svg { display: block; width: 14px; height: 18px; }
+.memo-help-button:hover { color: #fff; background: rgba(255,255,255,.12); }
+.memo-help-button:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; background: rgba(255,255,255,.2); animation-play-state: paused; }
+@keyframes memo-help-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@media (prefers-reduced-motion: reduce) { .memo-help-button { animation: none; } }
+.onboarding-modal button:focus-visible { outline: 3px solid var(--t-primary); outline-offset: 3px; }
+body.onboarding-open { overflow: hidden; }
+.onboarding-modal { padding: 24px 16px; box-sizing: border-box; }
+.onboarding-modal [role="dialog"]:focus { outline: none; }
+.onboarding-modal .modal-guide { width: 100%; max-width: 660px; max-height: calc(100dvh - 48px); }
+.onboarding-modal .guide-banner .digest-main { max-height: calc(100dvh - 104px); }
+.onboarding-modal .guide-body { overscroll-behavior: contain; scrollbar-gutter: stable; }
+.onboarding-modal .guide-intro { color: var(--t-text); margin: 4px 0 18px; }
+.onboarding-modal .guide-section h4 { color: var(--t-text); font-size: 14px; }
+.onboarding-modal #guideTitle { color: var(--t-text); }
+.onboarding-modal .guide-section p { line-height: 1.8; margin: 8px 0; }
+.onboarding-modal .guide-section p b { color: var(--t-text); }
+.guide-version { padding: 14px; margin: 14px 0; border: 1px dashed var(--t-border); background: var(--t-bg); color: var(--t-text); }
+.guide-version strong { font-size: 13px; }
+.guide-version p { margin: 6px 0 0; color: var(--t-text-light); }
+.guide-github-link { color: var(--t-text); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.guide-github-link:hover { color: var(--t-neutral); }
+.guide-github-link:focus-visible { outline: 2px solid var(--t-primary); outline-offset: 2px; }
+.agent-readiness-dialog { max-width: 620px; width: 100%; padding: 30px 26px 24px; box-sizing: border-box; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; border: 2px solid var(--t-border); box-shadow: 5px 5px 0 var(--t-border-light); }
+.readiness-eyebrow { color: var(--t-text-light); font-size: 12px; padding-right: 18px; }
+.agent-readiness-dialog h3 { color: var(--t-text); font-size: 22px; margin: 10px 0 12px; }
+.readiness-heading { display: flex; align-items: center; gap: 12px; margin: 10px 0 16px; }
+.readiness-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.readiness-title img { flex-shrink: 0; image-rendering: pixelated; }
+.readiness-title h3 { margin: 0; }
+.readiness-guide-link { margin-left: auto; padding: 6px 0; flex-shrink: 0; border: 0; background: transparent; color: var(--t-text-light); font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.readiness-guide-link:hover { color: var(--t-text); }
+.readiness-description { color: var(--t-text-light); font-size: 13px; line-height: 1.8; margin: 0 0 18px; }
+.readiness-description p { margin: 0 0 10px; }
+.readiness-description p:last-child { margin-bottom: 0; }
+.readiness-description strong { color: var(--t-text); }
+.welcome-paw { display: inline-block; margin-inline-end: 6px; }
+.readiness-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 12px; font-size: 12px; color: var(--t-text-light); }
+.readiness-toolbar button { flex-shrink: 0; }
+.readiness-agents { display: grid; gap: 10px; }
+.readiness-agent { border: 1.5px solid var(--t-border-light); background: var(--t-bg); padding: 14px; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; }
+.readiness-agent-info { min-width: 0; }
+.readiness-agent-name { font-size: 15px; font-weight: 700; color: var(--t-text); }
+.readiness-agent-state { display: block; font-size: 12px; color: var(--t-text-light); margin-top: 6px; overflow-wrap: anywhere; }
+.readiness-agent[data-state="detected"] { border-color: var(--t-border); }
+.readiness-agent-result { grid-column: 1/-1; font-size: 12px; line-height: 1.7; margin: 9px 0 0; padding-top: 8px; border-top: 1px dashed var(--t-border-light); color: var(--t-text); }
+.readiness-agent .btn-small { margin: 0; white-space: nowrap; }
+.readiness-test-note, .readiness-feature-note { font-size: 12px; line-height: 1.85; color: var(--t-text-light); margin: 16px 0 0; }
+.readiness-feature-note { border-top: 1px dashed var(--t-border-light); padding-top: 14px; color: var(--t-text); }
+.readiness-error { font-size: 12px; line-height: 1.7; color: var(--t-text); padding: 10px 12px; border: 1px dashed var(--t-border); margin: 12px 0 0; }
+.readiness-footer { display: flex; gap: 12px; justify-content: space-between; align-items: center; margin-top: 22px; }
+.readiness-footer > span { font-size: 11px; color: var(--t-text-light); }
+.onboarding-modal button:disabled { opacity: .55; cursor: wait; }
+@media (max-width: 520px) {
+  .onboarding-modal { padding: 16px 12px; }
+  .onboarding-modal .modal-guide { padding: 12px 0; max-height: calc(100dvh - 32px); }
+  .onboarding-modal .guide-banner .digest-main { max-height: calc(100dvh - 74px); }
+  .agent-readiness-dialog { padding: 28px 18px 20px; max-height: calc(100dvh - 32px); }
+  .agent-readiness-dialog h3 { font-size: 20px; }
+  .readiness-heading { gap: 8px; flex-wrap: wrap; }
+  .readiness-title { gap: 8px; }
+  .readiness-title img { width: 28px; height: 28px; }
+  .readiness-agent { padding: 12px; column-gap: 8px; }
+  .readiness-agent .btn-small { padding: 7px 9px; font-size: 12px; }
+  .readiness-footer { flex-wrap: wrap; }
+  .readiness-footer .btn-primary { margin-left: auto; }
+}

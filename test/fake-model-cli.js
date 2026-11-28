@@ -1,22 +1,33 @@
 const fs=require('node:fs');
 const {respond}=require('./fake-model');
 if(process.argv.includes('--version')) {console.log((process.env.MEMO_FAKE_AGENT || 'claude')+' test CLI');process.exit(0);}
+if(process.argv.includes('--help')) {
+  const group=process.argv.includes('auth') || process.argv.includes('login');
+  console.log(group ? 'Commands:\n  status  Show login status' : 'Commands:\n  auth  Manage authentication\n  login  Manage login\n  app-server  Run app server\nOptions:\n  --tools --strict-mcp-config --mcp-config --setting-sources --settings --no-session-persistence --system-prompt --max-turns --safe-mode');
+  process.exit(0);
+}
+if(process.argv.includes('status') && (process.argv.includes('auth') || process.argv.includes('login'))) {
+  const loggedOut=process.env.MEMO_FAKE_AUTH_LOGGED_OUT==='1';
+  if(process.env.MEMO_FAKE_AGENT==='codex') console.log(loggedOut ? 'Not logged in' : 'Logged in using ChatGPT');
+  else console.log(JSON.stringify({loggedIn:!loggedOut,authMethod:loggedOut ? 'none' : 'claude.ai'}));
+  process.exit(loggedOut ? 1 : 0);
+}
 const appServer=process.argv.includes('app-server');
 const acp=process.argv.includes('acp');
 const streaming=process.argv.includes('stream-json');
-let modelProvider,promptRequestId;
+let modelProvider,promptRequestId,threadConfig;
 const write=row => process.stdout.write(JSON.stringify(row)+'\n');
 const mode=() => process.env.MEMO_FAKE_CC_INVALID_FILE && fs.existsSync(process.env.MEMO_FAKE_CC_INVALID_FILE) ? fs.readFileSync(process.env.MEMO_FAKE_CC_INVALID_FILE,'utf8') : '';
 function run(prompt) {
-  const task=prompt.match(/^TASK=([^\n]+)/m)?.[1] || 'habit-pool';
-  const input=task==='habit-pool' ? {book:prompt} : JSON.parse(prompt.split('\nINPUT_JSON\n')[1].split('\nEND_INPUT_JSON')[0]);
-  if(process.env.MEMO_FAKE_CC_CAPTURE)fs.appendFileSync(process.env.MEMO_FAKE_CC_CAPTURE,JSON.stringify({task,input,agent:process.env.MEMO_FAKE_AGENT,argv:process.argv.slice(2),modelProvider})+'\n');
+  const task=prompt.startsWith('Connection test only.') ? 'connection-test' : prompt.match(/^TASK=([^\n]+)/m)?.[1] || 'habit-pool';
+  const input=task==='connection-test' ? {prompt} : task==='habit-pool' ? {book:prompt} : JSON.parse(prompt.split('\nINPUT_JSON\n')[1].split('\nEND_INPUT_JSON')[0]);
+  if(process.env.MEMO_FAKE_CC_CAPTURE)fs.appendFileSync(process.env.MEMO_FAKE_CC_CAPTURE,JSON.stringify({task,input,agent:process.env.MEMO_FAKE_AGENT,argv:process.argv.slice(2),modelProvider,...(task==='connection-test' ? {cwd:process.cwd(),threadConfig} : {})})+'\n');
   if(process.env.MEMO_FAKE_CC_MARKER)fs.writeFileSync(process.env.MEMO_FAKE_CC_MARKER,'started');
   setTimeout(() => {
     const setting=mode();
     if(setting==='hang'){setInterval(()=>{},1000);return;}
     const error=setting==='partial-failure' ? 'unauthorized: login required' : setting===`fail:${task}` ? 'simulated CLI failure' : null;
-    let output=setting===task ? 'not JSON' : setting===`blank:${task}` ? '' : setting===`empty:${task}` ? JSON.stringify(task==='graph' ? {nodes:[],edges:[],summaries:[],insights:''} : {habits:[]}) : JSON.stringify(respond(task,input));
+    let output=setting===task ? 'not JSON' : setting===`blank:${task}` ? '' : setting===`empty:${task}` ? JSON.stringify(task==='graph' ? {nodes:[],edges:[],summaries:[],insights:''} : {habits:[]}) : task==='connection-test' ? 'OK' : JSON.stringify(respond(task,input));
     if(setting===`duplicate:${task}`)output=JSON.stringify({...respond(task,input),habits:Array(30).fill('重复的小练习')});
     if(error)output='partial content that must not be saved';
     if(appServer || streaming || acp) {
@@ -49,7 +60,7 @@ function run(prompt) {
       },setting==='stream-slow' ? 150 : 10);
     } else {
       if(error){process.stderr.write(error);process.exitCode=1;return;}
-      process.stdout.write(output);
+      process.stdout.write(task==='connection-test' && process.argv.includes('json') ? JSON.stringify({type:'result',is_error:false,result:output}) : output);
     }
   },mode()==='slow' ? 2500 : 200);
 }
@@ -72,7 +83,9 @@ process.stdin.on('data',data => {
     else if(row.method==='initialize')write({id:row.id,result:{}});
     else if(row.method==='config/read')write({id:row.id,result:{config:JSON.parse(process.env.MEMO_FAKE_CODEX_CONFIG || '{}')}});
     else if(row.method==='configRequirements/read')write({id:row.id,result:{requirements:process.env.MEMO_FAKE_CODEX_HTTP_REJECT ? {modelProvider:'openai'} : null}});
+    else if(row.method==='account/read')write({id:row.id,result:{account:null,requiresOpenaiAuth:process.env.MEMO_FAKE_CODEX_AUTH_OPTIONAL!=='1'}});
     else if(row.method==='thread/start') {
+      threadConfig=row.params;
       const selected=process.argv.find(arg=>arg.startsWith('model_provider='));
       modelProvider=row.params.modelProvider || (selected && JSON.parse(selected.slice('model_provider='.length))) || JSON.parse(process.env.MEMO_FAKE_CODEX_CONFIG || '{}').model_provider || 'openai';
       write({id:row.id,result:{thread:{id:'fake-thread'}}});

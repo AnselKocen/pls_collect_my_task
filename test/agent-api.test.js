@@ -36,7 +36,9 @@ test('agent selection persists and locks every manual, scheduled and habit task'
   const select = (agent,status=200) => request('/api/settings',{method:'PUT',body:{agent},status});
   const calls = () => fs.existsSync(f.capture) ? fs.readFileSync(f.capture,'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
   async function started() {
-    for (let count=0;count<150 && !fs.existsSync(marker);count++) await delay(10);
+    // Codex may spend up to 5s in its prompt-free preflight. Startup readiness
+    // also launches status commands, so allow that work under suite CPU load.
+    for (let count=0;count<800 && !fs.existsSync(marker);count++) await delay(10);
     assert.equal(fs.existsSync(marker),true);
   }
   function drive(index) {

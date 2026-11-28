@@ -57,10 +57,27 @@ async function withLock(ctx, work) {
   fs.mkdirSync(ctx.directory, { recursive: true });
   const owner = { pid: process.pid, token: randomUUID() }, ownerFile = path.join(ctx.lockDir, 'owner.json');
   const deadline = Date.now() + ctx.timeout + 2000;
+  const transient = error => ['ENOENT', 'EINVAL', 'ENOTEMPTY'].includes(error.code);
+  const sameDirectory = (a, b) => a.dev === b.dev && a.ino === b.ino && a.birthtimeMs === b.birthtimeMs;
+  let heldDirectory;
+  async function retire() {
+    // Never recursively remove the reusable lock pathname: another starter may
+    // already have acquired it while APFS is finishing the old removal.
+    const retired = `${ctx.lockDir}.${randomUUID()}.retired`;
+    fs.renameSync(ctx.lockDir, retired);
+    for (let attempt = 0; ; attempt++) {
+      try { fs.rmSync(retired, { recursive: true, force: true, maxRetries: 3, retryDelay: 10 }); return; }
+      catch (error) { if (!transient(error) || attempt >= 3) throw error; await delay(10); }
+    }
+  }
   while (true) {
-    try { fs.mkdirSync(ctx.lockDir); fs.writeFileSync(ownerFile, JSON.stringify(owner)); break; }
+    try {
+      fs.mkdirSync(ctx.lockDir);
+      fs.writeFileSync(ownerFile, JSON.stringify(owner), { flag: 'wx' });
+      if (readJson(ownerFile)?.token === owner.token) { heldDirectory = fs.statSync(ctx.lockDir); break; }
+    }
     catch (error) {
-      if (error.code !== 'EEXIST') throw error;
+      if (error.code !== 'EEXIST' && !transient(error)) throw error;
       try {
         const previous = readJson(ownerFile), previousStat = fs.statSync(ctx.lockDir), age = Date.now() - previousStat.mtimeMs;
         if ((previous?.pid && !alive(previous.pid)) || (!previous?.pid && age > 5000)) {
@@ -72,24 +89,27 @@ async function withLock(ctx, work) {
             fs.writeFileSync(reclaimFile, JSON.stringify(owner), { flag: 'wx' });
             claimed = true;
             const current = readJson(ownerFile), currentStat = fs.statSync(ctx.lockDir);
-            const sameDirectory = currentStat.dev === previousStat.dev && currentStat.ino === previousStat.ino && currentStat.birthtimeMs === previousStat.birthtimeMs;
-            if ((current?.pid && !alive(current.pid)) || (!current?.pid && !previous?.pid && age > 5000 && sameDirectory)) {
-              fs.rmSync(ctx.lockDir, { recursive: true, force: true }); removed = true;
+            const sameOwner = current?.pid === previous?.pid && current?.token === previous?.token;
+            if (sameDirectory(currentStat, previousStat) && sameOwner &&
+                ((current?.pid && !alive(current.pid)) || (!current?.pid && age > 5000))) {
+              await retire(); removed = true;
             }
           } catch (reclaimError) {
-            if (!['EEXIST', 'ENOENT'].includes(reclaimError.code)) throw reclaimError;
+            if (reclaimError.code !== 'EEXIST' && !transient(reclaimError)) throw reclaimError;
           } finally {
             if (claimed && readJson(reclaimFile)?.token === owner.token) fs.rmSync(reclaimFile, { force: true });
           }
           if (removed) continue;
         }
-      } catch (inspection) { if (inspection.code === 'ENOENT') continue; throw inspection; }
-      if (Date.now() >= deadline) throw new Error('另一个启动或停止操作尚未完成，请稍后重试');
-      await delay(50);
+      } catch (inspection) { if (!transient(inspection)) throw inspection; }
     }
+    if (Date.now() >= deadline) throw new Error('另一个启动或停止操作尚未完成，请稍后重试');
+    await delay(50);
   }
   try { return await work(); }
-  finally { if (readJson(ownerFile)?.token === owner.token) fs.rmSync(ctx.lockDir, { recursive: true, force: true }); }
+  finally {
+    if (readJson(ownerFile)?.token === owner.token && sameDirectory(fs.statSync(ctx.lockDir), heldDirectory)) await retire();
+  }
 }
 
 function health(ctx) {

@@ -189,6 +189,8 @@ function _updateBubblePos() {
 function _showCCBubble(text, isDone) {
   const bubble = document.getElementById('ccTaskBubble');
   if (!bubble) return;
+  _stopCCIdle();
+  bubble.dataset.ccBubbleKind = 'task';
   bubble.title = text;
   if (isDone) {
     bubble.innerHTML = `<span>${escapeHtml(text)}</span><button type="button" class="cc-task-open" data-ai-task-details>前往查看</button><button class="cc-task-bubble-close" id="ccBubbleClose">✕</button>`;
@@ -217,13 +219,11 @@ function receiveCCTask(task) {
   }
   window._ccActivity.applyTask(task);
   if (task?.status === 'running') {
-    clearTimeout(_ccIdleTimer);clearTimeout(_ccIdleHideTimer);
     if (previous?.id !== task.id || previous.status !== task.status || previous.stage !== task.stage || previous.name !== task.name) {
       _showCCBubble(task.stage || '正在' + task.name,false);
     }
   } else if (task && previous?.id === task.id && previous.status === 'running') {
     _showCCBubble(task.status === 'completed' ? '已完成：' + task.name : task.error || '这次没完成，请再试一次',true);
-    _scheduleCCIdle();
   }
 }
 
@@ -238,28 +238,68 @@ const _CC_IDLE_PHRASES = [
 ];
 let _ccIdleTimer = null;
 let _ccIdleHideTimer = null;
-function _scheduleCCIdle() {
-  clearTimeout(_ccIdleTimer);
-  _ccIdleTimer = setTimeout(() => {
-    const bubble = document.getElementById('ccTaskBubble');
-    if (!window._ccActivity.isBusy() && window._ccActivity.getState() === 'idle' && bubble && bubble.classList.contains('hidden')) {
-      const phrase = _CC_IDLE_PHRASES[Math.floor(Math.random() * _CC_IDLE_PHRASES.length)];
-      bubble.innerHTML = `<span>${phrase}</span>`;
-      bubble.classList.remove('hidden');
-      cancelAnimationFrame(_ccBubbleRaf);
-      _ccBubbleRaf = requestAnimationFrame(_updateBubblePos);
-      clearTimeout(_ccIdleHideTimer);
-      _ccIdleHideTimer = setTimeout(() => {
-        if (!window._ccActivity.isBusy()) {
-          bubble.classList.add('hidden');
-          cancelAnimationFrame(_ccBubbleRaf);
-        }
-        _scheduleCCIdle();
-      }, 2500);
-    } else {
-      _scheduleCCIdle();
+let _ccIdleBeat = 0;
+let _ccIdleGeneration = 0;
+function _ccSanctuaryUrl() {
+  const url = new URL('https://47.103.200.189/cat-sanctuary/');
+  const displayedTheme = document.documentElement.getAttribute('data-theme') || 'gold';
+  const theme = displayedTheme === 'pink' ? 'berry' : displayedTheme;
+  url.searchParams.set('theme', theme);
+  if (theme === 'custom') {
+    const style = getComputedStyle(document.documentElement);
+    const tokens = ['--t-bg','--t-card','--t-primary','--t-text','--t-border','--d-tape-primary'];
+    const colors = tokens.map(token => style.getPropertyValue(token).trim());
+    if (colors.every(color => /^#[\da-f]{6}$/i.test(color))) {
+      url.hash = 'colors=' + colors.map(color => color.slice(1).toUpperCase()).join('-');
     }
-  }, 90000);
+  }
+  return url.href;
+}
+function _updateCCSanctuaryLink() {
+  const link = document.querySelector('#ccTaskBubble .cc-cat-home');
+  if (link) link.href = _ccSanctuaryUrl();
+}
+function _stopCCIdle() {
+  clearInterval(_ccIdleTimer);
+  clearTimeout(_ccIdleHideTimer);
+  _ccIdleTimer = _ccIdleHideTimer = null;
+  _ccIdleBeat = 0;
+  ++_ccIdleGeneration;
+}
+function _scheduleCCIdle() {
+  _stopCCIdle();
+  const bubble = document.getElementById('ccTaskBubble');
+  // Task results own the bubble until their close button restarts this clock.
+  // This also prevents async boot from starting over an early task event.
+  if (!bubble || !bubble.classList.contains('hidden')) return;
+  const generation = _ccIdleGeneration;
+  _ccIdleTimer = setInterval(() => {
+    if (generation !== _ccIdleGeneration) return;
+    _ccIdleBeat = (_ccIdleBeat + 1) % 3;
+    // Each beat is a single opportunity. Hidden pages and temporary actions
+    // skip it rather than accumulating messages to deliver later.
+    if (document.hidden || window._ccActivity.isBusy() || window._ccActivity.getState() !== 'idle' || !bubble.classList.contains('hidden')) return;
+    const chatter = _ccIdleBeat === 0;
+    const text = chatter ? _CC_IDLE_PHRASES[Math.floor(Math.random() * _CC_IDLE_PHRASES.length)] : '喵嗷，去不去咪的家里玩？';
+    bubble.dataset.ccBubbleKind = chatter ? 'chatter' : 'invitation';
+    bubble.title = text;
+    bubble.innerHTML = `<span>${escapeHtml(text)}</span>` + (chatter ? '' : '<a class="cc-cat-home" target="_blank" rel="noopener">前往</a>');
+    if (!chatter) {
+      _updateCCSanctuaryLink();
+      bubble.querySelector('.cc-cat-home').addEventListener('click', _updateCCSanctuaryLink);
+    }
+    const content = bubble.firstElementChild;
+    bubble.classList.remove('hidden');
+    cancelAnimationFrame(_ccBubbleRaf);
+    _ccBubbleRaf = requestAnimationFrame(_updateBubblePos);
+    _ccIdleHideTimer = setTimeout(() => {
+      // An old invitation must never close a newer task or idle message.
+      if (generation !== _ccIdleGeneration || bubble.firstElementChild !== content) return;
+      _ccIdleHideTimer = null;
+      bubble.classList.add('hidden');
+      cancelAnimationFrame(_ccBubbleRaf);
+    }, chatter ? 2500 : 10000);
+  }, 30000);
 }
 
 const _ccTaskSet = new Set();
@@ -271,8 +311,6 @@ function showCCTask(taskName,target) {
   document.querySelectorAll('.ai-destination-note').forEach(note=>{note.textContent='';note.classList.add('hidden');});
   window.markAITaskPending?.(target,taskName);
   renderAgentControl();
-  clearTimeout(_ccIdleTimer);
-  clearTimeout(_ccIdleHideTimer);
   _ccActiveTasks++;
   _ccTaskTokens.set(taskName,window._ccActivity.begin('request:'+taskName,'thinking',20));
   _showCCBubble('正在' + taskName + ' =(¯꒳¯ )=', false);
@@ -325,6 +363,7 @@ async function syncAIStatus() {
     const status = await api('/api/ai/status');
     if (sequence === agentStatusSequence && !agentSwitchPending) {
       aiState = status;settings.agent = status.agent;agentStatusKnown = true;renderAgentControl();
+      window.MemoOnboarding?.updateAIStatus(status);
       window._ccActivity.setBusy(status);
       if (status.busy && window._ccActivity.snapshot().activities.some(activity => activity.id === 'backend-busy')) {
         _showCCBubble(taskWaitText(status),false);
@@ -390,6 +429,7 @@ async function init() {
     renderTagSelector();
     renderFilterTags();
     loadSettings();
+    window.MemoOnboarding?.start();
     await syncAIStatus().catch(() => {});
     setInterval(() => syncAIStatus().catch(() => {}),1500);
     window.addEventListener('focus',() => syncAIStatus().catch(() => {}));
@@ -1540,21 +1580,6 @@ async function deleteWeeklyDigest(idx) {
 
 document.getElementById('weeklyClose').addEventListener('click', () => { document.getElementById('weeklyModal').classList.add('hidden'); });
 
-// === Guide Modal ===
-(function setupGuideModal() {
-  const modal = document.getElementById('guideModal');
-  if (!modal) return;
-  const open = () => modal.classList.remove('hidden');
-  const close = () => modal.classList.add('hidden');
-  document.getElementById('btnGuide')?.addEventListener('click', open);
-  document.getElementById('guideClose')?.addEventListener('click', close);
-  document.getElementById('guideOk')?.addEventListener('click', close);
-  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
-  });
-})();
-
 // === Blind Box ===
 let blindboxPickedTags = [];
 
@@ -2097,6 +2122,7 @@ const modalTitleLabels = ['标签整理建议', '关联图谱', '本周总结', 
 
 let receivingSharedTheme = false;
 function publishThemeSelection(theme, customColors) {
+  _updateCCSanctuaryLink();
   if (!receivingSharedTheme) window.MemoThemeSync?.publish({theme, ...(customColors ? {customColors} : {})});
 }
 

@@ -7,11 +7,18 @@
   const $ = id => document.getElementById(id);
   const root = document.documentElement, image = $('room'), select = $('roomThemeSelect');
   const controls = $('roomThemeControls'), status = $('roomThemeStatus');
-  const sync = window.MemoThemeSync, http = /^https?:$/.test(location.protocol);
+  const sync = window.MemoThemeSync;
+  const usesSettingsApi = /^https?:$/.test(location.protocol) && root.dataset.roomSettings !== 'local';
   const themes = catalog.themes, byKey = new Map(themes.map(theme => [theme.key, theme]));
   const defaults = {bg:'#FBF7E9',card:'#FFFFFF',accent:'#E8B84B',text:'#4A3A28',border:'#C8B8A0',deco:'#FCE888'};
   const customKeys = Object.keys(defaults);
   const validCustom = colors => colors && customKeys.every(key => /^#[\da-f]{6}$/i.test(colors[key] || ''));
+  function linkedCustomColors() {
+    const value = new URLSearchParams(location.hash.slice(1)).get('colors');
+    const parts = value?.split('-');
+    if (parts?.length !== customKeys.length || !parts.every(part => /^[\da-f]{6}$/i.test(part))) return null;
+    return Object.fromEntries(customKeys.map((key, index) => [key, '#' + parts[index]]));
+  }
   const normalize = key => key === 'pink' ? 'berry' : byKey.has(key) || key === 'custom' ? key : 'gold';
   const query = new URLSearchParams(location.search).get('theme');
   let preview = !!query && (byKey.has(query) || query === 'pink' || query === 'custom');
@@ -111,7 +118,7 @@
     } catch {}
   }
   function saveSelection(selection) {
-    if (!http) return Promise.resolve();
+    if (!usesSettingsApi) return Promise.resolve();
     pendingSaves++;
     saveQueue = saveQueue.catch(() => {}).then(async () => {
       try {
@@ -146,7 +153,6 @@
       applyPalette(key, palette);
       image.alt = `${label}配色的等距像素猫咪小屋，包含猫爬架、猫窝、玩具和喂食角。`;
       $('downloadScene').download = `猫咪的秘密基地-${label}.png`;
-      document.querySelectorAll('[data-room-prompt]').forEach(link => link.href = background.prompt || 'assets/cat-sanctuary/prompt-v3-pixel.txt');
       announce(`已换上${label}，小猫也换好配色了`);
       if (options.updateUrl) updateUrl(key);
       if (options.user) {
@@ -180,7 +186,7 @@
     applyTheme(selection.theme,{customColors:selection.customColors});
   });
   async function refreshSettings() {
-    if (!http || preview || pendingSaves || busy) return;
+    if (!usesSettingsApi || preview || pendingSaves || busy) return;
     const revision = version, controller = new AbortController(), timeout = setTimeout(() => controller.abort(),2500);
     try {
       const response = await fetch('/api/settings',{signal:controller.signal,cache:'no-store'});
@@ -203,6 +209,7 @@
   };
   api.ready = (async () => {
     const saved = sync?.read(); rememberCustom(saved?.customColors);
+    if (query === 'custom') rememberCustom(linkedCustomColors());
     await applyTheme(preview ? query : saved?.theme || 'gold');
     await refreshSettings();
   })();

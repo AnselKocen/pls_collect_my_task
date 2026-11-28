@@ -6,10 +6,10 @@
   const $ = id => document.getElementById(id);
   const scene = $('scene'), image = $('room'), world = $('roomCatWorld');
   const cat = $('roomCat'), shadow = $('roomCatShadow'), foreground = $('roomForeground');
-  const placeLabel = $('catLocation'), nextButton = $('catNextLocation'), autoButton = $('catAutoToggle'), note = $('catPlaceNote');
+  const placeSelect = $('catLocation'), prevButton = $('catPrevLocation'), nextButton = $('catNextLocation'), autoStatus = $('catAutoStatus');
   if (!layout || !pixelCat || !layout.nodes?.length) {
-    nextButton.disabled = true; autoButton.disabled = true;
-    note.textContent = '小猫正在找舒服的位置';
+    placeSelect.disabled = prevButton.disabled = nextButton.disabled = true;
+    autoStatus.textContent = '小猫正在找舒服的位置';
     return;
   }
 
@@ -18,7 +18,7 @@
   const nodes = new Map(layout.nodes.map(node => [node.id, node]));
   const orderedNodes = [...layout.nodes].sort((a, b) => a.number - b.number);
   const nodeNumber = node => String(node.number).padStart(2, '0');
-  const nodeLabel = node => nodeNumber(node) + ' · ' + node.label;
+  const nodeLabel = node => node.label;
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   const ns = 'http://www.w3.org/2000/svg';
   const maskElements = new Map();
@@ -28,12 +28,11 @@
   let animationFrame = null, idleTimer = null, gestureEndTimer = null, autoTimer = null, phaseTimer = null, transientTimer = null;
   let activityToken = 0;
   let behaviorPlan = [], behaviorCycle = false, phaseIndex = 0, phaseStartedAt = 0, phaseRemainingMs = Infinity;
-  let autoDueAt = 0, autoDeparturePending = false, transientAction = null, resumeAfterAction = null, suspendedContext = null;
+  let autoDueAt = 0, transientAction = null, resumeAfterAction = null, suspendedContext = null;
   let travelState = null;
-  const clickActions = ['thinking', 'coding', 'looking', 'sweeping', 'error', 'happy', 'yarn', 'stand'].filter(state => pixelCat.ANIMATIONS[state]);
-  const actionLabels = {idle:'安静趴着',belly:'睡个好觉',stretch:'伸个懒腰',looking:'好奇地四处看看',thinking:'认真想一想',coding:'忙一会儿小事情',sweeping:'打扫一下小角落',error:'有一点点小困惑',happy:'开心地挥挥爪',yarn:'玩一会儿毛线',stand:'站起来看看'};
+  const clickActions = ['thinking', 'error', 'happy'].filter(state => pixelCat.ANIMATIONS[state]);
   const now = () => performance.now();
-  const randomDwell = () => 22000 + Math.random() * 18000;
+  const DWELL_MS = 10000;
 
   const makeSvg = (tag, attributes, parent) => {
     const element = document.createElementNS(ns, tag);
@@ -98,7 +97,6 @@
     idleTimer = gestureEndTimer = autoTimer = phaseTimer = transientTimer = null;
     if (animationFrame !== null) cancelAnimationFrame(animationFrame);
     animationFrame = null;
-    autoDeparturePending = false;
   }
   function playState(state, progress = 0) {
     clearTimeout(idleTimer); clearTimeout(gestureEndTimer);
@@ -122,14 +120,12 @@
         gestureEndTimer = null;
         if (token !== activityToken || moving || transientAction) return;
         pixelCat.setIdleAction(cat, 'rest');
-        if (autoDeparturePending) departForNextPlace();
-        else scheduleGesture();
+        scheduleGesture();
       }, pixelCat.IDLE_ACTIONS[gesture].duration);
     }, 4000 + Math.random() * 4500);
   }
-  function updateAutoButton() {
-    autoButton.setAttribute('aria-pressed', String(automatic));
-    autoButton.textContent = automatic ? '自动闲逛中' : '自动闲逛';
+  function updateAutoStatus() {
+    autoStatus.textContent = automatic ? '自动闲逛中' : '安静休息中';
   }
   function departForNextPlace() {
     if (!automatic || moving || transientAction || motionPreference.matches || document.hidden) return;
@@ -142,20 +138,16 @@
   function scheduleNextPlace() {
     clearTimeout(autoTimer);
     autoTimer = null;
-    if (!automatic || moving || transientAction || motionPreference.matches || document.hidden || behaviorCycle) return;
-    if (!autoDueAt) autoDueAt = now() + randomDwell();
-    // Finite phases (for example yarn) finish before an automatic departure.
-    if (Number.isFinite(phaseRemainingMs)) return;
+    if (!automatic || moving || transientAction || motionPreference.matches || document.hidden) return;
+    if (!autoDueAt) autoDueAt = now() + DWELL_MS;
     const token = activityToken;
-    const state = behaviorPlan[phaseIndex]?.state || 'idle';
-    const loop = state === 'idle' ? 0 : pixelCat.ANIMATIONS[state]?.duration || 0;
-    const due = loop ? phaseStartedAt + Math.ceil(Math.max(autoDueAt - phaseStartedAt, 0) / loop) * loop : autoDueAt;
+    // Every place shares this deadline, including finite/cycling routines.
+    // Clicking the cat pauses it through captureContext/resumeContext.
     autoTimer = setTimeout(() => {
       autoTimer = null;
       if (!automatic || token !== activityToken || document.hidden || transientAction) return;
-      if (gestureEndTimer !== null) autoDeparturePending = true;
-      else departForNextPlace();
-    }, Math.max(0, due - now()));
+      departForNextPlace();
+    }, Math.max(0, autoDueAt - now()));
   }
   function planFor(node) {
     const configured = node.behavior?.phases?.filter(phase => pixelCat.ANIMATIONS[phase.state] && Number(phase.seconds) > 0);
@@ -170,7 +162,6 @@
     const phase = behaviorPlan[phaseIndex];
     const state = motionPreference.matches && !['idle','belly'].includes(phase.state) ? 'idle' : phase.state;
     playState(state, progress);
-    note.textContent = currentNode.note || (currentNode.state === 'yarn' && phaseIndex > 0 ? '玩累了，就在垫子上趴一会儿' : actionLabels[state] || '找个舒服的地方趴一会儿');
     if (state === 'idle') scheduleGesture();
     if (Number.isFinite(phaseRemainingMs) && !motionPreference.matches && !document.hidden) {
       const token = activityToken;
@@ -179,9 +170,6 @@
         if (token !== activityToken || moving || transientAction || document.hidden) return;
         let next = phaseIndex + 1;
         if (next >= behaviorPlan.length) {
-          // Finish a full behavior cycle before roaming. For 01 this retains
-          // exactly 24s asleep + 6s stretching in every completed cycle.
-          if (behaviorCycle && automatic && now() >= autoDueAt) { departForNextPlace(); return; }
           next = behaviorCycle ? 0 : behaviorPlan.length - 1;
         }
         startPhase(next);
@@ -191,7 +179,7 @@
   }
   function beginRoutine(node) {
     behaviorPlan = planFor(node); behaviorCycle = node.behavior?.type === 'cycle' && behaviorPlan.every(phase => Number.isFinite(phase.ms));
-    autoDueAt = automatic ? now() + randomDwell() : 0;
+    autoDueAt = automatic ? now() + DWELL_MS : 0;
     startPhase(0);
   }
   function arrive(node, fromWalk = false) {
@@ -201,7 +189,7 @@
     cat.dataset.node = node.id; cat.dataset.moving = 'false';
     cat.dataset.number = nodeNumber(node);
     cat.setAttribute('aria-label',nodeLabel(node) + '的小猫，点击播放一个随机动作');
-    placeLabel.value = nodeLabel(node);
+    placeSelect.value = node.id;
     beginRoutine(node);
   }
   function captureContext() {
@@ -233,14 +221,13 @@
     behaviorPlan = planFor(currentNode);
     behaviorCycle = currentNode.behavior?.type === 'cycle' && behaviorPlan.every(phase => Number.isFinite(phase.ms));
     autoDueAt = automatic ? now() + context.autoRemaining : 0;
-    placeLabel.value = nodeLabel(currentNode);
+    placeSelect.value = currentNode.id;
     startPhase(Math.min(context.index,behaviorPlan.length-1),context.remaining,context.progress);
   }
   function runTransientAction(state, remaining, progress = 0) {
     const duration = remaining ?? pixelCat.ANIMATIONS[state].duration;
     transientAction = {state,startedAt:now(),remaining:duration};
     playState(state, progress);
-    note.textContent = actionLabels[state] || '玩一个小动作';
     const token = activityToken;
     transientTimer = setTimeout(() => {
       transientTimer = null;
@@ -296,7 +283,7 @@
 
   function walkTo(node, path) {
     moving = true; destination = node; cat.dataset.moving = 'true';
-    placeLabel.value = nodeLabel(node); note.textContent = '慢慢走到 ' + nodeLabel(node);
+    placeSelect.value = node.id;
     cat.setAttribute('aria-label','正在走向 ' + nodeLabel(node) + '的小猫，点击播放一个随机动作');
     pixelCat.setState(cat, 'walk'); pixelCat.play(cat);
     const segments = [];
@@ -336,7 +323,6 @@
     const wasMoving = moving || resumeAfterAction?.kind === 'travel';
     clearActivity(); moving = false; destination = null;
     transientAction = null; resumeAfterAction = null; suspendedContext = null; travelState = null;
-    if (options.manual) { automatic = false; updateAutoButton(); }
     const canWalk = currentNode && currentNode.id !== node.id && currentNode.walkable !== false && node.walkable !== false;
     const path = canWalk && !motionPreference.matches && !options.instant && !wasMoving ? findRoutes(currentNode.id, node.id) : null;
     if (path) walkTo(node, path);
@@ -345,10 +331,10 @@
   }
   function setAuto(enabled) {
     automatic = !!enabled && !motionPreference.matches;
-    updateAutoButton(); clearTimeout(autoTimer);
-    autoTimer = null; autoDeparturePending = false;
+    updateAutoStatus(); clearTimeout(autoTimer);
+    autoTimer = null;
     if (transientAction && resumeAfterAction?.kind === 'routine') {
-      resumeAfterAction.autoRemaining = automatic ? randomDwell() : 0;
+      resumeAfterAction.autoRemaining = automatic ? DWELL_MS : 0;
       return automatic;
     }
     if (transientAction && resumeAfterAction?.kind === 'travel') {
@@ -357,25 +343,23 @@
     }
     if (!automatic && moving && destination) {
       const target = destination; clearActivity(); arrive(target);
-    } else if (automatic) { autoDueAt = now() + randomDwell(); scheduleNextPlace(); }
+    } else if (automatic) { autoDueAt = now() + DWELL_MS; scheduleNextPlace(); }
     return automatic;
   }
 
   orderedNodes.forEach(node => {
-    const hotspot = document.createElement('button');
-    hotspot.className = 'hotspot numbered'; hotspot.type = 'button'; hotspot.dataset.node = node.id;
-    hotspot.textContent = nodeNumber(node);
-    hotspot.style.setProperty('--x', `${node.x / width * 100}%`); hotspot.style.setProperty('--y', `${node.y / height * 100}%`);
-    hotspot.setAttribute('aria-label', '让小猫去 ' + nodeLabel(node));
-    hotspot.addEventListener('click', () => goTo(node.id, {manual: true}));
-    $('roomNodeHotspots').append(hotspot);
+    const option = document.createElement('option');
+    option.value = node.id; option.textContent = nodeLabel(node);
+    placeSelect.append(option);
   });
-  nextButton.addEventListener('click', () => {
+  function stepPlace(direction) {
     const active = destination || nodes.get(resumeAfterAction?.targetId) || currentNode;
     const index = orderedNodes.findIndex(node => node.id === active?.id);
-    goTo(orderedNodes[(index + 1) % orderedNodes.length].id, {manual: true});
-  });
-  autoButton.addEventListener('click', () => setAuto(!automatic));
+    goTo(orderedNodes[(Math.max(0, index) + direction + orderedNodes.length) % orderedNodes.length].id);
+  }
+  prevButton.addEventListener('click', () => stepPlace(-1));
+  nextButton.addEventListener('click', () => stepPlace(1));
+  placeSelect.addEventListener('change', () => goTo(placeSelect.value));
   cat.addEventListener('pointerdown', event => event.stopPropagation());
   cat.addEventListener('click', event => { event.stopPropagation(); playRandomAction(); });
   cat.addEventListener('keydown', event => {
@@ -383,7 +367,7 @@
   });
   motionPreference.addEventListener('change', () => {
     const target = destination || nodes.get(resumeAfterAction?.targetId) || currentNode;
-    clearActivity(); automatic = false; updateAutoButton();
+    clearActivity(); automatic = !motionPreference.matches; updateAutoStatus();
     transientAction = null; resumeAfterAction = null; suspendedContext = null;
     if (target) arrive(target);
   });
@@ -404,7 +388,7 @@
   image.addEventListener('load', () => { fitWorld(); world.classList.add('ready'); });
   image.addEventListener('error', () => world.classList.remove('ready'));
   fitWorld(); if (image.complete && image.naturalWidth > 0) world.classList.add('ready');
-  pixelCat.mount(cat); updateAutoButton();
+  pixelCat.mount(cat); updateAutoStatus();
   goTo(nodes.has(layout.defaultNode) ? layout.defaultNode : layout.nodes[0].id, {instant: true});
 
   window.CatRoomScene = {

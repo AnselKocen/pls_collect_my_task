@@ -21,6 +21,9 @@ ai-config.json.tmp
 # Project-specific deployment keys stay local.
 /.deploy_ed25519
 /.deploy_ed25519.pub
+/.deploy/cat-sanctuary.json
+/.deploy/known_hosts
+/.deploy/install-cat-sanctuary-key.sh
 
 # Generated previews and acceptance evidence.
 /output/

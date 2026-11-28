@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="cc-cat-themes.css">
   <link rel="stylesheet" href="cc-cat.css">
   <link rel="stylesheet" href="cc-cat-symbols.css">
+  <link rel="stylesheet" href="onboarding.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -626,8 +627,8 @@
     </div>
 
     <!-- Guide Modal -->
-    <div id="guideModal" class="modal hidden">
-      <div class="modal-content modal-guide">
+    <div id="guideModal" class="modal hidden onboarding-modal">
+      <section class="modal-content modal-guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle" tabindex="-1">
         <div class="guide-banner">
           <div class="theme-dots">
             <span class="dot dot-1"></span>
@@ -637,7 +638,7 @@
           </div>
           <div class="digest-bg"></div>
           <div class="digest-main">
-            <div class="tape tape-clock tape-2" style="top:-12px;left:6px;transform:rotate(-2deg)"><span>📖 使用指南</span></div>
+            <div class="tape tape-clock tape-2" style="top:-12px;left:6px;transform:rotate(-2deg)"><span>📖 项目介绍</span></div>
             <div class="tape tape-deco tape-4" style="width:110px;height:26px;top:-10px;right:-22px;transform:rotate(38deg)"></div>
             <div class="tape tape-deco tape-9" style="width:100px;height:24px;top:-4px;right:-14px;transform:rotate(26deg)"></div>
             <div class="paperclip" style="top:-12px;right:60px"></div>
@@ -645,42 +646,60 @@
             <div class="star star-sm star-light" style="bottom:4px;left:8px"></div>
             <div class="digest-header">
               <span class="digest-icon">📖</span>
-              <h3>记忆手帐 · 使用指南</h3>
-              <button class="modal-close" id="guideClose" style="position:static;font-size:20px">&times;</button>
+              <h3 id="guideTitle">记忆手帐 · 项目与功能介绍</h3>
+              <button class="modal-close" id="guideClose" aria-label="关闭详细指南，返回欢迎页" style="position:static;font-size:20px">&times;</button>
             </div>
             <div class="digest-body guide-body">
+              <p class="guide-intro">记忆手帐 Memo Journal 是个人便签、任务整理和习惯记录应用，提供 Mac 桌面版及连接本机服务的网页版。</p>
               <div class="guide-section">
-                <h4>✨ 基础功能</h4>
-                <p>• <b>快速记录</b>：左侧「快速记录」框写下碎碎念，选择标签后点保存</p>
-                <p>• <b>便签管理</b>：支持编辑、删除、置顶，点击便签可查看详情</p>
-                <p>• <b>标签筛选</b>：顶部标签栏可按标签过滤便签</p>
-              </div>
-              <div class="guide-section">
-                <h4>🤖 智能助手（在设置里选择 AI 助手）</h4>
-                <p>• <b>本地查找</b>：精确匹配连续文字，模糊匹配关键词组合；无需 AI</p>
-                <p>• <b>整理标签</b>：AI 自动分析便签，建议合并或新增标签</p>
-                <p>• <b>任务图谱</b>：可视化展示便签之间的关联关系</p>
-                <p>• <b>本周总结</b>：按电脑本地自然周（周一至周日）整理，截至生成时刻；默认周日 23:59 自动生成</p>
-                <p>• <b>今日摘要</b>：按电脑本地当天整理，手动与定时生成使用相同日期范围</p>
+                <h4>✏️ 项目介绍</h4>
+                <p>业务数据保存在本机。基础记录功能独立于 AI；AI 功能通过用户选择的 Claude Code、Codex 或 CodeBuddy CLI 调用已配置的模型服务，使用用户自己的账号与额度。</p>
+                <p>项目源码与说明：<a class="guide-github-link" href="https://github.com/AnselKocen/pls_collect_my_task" target="_blank" rel="noopener noreferrer">GitHub · AnselKocen/pls_collect_my_task ↗</a></p>
               </div>
               <div class="guide-section">
-                <h4>🌻 特色玩法</h4>
-                <p>• <b>习惯养成</b>：和 AI 聊聊计划，或上传素材、粘贴文字生成专属卡池，每天抽取习惯卡打卡</p>
-                <p>• <b>任务盲盒</b>：迷茫时随机抽取一条待办，让 AI 帮你做决定</p>
-                <p>• <b>定时提醒</b>：设置未来时间点，到点会收到系统通知</p>
+                <h4>🤖 功能介绍 · 记录与 AI 整理</h4>
+                <p><b>便签管理与搜索：</b>支持新增、编辑、删除和置顶记录，通过标签分类，提供本地精确文字搜索和模糊关键词搜索，无需 AI。</p>
+                <p><b>AI 整理：</b>根据记录生成标签整理建议、每日摘要、每周总结，以及展示记录关联的任务图谱。</p>
               </div>
               <div class="guide-section">
-                <h4>💡 小技巧</h4>
-                <p>• 按 <b>Cmd/Ctrl + R</b> 刷新页面</p>
-                <p>• AI 一次只能处理一个任务，请耐心等待</p>
+                <h4>🌻 功能介绍 · 习惯与日常功能</h4>
+                <p><b>习惯养成：</b>支持通过 AI 对话、文字或文件材料生成习惯卡池；已有卡池可进行抽卡、打卡和日历查看。</p>
+                <p><b>任务盲盒：</b>从记录中随机抽取一条便签。<b>主题与小猫：</b>支持主题切换、自定义配色、像素小猫互动及「猫咪的秘密基地」入口。</p>
               </div>
-              <div class="digest-actions">
-                <button id="guideOk" class="btn-small">知道了</button>
+              <div class="guide-section">
+                <h4>🕰️ 功能介绍 · 定时与数据管理</h4>
+                <p><b>定时任务：</b>支持按计划生成每日摘要和每周总结，以及记录提醒。计划执行依赖本机服务运行。</p>
+                <p><b>数据管理：</b>提供本机数据备份、备份下载和恢复功能。每天首次启动时自动创建当日备份，保留最近七份自动备份。</p>
               </div>
+              <div class="guide-version"><strong>当前版本 <span data-app-version>读取中…</span></strong><p>本版使用说明：网页与 Mac 版共用助手检测；启动时只做基础检查，连接测试由你手动发起。</p></div>
+              <div class="digest-actions"><button id="guideOk" class="btn-small" type="button">返回欢迎页</button></div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+    </div>
+
+    <div id="agentReadinessModal" class="modal hidden onboarding-modal">
+      <section class="modal-content agent-readiness-dialog" role="dialog" aria-modal="true" aria-labelledby="agentReadinessTitle" aria-describedby="readinessDescription" tabindex="-1">
+        <button id="agentReadinessClose" class="modal-close" type="button" aria-label="关闭助手检测">&times;</button>
+        <div class="readiness-eyebrow">你好，今天也可以从一条记录开始</div>
+        <div class="readiness-heading">
+          <div class="readiness-title"><img id="readinessCatIcon" src="favicon.svg?v=siamese-large" width="32" height="32" alt=""><h3 id="agentReadinessTitle">欢迎来到记忆手帐</h3></div>
+          <button id="readinessGuideOpen" class="readiness-guide-link" type="button">查看详细指南</button>
+        </div>
+        <div id="readinessDescription" class="readiness-description">
+          <p><span class="welcome-paw" aria-hidden="true">🐾</span>记忆手帐Memo Journal是一款结合本地记录与 AI 整理的便签和任务助手。</p>
+          <p><span class="welcome-paw" aria-hidden="true">🐾</span>你可以把它当作简单的记事本，随手记录想法、心情和待办；也可以让 AI 帮你整理记录、生成摘要、梳理任务和养成习惯。</p>
+          <p><span class="welcome-paw" aria-hidden="true">🐾</span><strong>日常记录无需 AI。</strong> <span class="welcome-paw" aria-hidden="true">🐾</span>使用 AI 功能，需要本机已安装下列任一助手的 CLI，并完成登录或认证配置。</p>
+          <p><span class="welcome-paw" aria-hidden="true">🐾</span>下方会显示本机助手的基础检测结果。<span class="welcome-paw" aria-hidden="true">🐾</span>你可以手动测试连接。</p>
+        </div>
+        <div class="readiness-toolbar"><span id="readinessSummary" role="status" aria-live="polite">正在检查本机助手…</span><button id="readinessRefresh" class="btn-small" type="button">重新检测</button></div>
+        <div id="readinessAgents" class="readiness-agents" aria-label="本机 AI 助手状态"></div>
+        <p id="readinessError" class="readiness-error hidden" role="status"></p>
+        <p class="readiness-test-note">「测试连接」会发送一条固定的简短测试消息，可能消耗少量模型额度，不包含你的记录。检测到登录状态，不代表模型已经连接成功。测试在受限环境中进行，结果仅供参考，不影响直接使用 AI 功能。</p>
+        <p class="readiness-feature-note">* 每日摘要、每周总结、标签整理、任务图谱和习惯卡池生成等功能需要 AI；日常记录、搜索、主题切换、已有卡池的抽卡和打卡等基础功能不受影响。</p>
+        <div class="readiness-footer"><span>记忆手帐 <span data-app-version></span></span><button id="agentReadinessOk" class="btn-primary" type="button">好的，我明白了。</button></div>
+      </section>
     </div>
 
     <!-- Custom Confirm Dialog -->
@@ -705,7 +724,10 @@
       </div>
     </div>
 
-    <div class="app-footer"><span class="app-copyright">© Anselkocen</span></div>
+    <div class="app-footer">
+      <button id="btnHelp" class="memo-help-button" type="button" aria-label="欢迎与 AI 助手检测" title="欢迎与助手检测"><svg viewBox="0 0 7 9" width="14" height="18" aria-hidden="true" shape-rendering="crispEdges"><path fill="currentColor" d="M2 1h3v1H2zM1 2h1v1H1zM5 2h1v2H5zM3 4h2v1H3zM3 5h1v1H3zM3 7h1v1H3z"/></svg></button>
+      <span class="app-copyright">© Anselkocen</span>
+    </div>
   </div>
 
   <div class="deco-stars" style="position:fixed;inset:0;z-index:0;pointer-events:none">
@@ -725,6 +747,7 @@
   <script src="cc-cat-controller.js"></script>
   <script src="cc-cat-idle.js"></script>
   <script src="theme-sync.js?v=1"></script>
+  <script src="onboarding.js"></script>
   <script src="app.js"></script>
   <script src="habit-wish.js"></script>
   <script src="task-stream.js"></script>

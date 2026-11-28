@@ -7457,7 +7457,7 @@ button[title="编辑"] { transform:scaleX(-1); }
 
 /* Task destinations share the existing feature views. */
 .ai-task-inline { margin:5px 0 5px 8px; }
-.cc-task-open { border:0; padding:2px 3px; background:none; color:var(--t-accent-dark); font:inherit; font-size:11px; cursor:pointer; text-decoration:underline; white-space:nowrap; }
+.cc-task-open, .cc-cat-home { border:0; padding:2px 3px; background:none; color:var(--t-accent-dark); font:inherit; font-size:11px; cursor:pointer; text-decoration:underline; white-space:nowrap; }
 .cc-task-open:disabled { opacity:.55; cursor:wait; }
 .ai-destination-note { padding:10px 12px; margin:0 0 12px; border-left:3px solid var(--t-accent); background:var(--t-secondary); color:var(--t-text); font-size:12px; line-height:1.6; }
 

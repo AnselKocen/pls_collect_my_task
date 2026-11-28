@@ -162,7 +162,9 @@ test('concurrent starts create one server and recover a dead lock owner', async 
     const runs = await Promise.all([f.run('start'), f.run('start'), f.run('start')]); runs.forEach(passed);
     assert.equal(runs.filter(r => r.stdout.includes('服务已启动')).length, 1);
     const pids = runs.map(r => Number(r.stdout.match(/PID (\d+)/)[1])); assert.equal(new Set(pids).size, 1); assert.equal(f.state().pid, pids[0]);
-    assert.ok(!fs.existsSync(lock)); passed(await f.run('stop'));
+    assert.ok(!fs.existsSync(lock));
+    assert.ok(!fs.readdirSync(f.control).some(name => name.startsWith('.server-control.lock')), 'active and retired lock directories are released');
+    passed(await f.run('stop'));
   }
 });
 
@@ -172,6 +174,7 @@ test('an old lock without an owner is recovered and unknown live locks time out 
   passed(await f.run('start')); passed(await f.run('stop'));
   fs.mkdirSync(lock); fs.writeFileSync(path.join(lock, 'owner.json'), JSON.stringify({ pid: process.pid, token: 'live-unrelated-owner' }));
   rejected(await f.run('start', { env: { MEMO_CONTROL_TIMEOUT_MS: '100' } }), /另一个启动或停止/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(lock, 'owner.json'), 'utf8')).token, 'live-unrelated-owner');
   process.kill(process.pid, 0); fs.rmSync(lock, { recursive: true });
 });
 
